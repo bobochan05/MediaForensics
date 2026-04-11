@@ -132,24 +132,274 @@ def _current_request_id() -> str:
     return request_id or _new_uuid()
 
 
+def _layer2_match_similarity(item: dict[str, object]) -> float:
+    metadata = dict(item.get("metadata") or {})
+    score_breakdown = dict(item.get("score_breakdown") or {})
+    similarity = _safe_float(
+        score_breakdown.get("final_score"),
+        _safe_float(
+            metadata.get("embedding_similarity"),
+            _safe_float(
+                item.get("visual_similarity"),
+                _safe_float(
+                    item.get("fused_similarity"),
+                    _safe_float(metadata.get("final_score")),
+                ),
+            ),
+        ),
+    )
+    return max(0.0, min(1.0, similarity))
+
+
+def _layer2_match_preview_url(item: dict[str, object]) -> str:
+    metadata = dict(item.get("metadata") or {})
+    candidate_urls = [
+        item.get("preview_url"),
+        item.get("media_url"),
+        metadata.get("media_url"),
+        metadata.get("resolved_media_url"),
+        metadata.get("provider_media_url"),
+        metadata.get("thumbnail"),
+        metadata.get("provider_image_url"),
+        item.get("image_url"),
+    ]
+    candidate_urls.extend(metadata.get("resolved_image_urls") or [])
+    source_url = str(item.get("url") or item.get("source_url") or "").strip()
+    if source_url.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+        candidate_urls.append(source_url)
+
+    for candidate in candidate_urls:
+        cleaned = str(candidate or "").strip()
+        if cleaned.startswith(("http://", "https://")):
+            return cleaned
+    return ""
+
+
+def _layer2_display_matches(
+    exact_matches: list[dict[str, object]],
+    visual_matches_top10: list[dict[str, object]],
+    embedding_matches_top10: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    display_items = [*exact_matches, *visual_matches_top10, *embedding_matches_top10]
+    matches: list[dict[str, object]] = []
+    seen_keys: set[str] = set()
+
+    for item in display_items:
+        source_url = str(item.get("url") or item.get("page_url") or item.get("source_url") or "").strip()
+        preview_url = _layer2_match_preview_url(item)
+        identity = source_url or preview_url or str(item.get("id") or item.get("entry_id") or item.get("candidate_key") or "").strip()
+        if identity and identity in seen_keys:
+            continue
+        if identity:
+            seen_keys.add(identity)
+
+        title = str(item.get("title") or "").strip()
+        if not title:
+            parsed = urlparse(source_url)
+            title = Path(parsed.path).name or f"Source match {len(matches) + 1}"
+
+        matches.append(
+            {
+                "id": str(item.get("id") or item.get("entry_id") or item.get("candidate_key") or f"match-{len(matches) + 1}"),
+                "preview_url": preview_url,
+                "source_url": source_url or preview_url,
+                "similarity": _layer2_match_similarity(item),
+                "first_seen": str(item.get("timestamp") or item.get("first_seen") or "").strip(),
+                "platform": str(item.get("platform") or "web"),
+                "title": title,
+            }
+        )
+        if len(matches) >= DISCOVERY_SECTION_LIMIT * 3:
+            break
+
+    return matches
+
+
+def _match_domain(item: dict[str, object]) -> str:
+    source_url = str(
+        item.get("page_url")
+        or item.get("url")
+        or item.get("source_url")
+        or item.get("media_url")
+        or ""
+    ).strip()
+    if not source_url:
+        return "unknown"
+    parsed = urlparse(source_url)
+    return parsed.netloc.lower().removeprefix("www.") or "unknown"
+
+
+def _match_type_label(item: dict[str, object], default_type: str) -> str:
+    raw_type = str(item.get("type") or "").strip().lower()
+    if raw_type == "exact_match":
+        return "exact"
+    if raw_type == "visually_similar":
+        return "visual"
+    if raw_type in {"embedding_similar", "related_content"}:
+        return "semantic"
+    return default_type
+
+
+def _match_explanation(item: dict[str, object], match_type: str) -> str:
+    note = str(item.get("note") or item.get("match_reason") or "").strip()
+    if note:
+        return note
+    if match_type == "exact":
+        return "High pixel similarity and corroborated reverse-search evidence."
+    if match_type == "visual":
+        return "Similar composition, framing, or subject appearance."
+    return "Contextually related result surfaced by reverse-image search."
+
+
+def _annotate_matches(items: list[dict[str, object]], *, default_type: str) -> list[dict[str, object]]:
+    annotated: list[dict[str, object]] = []
+    for item in items:
+        enriched = deepcopy(item)
+        match_type = _match_type_label(enriched, default_type)
+        enriched["match_type"] = match_type
+        enriched["similarity_score"] = round(_layer2_match_similarity(enriched), 4)
+        enriched["explanation"] = _match_explanation(enriched, match_type)
+        enriched["domain"] = _match_domain(enriched)
+        annotated.append(enriched)
+    return annotated
+
+
+def _top_domains_from_matches(items: list[dict[str, object]], limit: int = 3) -> list[str]:
+    counts: dict[str, int] = {}
+    for item in items:
+        domain = str(item.get("domain") or _match_domain(item)).strip().lower()
+        if not domain or domain == "unknown":
+            continue
+        counts[domain] = counts.get(domain, 0) + 1
+    return [domain for domain, _ in sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))[:limit]]
+
+
+def _first_seen_estimate(items: list[dict[str, object]]) -> str:
+    timestamps = [
+        str(item.get("timestamp") or item.get("first_seen") or "").strip()
+        for item in items
+        if str(item.get("timestamp") or item.get("first_seen") or "").strip()
+    ]
+    if not timestamps:
+        return "Unavailable from current providers"
+    return min(timestamps)
+
+
+def _best_origin_match(
+    exact_matches: list[dict[str, object]],
+    visual_matches: list[dict[str, object]],
+    related_sources: list[dict[str, object]],
+) -> dict[str, object] | None:
+    for bucket in (exact_matches, visual_matches, related_sources):
+        if bucket:
+            return sorted(bucket, key=lambda item: item.get("similarity_score") or 0.0, reverse=True)[0]
+    return None
+
+
+def _domain_clusters(items: list[dict[str, object]]) -> dict[str, list[dict[str, object]]]:
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for item in items:
+        domain = str(item.get("domain") or _match_domain(item)).strip().lower() or "unknown"
+        grouped.setdefault(domain, []).append(item)
+    return dict(sorted(grouped.items(), key=lambda pair: (-len(pair[1]), pair[0])))
+
+
+def _origin_summary_payload(
+    exact_matches: list[dict[str, object]],
+    visual_matches: list[dict[str, object]],
+    related_sources: list[dict[str, object]],
+) -> dict[str, object]:
+    all_matches = [*exact_matches, *visual_matches, *related_sources]
+    top_domains = _top_domains_from_matches(all_matches)
+    strongest = _best_origin_match(exact_matches, visual_matches, related_sources)
+    source_count = len(all_matches)
+    strongest_domain = str((strongest or {}).get("domain") or "an unknown source").strip()
+    first_seen = _first_seen_estimate(all_matches)
+    if top_domains:
+        domain_story = ", ".join(top_domains[:3])
+        summary = (
+            f"This image most likely originated from {strongest_domain} and has appeared across {source_count} sources. "
+            f"Strong matches were found on {domain_story}. The content appears to be reused or modified across multiple platforms."
+        )
+    else:
+        summary = (
+            f"This image most likely originated from {strongest_domain} and has appeared across {source_count} sources. "
+            "Provider data is limited, so this origin estimate should be reviewed manually."
+        )
+    return {
+        "origin_summary": summary,
+        "top_domains": top_domains,
+        "first_seen_estimate": first_seen,
+    }
+
+
+def _consistency_warning_payload(layer1_result: str, layer1_confidence: float, exact_matches: list[dict[str, object]]) -> dict[str, object]:
+    has_strong_exact = any(float(item.get("similarity_score") or 0.0) >= 0.85 for item in exact_matches)
+    enabled = str(layer1_result or "").upper() == "FAKE" and float(layer1_confidence or 0.0) >= 80.0 and has_strong_exact
+    message = (
+        "AI model flags this as synthetic, but strong real-world matches exist. Review manually."
+        if enabled
+        else ""
+    )
+    return {
+        "consistency_warning": enabled,
+        "message": message,
+    }
+
+
 def build_layer2_response(data: dict[str, object] | None) -> dict[str, object]:
     payload = data if isinstance(data, dict) else {}
     exact_raw = payload.get("exact_matches")
     visual_raw = payload.get("visual_matches_top10")
-    embedding_raw = payload.get("embedding_matches_top10")
-    exact = list(exact_raw) if isinstance(exact_raw, list) else []
-    visual = list(visual_raw) if isinstance(visual_raw, list) else []
-    embedding = list(embedding_raw) if isinstance(embedding_raw, list) else []
-    return {
+    embedding_raw = payload.get("related_web_sources")
+    if not isinstance(embedding_raw, list):
+        embedding_raw = payload.get("embedding_matches_top10")
+    exact = _annotate_matches(list(exact_raw) if isinstance(exact_raw, list) else [], default_type="exact")
+    visual = _annotate_matches(list(visual_raw) if isinstance(visual_raw, list) else [], default_type="visual")
+    embedding = _annotate_matches(list(embedding_raw) if isinstance(embedding_raw, list) else [], default_type="semantic")
+    matches = _layer2_display_matches(exact, visual, embedding)
+    origin_payload = _origin_summary_payload(exact, visual, embedding)
+    domain_clusters = _domain_clusters([*exact, *visual, *embedding])
+    response = {
         "exact_matches": exact,
         "visual_matches_top10": visual,
         "embedding_matches_top10": embedding,
+        "related_web_sources": embedding,
+        "visual_matches": visual,
+        "embedding_matches": embedding,
         "counts": {
             "exact": len(exact),
             "visual": len(visual),
             "embedding": len(embedding),
         },
+        "matches": matches,
+        "count": len(matches),
+        "origin_summary": origin_payload["origin_summary"],
+        "top_domains": origin_payload["top_domains"],
+        "first_seen_estimate": origin_payload["first_seen_estimate"],
+        "domain_clusters": domain_clusters,
     }
+    for key in (
+        "spread_analysis",
+        "provider_status",
+        "image_url",
+        "message",
+        "status",
+        "execution",
+        "fallback_used",
+        "confidence_score",
+        "context_analysis",
+        "clusters",
+        "errors",
+        "sources",
+        "manual_search_links",
+        "manual_search_note",
+        "reverse_search",
+        "consistency_warning",
+    ):
+        if key in payload:
+            response[key] = deepcopy(payload[key])
+    return response
 
 
 def _cleanup_layer2_store() -> None:
@@ -651,6 +901,191 @@ def _reverse_search_asset_key(url: str | None) -> str:
         return ""
     stem = Path(normalized_path).stem
     return re.sub(r"_[a-z0-9]{5,}$", "", stem)
+
+
+def _domain_label(url: str | None) -> str:
+    cleaned = str(url or "").strip()
+    if not cleaned:
+        return "web"
+    parsed = urlparse(cleaned)
+    return parsed.netloc.lower().removeprefix("www.") or "web"
+
+
+def _reverse_rank_score(bucket: str, rank: int) -> float:
+    bucket_key = str(bucket or "").strip().lower()
+    base_scores = {
+        "visual_matches": 0.8,
+        "top_matches": 0.72,
+        "image_results": 0.66,
+        "related_content": 0.58,
+        "inline_images": 0.54,
+        "similar_images": 0.54,
+    }
+    decay = 0.028 if bucket_key == "visual_matches" else 0.024
+    base = base_scores.get(bucket_key, 0.6)
+    return max(0.28, min(0.94, base - (max(rank - 1, 0) * decay)))
+
+
+def _serialize_public_web_result(
+    item: dict[str, object],
+    *,
+    item_type: str,
+    note: str,
+) -> dict[str, object] | None:
+    page_url = str(item.get("page_url") or item.get("link") or item.get("url") or "").strip()
+    image_url = str(item.get("image_url") or item.get("image") or item.get("thumbnail") or "").strip()
+    source_url = page_url if page_url.startswith(("http://", "https://")) else ""
+    preview_url = image_url if image_url.startswith(("http://", "https://")) else ""
+    if not source_url and not preview_url:
+        return None
+
+    bucket = str(item.get("bucket") or "").strip().lower()
+    rank = int(_safe_float(item.get("rank"), 9999))
+    trusted_domain = bool(item.get("trusted_domain"))
+    domain = str(item.get("domain") or _domain_label(source_url or preview_url)).strip().lower() or "web"
+    title = str(item.get("title") or "").strip() or domain
+    caption = str(item.get("snippet") or item.get("source") or "").strip() or None
+    final_score = _reverse_rank_score(bucket, rank)
+    confidence = "MEDIUM" if bucket == "visual_matches" and rank <= 3 else "LOW"
+    similarity = final_score if item_type == "visually_similar" else None
+    credibility = 0.8 if trusted_domain else 0.5
+
+    return {
+        "id": source_url or preview_url or f"{bucket}-{rank}",
+        "url": source_url or preview_url,
+        "page_url": source_url or None,
+        "preview_url": preview_url or None,
+        "media_url": preview_url or None,
+        "local_path": None,
+        "visual_similarity": similarity,
+        "audio_similarity": None,
+        "fused_similarity": final_score,
+        "combined_score": final_score,
+        "platform": domain,
+        "timestamp": None,
+        "source_type": "external",
+        "title": title,
+        "caption": caption,
+        "context": "web",
+        "context_scores": {"web": 1.0},
+        "credibility_score": credibility,
+        "is_mock": False,
+        "label": None,
+        "metadata": {
+            "provider": "serpapi_reverse_search",
+            "reverse_bucket": bucket,
+            "rank": rank,
+            "trusted_domain": trusted_domain,
+            "page_url": source_url or None,
+            "image_url": preview_url or None,
+            "thumbnail": preview_url or None,
+            "final_score": final_score,
+            "match_reason": note,
+            "score_components": {
+                "similarity": similarity if similarity is not None else final_score,
+                "source_trust": credibility,
+                "evidence": 0.4 if bucket == "visual_matches" else 0.25,
+                "final_score": final_score,
+            },
+            "resolver_status": "public_web_result",
+        },
+        "type": item_type,
+        "confidence": confidence,
+        "note": note,
+        "confidence_level": confidence,
+        "match_reason": note,
+        "resolver_status": "public_web_result",
+        "score_breakdown": {
+            "similarity": similarity if similarity is not None else final_score,
+            "trust": credibility,
+            "evidence": 0.4 if bucket == "visual_matches" else 0.25,
+            "final_score": final_score,
+        },
+    }
+
+
+def _merge_section_items(*groups: list[dict[str, object]], limit: int = DISCOVERY_SECTION_LIMIT) -> list[dict[str, object]]:
+    merged: list[dict[str, object]] = []
+    seen_keys: set[str] = set()
+
+    for group in groups:
+        for item in group:
+            source_key = _normalized_url_key(
+                str(item.get("page_url") or item.get("url") or item.get("source_url") or "")
+            )
+            preview_key = _normalized_url_key(
+                str(item.get("preview_url") or item.get("media_url") or ((item.get("metadata") or {}).get("image_url")) or "")
+            )
+            identity = source_key or preview_key or str(item.get("id") or "").strip()
+            if not identity or identity in seen_keys:
+                continue
+            seen_keys.add(identity)
+            merged.append(item)
+            if len(merged) >= limit:
+                return merged
+
+    return merged
+
+
+def _reverse_visual_matches(
+    reverse_search: dict[str, object],
+    *,
+    excluded_urls: set[str] | None = None,
+    limit: int = DISCOVERY_SECTION_LIMIT,
+) -> list[dict[str, object]]:
+    excluded = {_normalized_url_key(url) for url in (excluded_urls or set()) if _normalized_url_key(url)}
+    visual_matches: list[dict[str, object]] = []
+
+    for raw_item in list(reverse_search.get("visual_matches") or []):
+        serialized = _serialize_public_web_result(
+            raw_item,
+            item_type="visually_similar",
+            note="Public lookalike result returned by reverse-image search. This is useful for independent verification and source hunting.",
+        )
+        if serialized is None:
+            continue
+        source_key = _normalized_url_key(str(serialized.get("page_url") or serialized.get("url") or ""))
+        if source_key and source_key in excluded:
+            continue
+        visual_matches.append(serialized)
+        if len(visual_matches) >= limit:
+            break
+
+    return visual_matches
+
+
+def _related_web_source_matches(
+    reverse_search: dict[str, object],
+    *,
+    excluded_urls: set[str] | None = None,
+    limit: int = DISCOVERY_SECTION_LIMIT,
+) -> list[dict[str, object]]:
+    excluded = {_normalized_url_key(url) for url in (excluded_urls or set()) if _normalized_url_key(url)}
+    related_matches: list[dict[str, object]] = []
+    groups = [
+        list(reverse_search.get("top_matches") or []),
+        list(reverse_search.get("image_results") or []),
+        list(reverse_search.get("similar_images") or []),
+    ]
+
+    for group in groups:
+        for raw_item in group:
+            serialized = _serialize_public_web_result(
+                raw_item,
+                item_type="embedding_similar",
+                note="Related public web page returned by reverse-image search. Use this as a public lead for investigation, not as proof of originality.",
+            )
+            if serialized is None:
+                continue
+            source_key = _normalized_url_key(str(serialized.get("page_url") or serialized.get("url") or ""))
+            if source_key and source_key in excluded:
+                continue
+            excluded.add(source_key)
+            related_matches.append(serialized)
+            if len(related_matches) >= limit:
+                return related_matches
+
+    return related_matches
 
 
 def _item_identity(item) -> str:
@@ -1250,6 +1685,121 @@ def _get_layer2_pipeline():
     return _LAYER2_PIPELINE
 
 
+def _run_layer2_discovery(
+    *,
+    upload_id: str,
+    stored_path: Path,
+    upload_metadata: dict[str, object],
+) -> dict[str, object]:
+    errors: list[str] = []
+    pipeline = _get_layer2_pipeline()
+
+    public_source_url: str | None
+    try:
+        public_source_url = _ensure_public_source_url(upload_id, upload_metadata)
+    except Exception as exc:  # pragma: no cover - network/provider safety
+        LOGGER.exception("Failed to establish a public source URL for %s", stored_path)
+        public_source_url = None
+        errors.append(f"Cloudinary upload failed: {exc}")
+
+    original_source_url = str(upload_metadata.get("source_url") or "").strip() or None
+    layer2_source_url = public_source_url or original_source_url
+
+    manual_search_links, manual_search_note = _manual_search_links(
+        str(upload_metadata.get("original_filename") or stored_path.name),
+        source_url=layer2_source_url,
+    )
+
+    external_items: list[dict[str, object]] = []
+    reverse_search_payload = _empty_reverse_search_payload()
+    reverse_confidence_score = 0.0
+    fallback_used = False
+    serpapi_status = "failed"
+
+    if layer2_source_url:
+        try:
+            from ai.layer2_matching.tracking.reverse_search_service import process_reverse_search
+
+            reverse_result = process_reverse_search(image_url=layer2_source_url)
+            reverse_search_payload = dict(reverse_result.get("reverse_search") or _empty_reverse_search_payload())
+            reverse_confidence_score = float(reverse_result.get("confidence_score") or 0.0)
+            fallback_used = bool(reverse_result.get("fallback_used"))
+            serpapi_status = "ok"
+        except Exception as exc:  # pragma: no cover - network/provider safety
+            LOGGER.exception("Public reverse search failed for %s", stored_path)
+            errors.append(f"Public reverse search failed: {exc}")
+
+    try:
+        external_items = _build_external_exploratory_items(
+            pipeline,
+            stored_path,
+            layer2_source_url,
+            limit=DISCOVERY_SECTION_LIMIT,
+        )
+    except Exception as exc:  # pragma: no cover - network/provider safety
+        LOGGER.exception("External Layer 2 discovery failed for %s", stored_path)
+        errors.append(f"External reverse search failed: {exc}")
+
+    exact_matches, _ = _classify_discovery_results(external_items)
+    exact_matches = exact_matches[:DISCOVERY_SECTION_LIMIT]
+    exact_keys = {identity for item in exact_matches if (identity := _item_identity(item))}
+    verified_visual_matches = _visual_similarity_list(
+        external_items,
+        excluded_keys=exact_keys,
+        limit=DISCOVERY_SECTION_LIMIT,
+    )
+    exact_urls = {
+        str(item.get("page_url") or item.get("url") or "").strip()
+        for item in exact_matches
+        if str(item.get("page_url") or item.get("url") or "").strip()
+    }
+    raw_visual_matches = _reverse_visual_matches(
+        reverse_search_payload,
+        excluded_urls=exact_urls,
+        limit=DISCOVERY_SECTION_LIMIT,
+    )
+    visual_matches_top10 = _merge_section_items(
+        verified_visual_matches,
+        raw_visual_matches,
+        limit=DISCOVERY_SECTION_LIMIT,
+    )
+    visual_urls = {
+        str(item.get("page_url") or item.get("url") or "").strip()
+        for item in [*exact_matches, *visual_matches_top10]
+        if str(item.get("page_url") or item.get("url") or "").strip()
+    }
+    embedding_matches_top10 = _related_web_source_matches(
+        reverse_search_payload,
+        excluded_urls=visual_urls,
+        limit=DISCOVERY_SECTION_LIMIT,
+    )
+
+    has_matches = bool(exact_matches or visual_matches_top10 or embedding_matches_top10)
+    return build_layer2_response(
+        {
+            "exact_matches": exact_matches,
+            "visual_matches_top10": visual_matches_top10,
+            "embedding_matches_top10": embedding_matches_top10,
+            "related_web_sources": embedding_matches_top10,
+            "spread_analysis": _spread_analysis(exact_matches),
+            "provider_status": {
+                "cloudinary": "ok" if layer2_source_url else "failed",
+                "serpapi": serpapi_status,
+            },
+            "image_url": layer2_source_url or "",
+            "reverse_search": reverse_search_payload,
+            "sources": list(reverse_search_payload.get("sources") or []),
+            "manual_search_links": manual_search_links,
+            "manual_search_note": manual_search_note,
+            "fallback_used": fallback_used,
+            "confidence_score": reverse_confidence_score,
+            "errors": errors,
+            "message": "Matches found" if has_matches else "No matches found",
+            "status": "success" if not errors else "degraded",
+        }
+    )
+
+
 def _request_image_url() -> str | None:
     payload = request.get_json(silent=True) if request.is_json else {}
     image_url = ""
@@ -1337,8 +1887,7 @@ def disable_cache(response):
     started_at = float(getattr(g, "request_started_at", 0.0) or 0.0)
     elapsed = time.time() - started_at if started_at > 0 else 0.0
     if elapsed > REQUEST_TIMEOUT_SECONDS and _is_json_api_request():
-        response = jsonify({"status": "degraded", "message": "Request timeout safeguard triggered"})
-        response.status_code = 200
+        response.headers["X-Slow-Request"] = f"{elapsed:.2f}s"
 
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
@@ -1497,24 +2046,20 @@ def api_analyze():
     if not enable_layer1:
         layer1_payload = {"result": "REAL", "confidence": 0.0, "heatmap": None}
 
-    layer2_matches: list[dict[str, object]] = []
-    if enable_layer2 and source_url:
-        layer2_matches.append(
-            {
-                "id": f"match-{upload_id}-1",
-                "preview_url": source_url,
-                "source_url": source_url,
-                "similarity": round(min(0.98, max(0.55, confidence + 0.17)), 4),
-                "first_seen": now_iso,
-                "platform": urlparse(source_url).netloc or "web",
-                "title": Path(original_filename).name,
-            }
+    layer2_payload = build_layer2_response(None)
+    upload_metadata = _load_upload_metadata(upload_id)
+    if enable_layer2:
+        layer2_payload = _run_layer2_discovery(
+            upload_id=upload_id,
+            stored_path=stored_path,
+            upload_metadata=upload_metadata,
         )
-    layer2_payload = _build_layer2_channels(
-        exact_matches=layer2_matches,
-        visual_matches_top10=[],
-        embedding_matches_top10=[],
+    consistency_warning = _consistency_warning_payload(
+        str(layer1_payload.get("result") or ""),
+        float(layer1_payload.get("confidence") or 0.0),
+        list(layer2_payload.get("exact_matches") or []),
     )
+    layer2_payload["consistency_warning"] = consistency_warning
     _store_layer2_channels(upload_id, layer2_payload)
 
     timeline: list[dict[str, object]] = []
@@ -1574,6 +2119,11 @@ def api_analyze():
             "guest_usage": guest_usage,
             "layer1": layer1_payload,
             "layer2": layer2_payload,
+            "origin_summary": layer2_payload.get("origin_summary"),
+            "top_domains": layer2_payload.get("top_domains"),
+            "first_seen_estimate": layer2_payload.get("first_seen_estimate"),
+            "domain_clusters": layer2_payload.get("domain_clusters"),
+            "consistency_warning": consistency_warning,
             "layer3": {
                 "timeline": timeline,
                 "growth": growth_payload,
@@ -1717,7 +2267,21 @@ def api_discover():
 
     stored_layer2 = _get_layer2_channels(upload_id)
     if stored_layer2 is None:
-        return jsonify({"status": "error", "message": "invalid upload_id"}), 404
+        try:
+            upload_metadata = _load_upload_metadata(upload_id)
+        except FileNotFoundError:
+            return jsonify({"status": "error", "message": "invalid upload_id"}), 404
+
+        stored_path = Path(str(upload_metadata.get("stored_path") or ""))
+        if not stored_path.exists():
+            return jsonify({"status": "error", "message": "stored media file is missing"}), 404
+
+        stored_layer2 = _run_layer2_discovery(
+            upload_id=upload_id,
+            stored_path=stored_path,
+            upload_metadata=upload_metadata,
+        )
+        _store_layer2_channels(upload_id, stored_layer2)
 
     return jsonify(build_layer2_response(stored_layer2))
 

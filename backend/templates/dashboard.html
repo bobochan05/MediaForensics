@@ -56,9 +56,41 @@
     .verdict{font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:1}.v-real{color:var(--ok)}.v-fake{color:var(--bad)}.v-unc{color:var(--warn)}
     .meter{height:10px;border-radius:999px;background:rgba(148,163,184,.2);overflow:hidden}.meter > div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .55s}
 
-    .match-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.match{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:rgba(2,8,23,.2)}
+    .layer2-meta{display:grid;gap:12px}
+    .investigation-note{font-size:12px;color:var(--muted)}
+    .origin-card{border:1px solid rgba(56,189,248,.35);border-radius:12px;padding:12px;background:rgba(56,189,248,.1);display:grid;gap:8px}
+    .origin-title{margin:0;color:var(--strong);font-size:16px}
+    .origin-summary{font-size:14px;line-height:1.6;color:var(--text)}
+    .origin-tags{display:flex;flex-wrap:wrap;gap:8px}
+    .origin-tag{border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:12px;color:var(--text);background:rgba(2,8,23,.14)}
+    .warning-card{display:none;border:1px solid rgba(251,146,60,.4);border-radius:12px;padding:12px;background:rgba(251,146,60,.12);color:var(--text)}
+    .warning-card.on{display:block}
+    .layer2-sections{display:grid;gap:12px}
+    .fold{overflow:hidden}
+    .fold > summary{list-style:none;cursor:pointer}
+    .fold > summary::-webkit-details-marker{display:none}
+    .fold-content{display:grid;gap:8px;padding-top:8px}
+    .search-assist{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(2,8,23,.14);display:grid;gap:8px}
+    .search-links{display:flex;flex-wrap:wrap;gap:8px}
+    .search-link{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;border:1px solid rgba(56,189,248,.34);background:rgba(56,189,248,.12);color:var(--strong);text-decoration:none;font-size:12px;font-weight:700}
+    .search-link:hover{background:rgba(56,189,248,.2)}
+    .result-group{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(2,8,23,.14);display:grid;gap:8px}
+    .group-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .group-ttl{margin:0;color:var(--strong);font-size:15px}
+    .group-count{border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:11px;color:var(--muted)}
+    .confidence-badge{border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700}
+    .confidence-high{color:var(--ok);border-color:rgba(52,211,153,.45)}
+    .confidence-medium{color:var(--warn);border-color:rgba(251,146,60,.45)}
+    .confidence-low{color:#93c5fd;border-color:rgba(147,197,253,.4)}
+    .group-desc{font-size:12px;color:var(--muted)}
+    .empty-note{border:1px dashed var(--line);border-radius:10px;padding:12px;color:var(--muted);font-size:12px;background:rgba(2,8,23,.12)}
+    .match-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.match{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:rgba(2,8,23,.2)}
     .thumb{height:110px;background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(37,99,235,.18));display:grid;place-items:center;color:var(--muted);font-size:12px}
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}.mb{padding:9px;display:grid;gap:4px}.mt{font-size:13px;font-weight:700;color:var(--strong)}.mm{font-size:12px;color:var(--muted)}.ml{font-size:12px;color:#93c5fd;text-decoration:none}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}.mb{padding:9px;display:grid;gap:6px}.mt{font-size:13px;font-weight:700;color:var(--strong)}.mm{font-size:12px;color:var(--muted)}.ml{font-size:12px;color:#93c5fd;text-decoration:none}.ml.disabled{color:var(--muted);pointer-events:none}
+    .match-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .domain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+    .domain-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(2,8,23,.18);display:grid;gap:6px}
+    .domain-name{font-size:13px;font-weight:700;color:var(--strong)}
 
     .tags{display:flex;gap:8px;flex-wrap:wrap}.tag{border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px}.low{border-color:rgba(52,211,153,.45);color:var(--ok)}.med{border-color:rgba(251,146,60,.45);color:var(--warn)}.viral{border-color:rgba(251,113,133,.45);color:var(--bad)}
     .alerts{display:grid;gap:8px}.alert{border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;background:rgba(2,8,23,.16)}
@@ -179,9 +211,69 @@
             <h3 class="layer-ttl">Layer 2: Source Matching</h3>
             <span class="badge" id="layer2Badge">Waiting for analysis</span>
           </div>
+          <div class="investigation-note">Results aggregated from multiple search engines.</div>
           <div class="muted" id="layer2Summary">No analysis yet. Matching sources and similarity evidence will appear here after scan.</div>
-          <div class="match-grid" id="matchGrid"></div>
           <div class="muted" id="matchExtra">No matches found yet because analysis has not been run.</div>
+          <div class="layer2-meta">
+            <section class="origin-card">
+              <h4 class="origin-title">Origin & Spread Summary</h4>
+              <div class="origin-summary" id="originSummary">Run analysis to estimate likely origin, spread footprint, and top domains.</div>
+              <div class="origin-tags" id="originTags"></div>
+            </section>
+            <section class="warning-card" id="consistencyWarning">
+              <strong>Consistency Warning</strong>
+              <div id="consistencyWarningText"></div>
+            </section>
+          </div>
+          <section class="search-assist">
+            <div class="group-head">
+              <h4 class="group-ttl">Check It Yourself</h4>
+            </div>
+            <div class="group-desc" id="manualSearchNote">Run an analysis to unlock quick reverse-search shortcuts.</div>
+            <div class="search-links" id="manualSearchLinks"></div>
+          </section>
+          <div class="layer2-sections">
+            <details class="result-group fold" open>
+              <summary class="group-head">
+                <h4 class="group-ttl">Exact Matches</h4>
+                <span class="group-count" id="exactCount">0</span>
+              </summary>
+              <div class="fold-content">
+                <div class="group-desc">Near-duplicate or highly corroborated reverse-search matches.</div>
+                <div class="match-grid" id="exactGrid"></div>
+              </div>
+            </details>
+            <details class="result-group fold" open>
+              <summary class="group-head">
+                <h4 class="group-ttl">Visual Matches Top 10</h4>
+                <span class="group-count" id="visualCount">0</span>
+              </summary>
+              <div class="fold-content">
+                <div class="group-desc">Closest lookalike media resolved from reverse-search candidates.</div>
+                <div class="match-grid" id="visualGrid"></div>
+              </div>
+            </details>
+            <details class="result-group fold" open>
+              <summary class="group-head">
+                <h4 class="group-ttl">Related Web Sources</h4>
+                <span class="group-count" id="embeddingCount">0</span>
+              </summary>
+              <div class="fold-content">
+                <div class="group-desc">Other public pages surfaced by reverse-image search. These are investigation leads, not confirmed originals.</div>
+                <div class="match-grid" id="embeddingGrid"></div>
+              </div>
+            </details>
+            <details class="result-group fold">
+              <summary class="group-head">
+                <h4 class="group-ttl">Domain Spread View</h4>
+                <span class="group-count" id="domainClusterCount">0</span>
+              </summary>
+              <div class="fold-content">
+                <div class="group-desc">Grouped by domain so you can see where the media appears most often.</div>
+                <div class="domain-grid" id="domainClusterGrid"></div>
+              </div>
+            </details>
+          </div>
         </section>
 
         <section class="layer" id="layer3Card">
@@ -303,8 +395,21 @@
       confidenceVal: document.getElementById("confidenceVal"),
       layer2Badge: document.getElementById("layer2Badge"),
       layer2Summary: document.getElementById("layer2Summary"),
-      matchGrid: document.getElementById("matchGrid"),
       matchExtra: document.getElementById("matchExtra"),
+      originSummary: document.getElementById("originSummary"),
+      originTags: document.getElementById("originTags"),
+      consistencyWarning: document.getElementById("consistencyWarning"),
+      consistencyWarningText: document.getElementById("consistencyWarningText"),
+      manualSearchNote: document.getElementById("manualSearchNote"),
+      manualSearchLinks: document.getElementById("manualSearchLinks"),
+      exactCount: document.getElementById("exactCount"),
+      exactGrid: document.getElementById("exactGrid"),
+      visualCount: document.getElementById("visualCount"),
+      visualGrid: document.getElementById("visualGrid"),
+      embeddingCount: document.getElementById("embeddingCount"),
+      embeddingGrid: document.getElementById("embeddingGrid"),
+      domainClusterCount: document.getElementById("domainClusterCount"),
+      domainClusterGrid: document.getElementById("domainClusterGrid"),
       layer3Badge: document.getElementById("layer3Badge"),
       growthLevelTag: document.getElementById("growthLevelTag"),
       riskTag: document.getElementById("riskTag"),
@@ -420,6 +525,15 @@
       catch(_){ return "unknown"; }
     }
 
+    function escapeHtml(value){
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function addChat(role, text){
       const row = document.createElement("div");
       row.className = `msg ${role === "user" ? "u" : "b"}`;
@@ -472,36 +586,204 @@
       el.confidenceVal.textContent = `Model confidence: ${conf.toFixed(2)}%.`;
     }
 
-    function safeMatchCard(m){
-      const sim = Number(m.similarity || 0);
-      const t = String(m.title || "Source match");
-      const src = String(m.source_url || "#");
-      const seen = safeDate(m.first_seen || "");
-      const p = String(m.preview_url || "");
-      return `<article class="match"><div class="thumb">${p ? `<img src="${p}" alt="${t.replace(/"/g,"&quot;")}" />` : "No preview available"}</div><div class="mb"><div class="mt">${t}</div><div class="mm">${(sim*100).toFixed(1)}% similar</div><div class="mm">Seen: ${seen}</div><a class="ml" href="${src}" target="_blank" rel="noreferrer">Open source</a></div></article>`;
+    function layer2Buckets(l2){
+      return {
+        exact: Array.isArray(l2.exact_matches) ? l2.exact_matches : [],
+        visual: Array.isArray(l2.visual_matches_top10) ? l2.visual_matches_top10 : (Array.isArray(l2.visual_matches) ? l2.visual_matches : []),
+        embedding: Array.isArray(l2.related_web_sources) ? l2.related_web_sources : (Array.isArray(l2.embedding_matches_top10) ? l2.embedding_matches_top10 : (Array.isArray(l2.embedding_matches) ? l2.embedding_matches : []))
+      };
+    }
+
+    function layer2TotalCount(l2){
+      const counts = l2.counts || {};
+      const total = Number(counts.exact || 0) + Number(counts.visual || 0) + Number(counts.embedding || 0);
+      if(total > 0){ return total; }
+      return Array.isArray(l2.matches) ? l2.matches.length : Number(l2.count || 0);
+    }
+
+    function layer2Similarity(item){
+      const m = item && item.metadata ? item.metadata : {};
+      const b = item && item.score_breakdown ? item.score_breakdown : {};
+      const value = Number(
+        item.similarity_score ||
+        b.final_score ||
+        m.embedding_similarity ||
+        item.visual_similarity ||
+        item.fused_similarity ||
+        m.final_score ||
+        0
+      );
+      return Math.max(0, Math.min(1, value));
+    }
+
+    function confidenceClass(confidence){
+      const level = String(confidence || "").toUpperCase();
+      if(level === "HIGH"){ return "confidence-high"; }
+      if(level === "MEDIUM"){ return "confidence-medium"; }
+      return "confidence-low";
+    }
+
+    function layer2SourceUrl(item){
+      const candidates = [item.page_url, item.url, item.source_url, item.media_url];
+      for(const candidate of candidates){
+        const value = String(candidate || "").trim();
+        if(value){ return value; }
+      }
+      return "";
+    }
+
+    function layer2PreviewUrl(item){
+      const m = item && item.metadata ? item.metadata : {};
+      const candidates = [
+        item.preview_url,
+        item.media_url,
+        item.image_url,
+        m.media_url,
+        m.resolved_media_url,
+        m.provider_media_url,
+        m.thumbnail,
+        m.provider_image_url,
+        m.image_url
+      ];
+      const resolved = Array.isArray(m.resolved_image_urls) ? m.resolved_image_urls : [];
+      resolved.forEach((url)=>candidates.push(url));
+      const sourceUrl = layer2SourceUrl(item);
+      if(/\.(jpg|jpeg|png|webp)$/i.test(sourceUrl)){ candidates.push(sourceUrl); }
+      for(const candidate of candidates){
+        const value = String(candidate || "").trim();
+        if(value.startsWith("http://") || value.startsWith("https://")){ return value; }
+      }
+      return "";
+    }
+
+    function layer2Title(item, prefix){
+      const title = String(item.title || "").trim();
+      if(title){ return title; }
+      const sourceUrl = layer2SourceUrl(item);
+      try{
+        const parsed = new URL(sourceUrl);
+        return parsed.pathname.split("/").filter(Boolean).pop() || prefix;
+      }catch(_){
+        return prefix;
+      }
+    }
+
+    function safeDiscoveryCard(item, fallbackTitle){
+      const sim = layer2Similarity(item);
+      const m = item && item.metadata ? item.metadata : {};
+      const title = escapeHtml(layer2Title(item, fallbackTitle));
+      const src = escapeHtml(layer2SourceUrl(item));
+      const seen = safeDate(item.timestamp || item.first_seen || "");
+      const preview = layer2PreviewUrl(item);
+      const confidence = String(item.confidence || item.confidence_level || "").trim();
+      const note = String(item.note || item.match_reason || "").trim();
+      const platform = String(item.platform || "").trim();
+      const matchType = String(item.match_type || fallbackTitle || "").trim();
+      const explanation = String(item.explanation || note || "").trim();
+      const rank = Number(m.rank || 0);
+      const hasSimilarity = Number(item.visual_similarity || m.embedding_similarity || 0) > 0;
+      const primaryMeta = hasSimilarity
+        ? `${(sim*100).toFixed(1)}% similar${platform ? ` | ${escapeHtml(platform)}` : ""}`
+        : rank > 0
+          ? `Reverse-search result #${rank}${platform ? ` | ${escapeHtml(platform)}` : ""}`
+          : (platform ? escapeHtml(platform) : "Public web lead");
+      const confidenceMarkup = `<span class="confidence-badge ${confidenceClass(confidence)}">${escapeHtml(confidence || "LOW")}</span>`;
+      const linkMarkup = src
+        ? `<a class="ml" href="${src}" target="_blank" rel="noreferrer">Open page</a>`
+        : `<span class="ml disabled">No public page available</span>`;
+      return `<article class="match"><div class="thumb">${preview ? `<img src="${escapeHtml(preview)}" alt="${title}" />` : "No preview available"}</div><div class="mb"><div class="match-meta"><div class="mt">${title}</div>${confidenceMarkup}</div><div class="mm">${escapeHtml(matchType || fallbackTitle)}</div><div class="mm">${primaryMeta}</div>${explanation ? `<div class="mm">${escapeHtml(explanation)}</div>` : ""}<div class="mm">Seen: ${escapeHtml(seen)}</div>${linkMarkup}</div></article>`;
+    }
+
+    function renderDiscoverySection(gridEl, countEl, items, emptyText, fallbackTitle){
+      countEl.textContent = String(items.length);
+      if(!items.length){
+        gridEl.innerHTML = `<div class="empty-note">${escapeHtml(emptyText)}</div>`;
+        return;
+      }
+      gridEl.innerHTML = items.map((item)=>safeDiscoveryCard(item, fallbackTitle)).join("");
+    }
+
+    function renderManualSearch(l2){
+      const links = Array.isArray(l2.manual_search_links) ? l2.manual_search_links : [];
+      el.manualSearchNote.textContent = String(l2.manual_search_note || "Reverse-search shortcuts will appear here after analysis.");
+      if(!links.length){
+        el.manualSearchLinks.innerHTML = "";
+        return;
+      }
+      el.manualSearchLinks.innerHTML = links.map((link)=>{
+        const label = escapeHtml(link.label || "Open search");
+        const href = escapeHtml(link.url || "#");
+        return `<a class="search-link" href="${href}" target="_blank" rel="noreferrer">${label}</a>`;
+      }).join("");
+    }
+
+    function renderOriginSummary(l2){
+      const topDomains = Array.isArray(l2.top_domains) ? l2.top_domains : [];
+      const firstSeen = String(l2.first_seen_estimate || "").trim();
+      el.originSummary.textContent = String(l2.origin_summary || "Run analysis to estimate likely origin, spread footprint, and top domains.");
+      const tags = [];
+      topDomains.forEach((domain)=>tags.push(`<span class="origin-tag">${escapeHtml(domain)}</span>`));
+      if(firstSeen && !/unavailable/i.test(firstSeen)){ tags.push(`<span class="origin-tag">First seen: ${escapeHtml(safeDate(firstSeen))}</span>`); }
+      el.originTags.innerHTML = tags.join("");
+    }
+
+    function renderConsistencyWarning(payload, l2){
+      const warning = payload.consistency_warning || l2.consistency_warning || {};
+      const enabled = Boolean(warning.consistency_warning);
+      el.consistencyWarning.classList.toggle("on", enabled);
+      el.consistencyWarningText.textContent = enabled
+        ? String(warning.message || "Layer outputs disagree. Review manually.")
+        : "";
+    }
+
+    function renderDomainClusters(l2){
+      const clusters = l2.domain_clusters && typeof l2.domain_clusters === "object" ? l2.domain_clusters : {};
+      const entries = Object.entries(clusters);
+      el.domainClusterCount.textContent = String(entries.length);
+      if(!entries.length){
+        el.domainClusterGrid.innerHTML = `<div class="empty-note">No domain clustering is available until public matches are found.</div>`;
+        return;
+      }
+      el.domainClusterGrid.innerHTML = entries.map(([domain, items])=>{
+        const count = Array.isArray(items) ? items.length : 0;
+        const strongest = Array.isArray(items) && items.length ? Math.max(...items.map((item)=>layer2Similarity(item))) : 0;
+        return `<article class="domain-card"><div class="domain-name">${escapeHtml(domain)}</div><div class="mm">${count} appearance${count!==1?"s":""}</div><div class="mm">Strongest match: ${(strongest*100).toFixed(1)}%</div></article>`;
+      }).join("");
     }
 
     function renderLayer2(payload){
       const l2 = payload.layer2 || {};
-      const matches = Array.isArray(l2.matches) ? l2.matches : [];
-      if(!matches.length){
+      const sections = layer2Buckets(l2);
+      const total = layer2TotalCount(l2);
+      const provider = l2.provider_status || {};
+      const cloudinary = provider.cloudinary === "ok" ? "ready" : "not ready";
+      const serpapi = provider.serpapi === "ok" ? "ready" : "not ready";
+      renderOriginSummary(l2);
+      renderConsistencyWarning(payload, l2);
+      renderManualSearch(l2);
+      renderDomainClusters(l2);
+      renderDiscoverySection(el.exactGrid, el.exactCount, sections.exact, "No exact reverse-search matches were confirmed for this run.", "Exact match");
+      renderDiscoverySection(el.visualGrid, el.visualCount, sections.visual, "No visual lookalike matches were resolved for this run.", "Visual match");
+      renderDiscoverySection(el.embeddingGrid, el.embeddingCount, sections.embedding, "No additional public web leads were found for this run.", "Related source");
+
+      if(!total){
         el.layer2Badge.textContent = "No source matches";
         el.layer2Summary.textContent = "No matches found. This media may be original or not widely circulated yet.";
-        el.matchGrid.innerHTML = "";
-        el.matchExtra.textContent = "First detected source is currently unavailable because no public match has been confirmed.";
+        el.matchExtra.textContent = `Cloudinary public link: ${cloudinary}. Reverse search: ${serpapi}.`;
         return;
       }
-      el.layer2Badge.textContent = `${matches.length} source match${matches.length>1?"es":""}`;
-      el.layer2Summary.textContent = "Matching media found. Similarity and source evidence are shown below.";
-      el.matchGrid.innerHTML = matches.map(safeMatchCard).join("");
-      const best = [...matches].sort((a,b)=>Number(b.similarity||0)-Number(a.similarity||0))[0];
-      const first = [...matches].sort((a,b)=>String(a.first_seen||"").localeCompare(String(b.first_seen||"")))[0];
-      el.matchExtra.textContent = `First detected source: ${first && first.source_url ? first.source_url : "unknown"} | Most similar match: ${(Number(best && best.similarity || 0)*100).toFixed(1)}%.`;
+      el.layer2Badge.textContent = `${total} total result${total>1?"s":""}`;
+      el.layer2Summary.textContent = `Layer 2 returned ${sections.exact.length} exact match${sections.exact.length!==1?"es":""}, ${sections.visual.length} visual lookalike${sections.visual.length!==1?"s":""}, and ${sections.embedding.length} related web lead${sections.embedding.length!==1?"s":""}.`;
+      const displayMatches = [...sections.exact, ...sections.visual, ...sections.embedding];
+      const best = [...displayMatches].sort((a,b)=>layer2Similarity(b)-layer2Similarity(a))[0];
+      const first = sections.exact[0] || sections.visual[0] || sections.embedding[0] || null;
+      const firstUrl = first ? layer2SourceUrl(first) : "unknown";
+      el.matchExtra.textContent = `Cloudinary public link: ${cloudinary}. Reverse search: ${serpapi}. First public lead: ${firstUrl} | Strongest current match: ${(layer2Similarity(best || {})*100).toFixed(1)}%.`;
     }
 
     function renderLayer3(payload){
       const l2 = payload.layer2 || {}, l3 = payload.layer3 || {};
-      const srcCount = Array.isArray(l2.matches) ? l2.matches.length : Number(l2.count || 0);
+      const srcCount = layer2TotalCount(l2);
       const growth = Number((l3.growth && l3.growth.rate_percent) || l3.growth_rate || 0);
       const risk = Number(l3.risk_score || (l3.risk && l3.risk.risk_score) || 0);
       const lvl = classifyGrowth(growth, risk, srcCount);
@@ -529,19 +811,23 @@
       const l1 = payload.layer1 || {}, l2 = payload.layer2 || {}, l3 = payload.layer3 || {};
       const verdict = String(l1.result || "UNKNOWN");
       const conf = Number(l1.confidence || 0);
-      const matches = Array.isArray(l2.matches) ? l2.matches.length : Number(l2.count || 0);
+      const matches = layer2TotalCount(l2);
       const risk = Number(l3.risk_score || (l3.risk && l3.risk.risk_score) || 0);
       const growth = Number((l3.growth && l3.growth.rate_percent) || l3.growth_rate || 0);
       const lvl = classifyGrowth(growth, risk, matches);
+      const originSummary = String(l2.origin_summary || "").trim();
       const spread = matches > 0 ? `It appears in ${matches} tracked source(s).` : "No confirmed external source matches yet.";
-      return `This media is likely ${verdict} with ${conf.toFixed(2)}% confidence. ${spread} Current spread level is ${lvl}, with composite risk ${(risk*100).toFixed(1)}%.`;
+      return `${originSummary || `This media is likely ${verdict} with ${conf.toFixed(2)}% confidence. ${spread}` } Current spread level is ${lvl}, with composite risk ${(risk*100).toFixed(1)}%.`;
     }
 
     function showSkeleton(){
       el.verdictVal.className = "skeleton";
       el.verdictVal.style.height = "58px";
       el.confidenceVal.textContent = "Confidence signal is being computed...";
-      el.matchGrid.innerHTML = '<div class="skeleton" style="height:152px"></div><div class="skeleton" style="height:152px"></div>';
+      const skeletonCards = '<div class="skeleton" style="height:152px"></div><div class="skeleton" style="height:152px"></div>';
+      el.exactGrid.innerHTML = skeletonCards;
+      el.visualGrid.innerHTML = skeletonCards;
+      el.embeddingGrid.innerHTML = skeletonCards;
       el.alertList.innerHTML = '<div class="skeleton" style="height:36px"></div>';
       drawTimeline([]);
     }
@@ -625,7 +911,7 @@
         await progressiveRender(data);
         clearSkeleton();
         el.insightText.textContent = generateInsight(data);
-        addChat("b", `Initial insight: media is likely ${String(data.layer1 && data.layer1.result || "UNKNOWN")} with ${Number(data.layer1 && data.layer1.confidence || 0).toFixed(2)}% confidence, and ${(Array.isArray(data.layer2 && data.layer2.matches) ? data.layer2.matches.length : Number(data.layer2 && data.layer2.count || 0))} source match(es).`);
+        addChat("b", `Initial insight: media is likely ${String(data.layer1 && data.layer1.result || "UNKNOWN")} with ${Number(data.layer1 && data.layer1.confidence || 0).toFixed(2)}% confidence, and ${layer2TotalCount(data.layer2 || {})} Layer 2 result(s).`);
 
         state.analysisCount += 1;
         localStorage.setItem("dg_analysis_count", String(state.analysisCount));
@@ -679,8 +965,21 @@
       el.confidenceVal.textContent = "Confidence will appear after analysis starts.";
       el.layer2Badge.textContent = "Waiting for analysis";
       el.layer2Summary.textContent = "No analysis yet. Matching sources and similarity evidence will appear here after scan.";
-      el.matchGrid.innerHTML = "";
       el.matchExtra.textContent = "No matches found yet because analysis has not been run.";
+      el.originSummary.textContent = "Run analysis to estimate likely origin, spread footprint, and top domains.";
+      el.originTags.innerHTML = "";
+      el.consistencyWarning.classList.remove("on");
+      el.consistencyWarningText.textContent = "";
+      el.manualSearchNote.textContent = "Run an analysis to unlock quick reverse-search shortcuts.";
+      el.manualSearchLinks.innerHTML = "";
+      el.exactCount.textContent = "0";
+      el.visualCount.textContent = "0";
+      el.embeddingCount.textContent = "0";
+      el.domainClusterCount.textContent = "0";
+      el.exactGrid.innerHTML = "";
+      el.visualGrid.innerHTML = "";
+      el.embeddingGrid.innerHTML = "";
+      el.domainClusterGrid.innerHTML = "";
       el.layer3Badge.textContent = "Tracking not started";
       el.growthLevelTag.className = "tag low"; el.growthLevelTag.textContent = "Growth: Low";
       el.riskTag.textContent = "Risk: 0%"; el.sourceTag.textContent = "Sources: 0";

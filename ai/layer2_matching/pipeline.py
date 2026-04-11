@@ -85,6 +85,54 @@ class Layer2Pipeline:
     def _entry_id(seed: str) -> str:
         return hashlib.sha1(seed.encode("utf-8")).hexdigest()[:16]
 
+    def _resolve_local_path(self, path: str | Path) -> Path:
+        path_obj = Path(path)
+        candidates: list[Path] = []
+
+        if path_obj.exists():
+            return path_obj.resolve()
+
+        if path_obj.is_absolute():
+            candidates.append(path_obj)
+        else:
+            candidates.append(self.config.project_dir / path_obj)
+
+        parts = list(path_obj.parts)
+        lower_parts = [part.lower() for part in parts]
+        if lower_parts:
+            if lower_parts[0] == "dataset":
+                relative = Path(*parts[1:]) if len(parts) > 1 else Path()
+                candidates.append(self.config.project_dir / "data" / "datasets" / relative)
+            if len(lower_parts) >= 2 and lower_parts[0] == "data" and lower_parts[1] == "dataset":
+                relative = Path(*parts[2:]) if len(parts) > 2 else Path()
+                candidates.append(self.config.project_dir / "data" / "datasets" / relative)
+            if len(lower_parts) >= 2 and lower_parts[0] == "data" and lower_parts[1] == "datasets":
+                relative = Path(*parts[2:]) if len(parts) > 2 else Path()
+                candidates.append(self.config.project_dir / "data" / "datasets" / relative)
+            artifact_markers = {
+                ("artifacts", "layer2", "uploads"): self.config.project_dir / "artifacts" / "layer2" / "uploads",
+                ("artifacts", "ui_uploads"): self.config.project_dir / "artifacts" / "ui_uploads",
+            }
+            for marker_parts, marker_target in artifact_markers.items():
+                marker_length = len(marker_parts)
+                for index in range(0, len(lower_parts) - marker_length + 1):
+                    if tuple(lower_parts[index : index + marker_length]) != marker_parts:
+                        continue
+                    remainder = Path(*parts[index + marker_length :]) if len(parts) > index + marker_length else Path()
+                    candidates.append(marker_target / remainder)
+                    break
+
+        seen: set[str] = set()
+        for candidate in candidates:
+            key = str(candidate)
+            if key in seen:
+                continue
+            seen.add(key)
+            if candidate.exists():
+                return candidate.resolve()
+
+        return candidates[0] if candidates else path_obj
+
     def _store_upload(self, source_path: Path, analysis_id: str, original_filename: str | None) -> Path:
         filename = Path(original_filename or source_path.name).name
         target_path = self.config.uploads_dir / f"{analysis_id}_{filename}"
@@ -103,7 +151,7 @@ class Layer2Pipeline:
         return label == "fake", float(confidence)
 
     def _local_metadata(self, path: str | Path, label: str | None, source: str = "layer1_cache") -> dict[str, object]:
-        path_obj = Path(path)
+        path_obj = self._resolve_local_path(path)
         return {
             "entry_id": self._entry_id(str(path_obj.resolve()) if path_obj.exists() else str(path_obj)),
             "source_type": "local",
@@ -194,7 +242,9 @@ class Layer2Pipeline:
             local_path = item.get("local_path")
             if not local_path:
                 continue
-            path_obj = Path(str(local_path))
+            path_obj = self._resolve_local_path(str(local_path))
+            if not path_obj.exists():
+                continue
             if path_obj.suffix.lower() not in VIDEO_EXTENSIONS:
                 continue
 
@@ -235,13 +285,18 @@ class Layer2Pipeline:
     def _to_occurrence_records(self, matches: list[dict[str, object]]) -> list[OccurrenceRecord]:
         records: list[OccurrenceRecord] = []
         for match in matches:
+            local_path = match.get("local_path")
+            resolved_local_path = None
+            if local_path:
+                candidate = self._resolve_local_path(str(local_path))
+                resolved_local_path = str(candidate) if candidate.exists() else str(candidate)
             records.append(
                 OccurrenceRecord(
                     entry_id=str(match["entry_id"]),
                     source_type=str(match.get("source_type", "local")),
                     platform=str(match.get("platform", "unknown")),
                     url=match.get("url"),
-                    local_path=match.get("local_path"),
+                    local_path=resolved_local_path,
                     timestamp=normalize_timestamp(match.get("timestamp")),
                     title=match.get("title"),
                     caption=match.get("caption"),

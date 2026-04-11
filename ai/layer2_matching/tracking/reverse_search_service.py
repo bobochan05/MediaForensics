@@ -14,8 +14,8 @@ import requests
 from dotenv import load_dotenv
 
 LOGGER = logging.getLogger(__name__)
-APP_DIR = Path(__file__).resolve().parents[1]
-ENV_PATH = APP_DIR / ".env"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ENV_PATH = PROJECT_ROOT / ".env"
 SERPAPI_ENDPOINT = "https://serpapi.com/search.json"
 DEFAULT_TIMEOUT_SECONDS = 25
 TRUSTED_DOMAINS = {
@@ -517,8 +517,11 @@ def process_reverse_search(file=None, image_url: str | None = None) -> dict[str,
         if primary_errors:
             primary_parsed["errors"] = primary_errors
 
-    fallback_used = not primary_parsed.get("matches_found", False)
-    fallback_parsed = fallback_search(public_url) if fallback_used else None
+    fallback_parsed = fallback_search(public_url)
+    fallback_used = bool(
+        not primary_parsed.get("matches_found", False)
+        and (fallback_parsed or {}).get("matches_found")
+    )
     combined = _merge_parsed_results(primary_parsed, fallback_parsed)
     confidence_score = compute_confidence(combined)
 
