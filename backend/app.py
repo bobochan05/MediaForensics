@@ -274,6 +274,150 @@ def _top_domains_from_matches(items: list[dict[str, object]], limit: int = 3) ->
     return [domain for domain, _ in sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))[:limit]]
 
 
+IMPORTANT_DOMAIN_DEFINITIONS: tuple[dict[str, object], ...] = (
+    {"key": "twitter.com", "label": "Twitter/X", "patterns": ("twitter.com", "x.com")},
+    {"key": "instagram.com", "label": "Instagram", "patterns": ("instagram.com",)},
+    {"key": "facebook.com", "label": "Facebook", "patterns": ("facebook.com", "fb.com")},
+    {"key": "reddit.com", "label": "Reddit", "patterns": ("reddit.com",)},
+    {"key": "youtube.com", "label": "YouTube", "patterns": ("youtube.com", "youtu.be")},
+    {"key": "tiktok.com", "label": "TikTok", "patterns": ("tiktok.com",)},
+    {"key": "linkedin.com", "label": "LinkedIn", "patterns": ("linkedin.com",)},
+    {"key": "wikipedia.org", "label": "Wikipedia", "patterns": ("wikipedia.org",)},
+    {"key": "bbc.com", "label": "BBC", "patterns": ("bbc.com", "bbc.co.uk")},
+    {"key": "cnn.com", "label": "CNN", "patterns": ("cnn.com",)},
+    {"key": "nytimes.com", "label": "The New York Times", "patterns": ("nytimes.com",)},
+    {"key": "reuters.com", "label": "Reuters", "patterns": ("reuters.com",)},
+    {"key": "apnews.com", "label": "Associated Press", "patterns": ("apnews.com",)},
+    {"key": "npr.org", "label": "NPR", "patterns": ("npr.org",)},
+    {"key": "washingtonpost.com", "label": "The Washington Post", "patterns": ("washingtonpost.com",)},
+    {"key": "theguardian.com", "label": "The Guardian", "patterns": ("theguardian.com",)},
+    {"key": "wsj.com", "label": "The Wall Street Journal", "patterns": ("wsj.com",)},
+    {"key": "bloomberg.com", "label": "Bloomberg", "patterns": ("bloomberg.com",)},
+    {"key": "cbsnews.com", "label": "CBS News", "patterns": ("cbsnews.com",)},
+    {"key": "nbcnews.com", "label": "NBC News", "patterns": ("nbcnews.com",)},
+    {"key": "abcnews.go.com", "label": "ABC News", "patterns": ("abcnews.go.com",)},
+    {"key": "foxnews.com", "label": "Fox News", "patterns": ("foxnews.com",)},
+    {"key": "aljazeera.com", "label": "Al Jazeera", "patterns": ("aljazeera.com",)},
+    {"key": "time.com", "label": "TIME", "patterns": ("time.com",)},
+    {"key": "forbes.com", "label": "Forbes", "patterns": ("forbes.com",)},
+    {"key": "theverge.com", "label": "The Verge", "patterns": ("theverge.com",)},
+    {"key": "techcrunch.com", "label": "TechCrunch", "patterns": ("techcrunch.com",)},
+)
+
+
+def _important_domain_definition(domain: str) -> dict[str, object] | None:
+    value = str(domain or "").strip().lower()
+    if not value or value == "unknown":
+        return None
+    for definition in IMPORTANT_DOMAIN_DEFINITIONS:
+        patterns = tuple(str(pattern).lower() for pattern in definition.get("patterns", ()))
+        if any(value == pattern or value.endswith(f".{pattern}") for pattern in patterns):
+            return definition
+    return None
+
+
+def _domain_confidence_label(count: int, max_similarity: float, exact_matches: int) -> str:
+    if exact_matches > 0 or max_similarity >= 0.85 or count >= 4:
+        return "High"
+    if max_similarity >= 0.65 or count >= 2:
+        return "Medium"
+    return "Low"
+
+
+def _domain_insights(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    grouped: dict[str, dict[str, object]] = {}
+    for item in items:
+        domain = str(item.get("domain") or _match_domain(item)).strip().lower() or "unknown"
+        similarity = float(item.get("similarity_score") or 0.0)
+        match_type = str(item.get("match_type") or "related").strip().lower() or "related"
+        entry = grouped.setdefault(
+            domain,
+            {
+                "domain": domain,
+                "count": 0,
+                "max_similarity": 0.0,
+                "avg_similarity_total": 0.0,
+                "match_type_counts": {"exact": 0, "visual": 0, "related": 0},
+            },
+        )
+        entry["count"] = int(entry["count"]) + 1
+        entry["max_similarity"] = max(float(entry["max_similarity"]), similarity)
+        entry["avg_similarity_total"] = float(entry["avg_similarity_total"]) + similarity
+        bucket = "related" if match_type not in {"exact", "visual", "related", "semantic"} else match_type
+        if bucket == "semantic":
+            bucket = "related"
+        type_counts = entry["match_type_counts"]
+        type_counts[bucket] = int(type_counts.get(bucket, 0)) + 1
+    insights: list[dict[str, object]] = []
+    for entry in grouped.values():
+        count = int(entry["count"])
+        avg_similarity = float(entry["avg_similarity_total"]) / count if count else 0.0
+        match_type_counts = dict(entry["match_type_counts"])
+        insights.append(
+            {
+                "domain": entry["domain"],
+                "count": count,
+                "avg_similarity": round(avg_similarity, 4),
+                "max_similarity": round(float(entry["max_similarity"]), 4),
+                "match_type_counts": match_type_counts,
+                "match_types": [name for name, value in match_type_counts.items() if int(value) > 0],
+            }
+        )
+    return sorted(insights, key=lambda item: (-int(item["count"]), -float(item["max_similarity"]), str(item["domain"])))
+
+
+def _important_domains(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    grouped: dict[str, dict[str, object]] = {}
+    for insight in _domain_insights(items):
+        definition = _important_domain_definition(str(insight.get("domain") or ""))
+        if definition is None:
+            continue
+        key = str(definition.get("key") or insight.get("domain") or "")
+        count = int(insight.get("count") or 0)
+        max_similarity = float(insight.get("max_similarity") or 0.0)
+        match_type_counts = dict(insight.get("match_type_counts") or {})
+        exact_count = int(match_type_counts.get("exact") or 0)
+        entry = grouped.setdefault(
+            key,
+            {
+                "domain": key,
+                "label": str(definition.get("label") or insight.get("domain") or ""),
+                "count": 0,
+                "max_similarity": 0.0,
+                "exact_count": 0,
+                "match_types": set(),
+            },
+        )
+        entry["count"] = int(entry["count"]) + count
+        entry["max_similarity"] = max(float(entry["max_similarity"]), max_similarity)
+        entry["exact_count"] = int(entry["exact_count"]) + exact_count
+        entry["match_types"].update(str(item) for item in (insight.get("match_types") or []))
+    important: list[dict[str, object]] = []
+    for entry in grouped.values():
+        count = int(entry["count"])
+        max_similarity = float(entry["max_similarity"])
+        exact_count = int(entry["exact_count"])
+        important.append(
+            {
+                "domain": str(entry["domain"]),
+                "label": str(entry["label"]),
+                "count": count,
+                "confidence": _domain_confidence_label(count, max_similarity, exact_count),
+                "match_types": sorted(entry["match_types"]),
+                "max_similarity": round(max_similarity, 4),
+            }
+        )
+    return sorted(
+        important,
+        key=lambda item: (
+            -int(item.get("count") or 0),
+            {"High": 3, "Medium": 2, "Low": 1}.get(str(item.get("confidence") or ""), 0),
+            -float(item.get("max_similarity") or 0.0),
+            str(item.get("domain") or ""),
+        ),
+    )
+
+
 def _first_seen_estimate(items: list[dict[str, object]]) -> str:
     timestamps = [
         str(item.get("timestamp") or item.get("first_seen") or "").strip()
@@ -359,7 +503,10 @@ def build_layer2_response(data: dict[str, object] | None) -> dict[str, object]:
     embedding = _annotate_matches(list(embedding_raw) if isinstance(embedding_raw, list) else [], default_type="semantic")
     matches = _layer2_display_matches(exact, visual, embedding)
     origin_payload = _origin_summary_payload(exact, visual, embedding)
-    domain_clusters = _domain_clusters([*exact, *visual, *embedding])
+    all_items = [*exact, *visual, *embedding]
+    domain_clusters = _domain_clusters(all_items)
+    domain_insights = _domain_insights(all_items)
+    important_domains = _important_domains(all_items)
     response = {
         "exact_matches": exact,
         "visual_matches_top10": visual,
@@ -378,6 +525,8 @@ def build_layer2_response(data: dict[str, object] | None) -> dict[str, object]:
         "top_domains": origin_payload["top_domains"],
         "first_seen_estimate": origin_payload["first_seen_estimate"],
         "domain_clusters": domain_clusters,
+        "domain_insights": domain_insights,
+        "important_domains": important_domains,
     }
     for key in (
         "spread_analysis",
