@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deepfake Detection & Intelligence Console</title>
+  <style>
+    :root{--bg:#2b2b2d;--bg2:#323335;--text:#e5e7eb;--strong:#f9fafb;--muted:#b6bbc5;--line:rgba(229,231,235,.18);--a:#38bdf8;--a2:#2563eb;--ok:#34d399;--warn:#fb923c;--bad:#fb7185;--panel:rgba(25,25,27,.62);--g1:rgba(255,255,255,.04);--g2:rgba(0,0,0,.08)}
+    html[data-theme="light"]{--bg:#e0e4d7;--bg2:#e0e4d7;--text:#374151;--strong:#111827;--muted:#4b5563;--line:rgba(17,24,39,.18);--a:#0284c7;--a2:#2563eb;--ok:#15803d;--warn:#c2410c;--bad:#b91c1c;--panel:rgba(255,255,255,.74);--g1:rgba(255,255,255,.18);--g2:rgba(148,163,184,.12)}
+    html[data-theme="midnight"]{--bg:#2f3f6e;--bg2:#2f3f6e;--text:#e6ecff;--strong:#f8fbff;--muted:#c2cce7;--line:rgba(191,219,254,.24);--a:#93c5fd;--a2:#60a5fa;--ok:#34d399;--warn:#fb923c;--bad:#fb7185;--panel:rgba(36,50,93,.68);--g1:rgba(147,197,253,.14);--g2:rgba(59,130,246,.12)}
+    html[data-theme="blue"]{--bg:#b9d7e4;--bg2:#b9d7e4;--text:#1f2937;--strong:#0f172a;--muted:#334155;--line:rgba(15,23,42,.2);--a:#0284c7;--a2:#2563eb;--ok:#15803d;--warn:#c2410c;--bad:#be123c;--panel:rgba(255,255,255,.55);--g1:rgba(255,255,255,.22);--g2:rgba(56,189,248,.1)}
+    *{box-sizing:border-box} html,body{margin:0;min-height:100vh;font-family:Manrope,Inter,Segoe UI,Arial,sans-serif;color:var(--text);background:radial-gradient(circle at 82% 14%,var(--g1),transparent 40%),radial-gradient(circle at 12% 88%,var(--g2),transparent 42%),linear-gradient(160deg,var(--bg),var(--bg2))}
+    .top{position:sticky;top:0;z-index:40;height:84px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+    .top-left,.top-right{display:flex;align-items:center;gap:10px;min-width:280px}.top-right{justify-content:flex-end}
+    .top-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}.logo{height:62px;width:auto;display:block}
+    .chip{border:1px solid #d1d5db;background:#fff;color:#334155;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:600}
+    .theme{border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;padding:7px 10px;font-size:12px;font-weight:700}
+
+    .app{display:grid;grid-template-columns:260px minmax(0,1fr) 330px;gap:16px;min-height:calc(100vh - 84px);padding:16px}
+    .panel{border:1px solid var(--line);border-radius:16px;background:var(--panel);backdrop-filter:blur(10px)}
+    .left{padding:14px;display:grid;gap:8px;align-content:start}
+    .left a{text-decoration:none;color:var(--text);padding:11px 12px;border-radius:10px;border:1px solid transparent;font-size:14px;font-weight:700;transition:.2s}
+    .left a:hover,.left a.active{background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.38)}
+
+    .main{display:grid;gap:16px;align-content:start}.header{padding:18px}.ttl{margin:0;color:var(--strong);font-size:35px;letter-spacing:-.03em}.sub{margin-top:8px;color:var(--muted);font-size:15px;line-height:1.55}
+    .card{padding:18px}.sec-ttl{margin:0;color:var(--strong);font-size:29px;letter-spacing:-.02em}
+    .controls{margin-top:16px;display:grid;gap:12px}
+    .drop{border:1px dashed rgba(148,163,184,.42);border-radius:12px;padding:18px;text-align:center;background:rgba(2,8,23,.2);cursor:pointer;display:grid;gap:10px;transition:.2s}
+    .drop.drag{border-color:var(--a);background:rgba(56,189,248,.08)} .drop input{display:none}
+    .drop-main{font-weight:700;font-size:14px;color:var(--strong)} .drop-sub{color:var(--muted);font-size:13px}
+    .preview{display:none;border:1px solid var(--line);border-radius:10px;background:rgba(2,8,23,.2);padding:8px} .preview.on{display:block}
+    .media{width:100%;max-height:220px;border-radius:8px;background:rgba(2,8,23,.28);object-fit:contain}
+    .url-row{display:grid;gap:8px}.url-row label{font-size:13px;color:var(--strong);font-weight:700}
+    .url{width:100%;height:46px;border:1px solid var(--line);border-radius:10px;background:rgba(2,8,23,.2);color:var(--text);padding:0 12px;font-size:14px;outline:none}.url:focus{border-color:var(--a)}
+
+    .processing{border:1px solid var(--line);border-radius:12px;background:rgba(2,8,23,.18);padding:12px;display:grid;gap:10px}
+    .stage-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.stage-txt{font-size:14px;font-weight:700;color:var(--strong)}
+    .spinner{width:18px;height:18px;border:2px solid rgba(148,163,184,.36);border-top-color:var(--a);border-radius:999px;display:none}
+    .processing.on .spinner{display:inline-block;animation:spin .9s linear infinite} @keyframes spin{to{transform:rotate(360deg)}}
+    .stage-rail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .pill{border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:12px;text-align:center;color:var(--muted);background:rgba(2,8,23,.2);transition:.25s}
+    .pill.active{color:var(--strong);border-color:rgba(56,189,248,.6);background:rgba(56,189,248,.18)} .pill.done{color:var(--ok);border-color:rgba(52,211,153,.5)}
+
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.muted{color:var(--muted);font-size:13px}
+    .btn{border:none;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff}
+    .btn.secondary{border:1px solid var(--line);background:transparent;color:var(--text)} .btn:disabled{opacity:.55;cursor:not-allowed}
+    .err{display:none;color:#fecaca;font-size:13px;background:rgba(239,68,68,.16);border:1px solid rgba(248,113,113,.35);border-radius:10px;padding:9px 10px}
+
+    .insight{border:1px solid rgba(56,189,248,.45);border-radius:12px;padding:12px;background:rgba(56,189,248,.13)}
+    .insight h3{margin:0 0 6px;color:var(--strong);font-size:16px}.insight p{margin:0;color:var(--text);font-size:14px;line-height:1.55}
+
+    .result{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(2,8,23,.2);display:grid;gap:12px}
+    .layer{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(2,8,23,.16);display:grid;gap:8px}
+    .layer-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.layer-ttl{margin:0;color:var(--strong);font-size:18px}
+    .badge{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px}.b-real{color:var(--ok);border-color:rgba(52,211,153,.5)}.b-fake{color:var(--bad);border-color:rgba(251,113,133,.5)}.b-unc{color:var(--warn);border-color:rgba(251,146,60,.5)}
+    .verdict{font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:1}.v-real{color:var(--ok)}.v-fake{color:var(--bad)}.v-unc{color:var(--warn)}
+    .meter{height:10px;border-radius:999px;background:rgba(148,163,184,.2);overflow:hidden}.meter > div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .55s}
+
+    .match-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.match{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:rgba(2,8,23,.2)}
+    .thumb{height:110px;background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(37,99,235,.18));display:grid;place-items:center;color:var(--muted);font-size:12px}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}.mb{padding:9px;display:grid;gap:4px}.mt{font-size:13px;font-weight:700;color:var(--strong)}.mm{font-size:12px;color:var(--muted)}.ml{font-size:12px;color:#93c5fd;text-decoration:none}
+
+    .tags{display:flex;gap:8px;flex-wrap:wrap}.tag{border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px}.low{border-color:rgba(52,211,153,.45);color:var(--ok)}.med{border-color:rgba(251,146,60,.45);color:var(--warn)}.viral{border-color:rgba(251,113,133,.45);color:var(--bad)}
+    .alerts{display:grid;gap:8px}.alert{border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;background:rgba(2,8,23,.16)}
+    .timeline{height:170px;border:1px solid var(--line);border-radius:10px;padding:8px;background:rgba(2,8,23,.2)} .timeline canvas{width:100%;height:100%}
+
+    .docs{display:grid;gap:10px}.doc{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(2,8,23,.16)} .doc summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--strong)} .doc p{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.6}
+
+    .right{display:grid;align-content:start;gap:16px}.side-card{padding:14px;display:grid;gap:8px}.side-ttl{margin:0;color:var(--strong);font-size:18px}
+    .usage{height:10px;border-radius:999px;background:rgba(148,163,184,.2);overflow:hidden}.usage > div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .4s}
+
+    .chat{padding:14px}.chat-ttl{margin:0 0 8px;color:var(--strong);font-size:24px;letter-spacing:-.02em}
+    .suggest{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}.sbtn{padding:8px 10px;font-size:12px}
+    .chat-list{height:280px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px;background:rgba(2,8,23,.18);display:grid;gap:8px}
+    .msg{padding:8px 9px;border-radius:8px;font-size:13px;line-height:1.45}.u{background:rgba(37,99,235,.45);color:#fff}.b{background:rgba(148,163,184,.18);color:#dbe4f4}
+    .chat-row{display:flex;gap:8px;margin-top:8px}.chat-row input{flex:1;height:40px;border-radius:10px;border:1px solid var(--line);background:rgba(2,8,23,.2);color:var(--text);padding:0 12px;font-size:14px;outline:none}
+
+    .skeleton{position:relative;overflow:hidden;background:rgba(148,163,184,.16);border-radius:8px}.skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);animation:shim 1.35s infinite} @keyframes shim{100%{transform:translateX(100%)}}
+
+    @media (max-width:1220px){.app{grid-template-columns:1fr}.match-grid{grid-template-columns:1fr}.right{order:3}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:84px;flex-wrap:wrap;padding:12px 14px 10px;gap:10px}.top-left,.top-right{min-width:unset}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="top-left">
+      <span class="chip" id="userChip">User: loading...</span>
+      <span class="chip" id="attemptChip">Attempts: loading...</span>
+    </div>
+    <div class="top-center"><img class="logo" src="{{ url_for('static', filename='tracelyt-logo.png') }}" alt="Tracelyt logo" /></div>
+    <div class="top-right">
+      <span class="chip" id="authChip">Auth: loading...</span>
+      <select id="themeSelect" class="theme" aria-label="Theme">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+        <option value="midnight">Midnight</option>
+        <option value="blue">Blue</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="panel left">
+      <a class="active" href="/dashboard">Dashboard</a>
+      <a href="#uploadBlock">Upload & Analyze</a>
+      <a href="#resultPanel">Results</a>
+      <a href="#resultPanel">Tracking</a>
+      <a href="/">Back To Landing</a>
+      <a href="/service">Legacy Experience</a>
+    </aside>
+
+    <main class="main">
+      <section class="panel header">
+        <h1 class="ttl">Deepfake Detection & Intelligence Console</h1>
+        <p class="sub">Upload media, run layered intelligence, and review explainable forensic insights with propagation awareness.</p>
+      </section>
+
+      <section class="panel card" id="uploadBlock">
+        <h2 class="sec-ttl">Upload & Analyze</h2>
+        <div class="controls">
+          <label class="drop" id="dropZone">
+            <input type="file" id="fileInput" accept="image/*,video/*" />
+            <div class="drop-main" id="fileName">Drag and drop image/video here, or click to upload.</div>
+            <div class="drop-sub">Supported formats: JPG, PNG, MP4, AVI, MOV, MKV, WEBM</div>
+          </label>
+
+          <div class="preview" id="previewWrap">
+            <img id="previewImage" class="media" alt="Preview" style="display:none" />
+            <video id="previewVideo" class="media" controls style="display:none"></video>
+          </div>
+
+          <div class="url-row">
+            <label for="sourceUrlInput">Source URL (optional, can run analysis without upload)</label>
+            <input id="sourceUrlInput" class="url" type="url" placeholder="https://example.com/media.jpg or https://example.com/video.mp4" />
+          </div>
+
+          <div class="processing" id="processingBox">
+            <div class="stage-row">
+              <div class="stage-txt" id="runState">Ready. Provide a media file or source URL.</div>
+              <div class="spinner" id="stageSpinner"></div>
+            </div>
+            <div class="stage-rail">
+              <div class="pill" id="stage1">Analyzing authenticity...</div>
+              <div class="pill" id="stage2">Searching global sources...</div>
+              <div class="pill" id="stage3">Tracking propagation...</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="muted">Pipeline runs automatically in sequence (Layer 1 -> Layer 2 -> Layer 3).</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn secondary" id="resetBtn" type="button">Reset</button>
+              <button class="btn" id="runBtn" type="button" disabled>Run Intelligence Analysis</button>
+            </div>
+          </div>
+
+          <div id="errorBox" class="err"></div>
+        </div>
+      </section>
+
+      <section class="panel card insight" id="insightCard">
+        <h3>AI Insight</h3>
+        <p id="insightText">Run an analysis to generate a combined forensic and propagation insight.</p>
+      </section>
+
+      <section class="panel card result" id="resultPanel">
+        <section class="layer" id="layer1Card">
+          <div class="layer-head">
+            <h3 class="layer-ttl">Layer 1: Authenticity Detection</h3>
+            <span class="badge b-unc" id="layer1Badge">Awaiting scan</span>
+          </div>
+          <div class="verdict v-unc" id="verdictVal">Awaiting analysis</div>
+          <div class="meter"><div id="confidenceBar"></div></div>
+          <div class="muted" id="confidenceVal">Confidence will appear after analysis starts.</div>
+          <div class="muted">Confidence is based on detected facial inconsistencies, fusion-model agreement, and frame-level evidence.</div>
+        </section>
+
+        <section class="layer" id="layer2Card">
+          <div class="layer-head">
+            <h3 class="layer-ttl">Layer 2: Source Matching</h3>
+            <span class="badge" id="layer2Badge">Waiting for analysis</span>
+          </div>
+          <div class="muted" id="layer2Summary">No analysis yet. Matching sources and similarity evidence will appear here after scan.</div>
+          <div class="match-grid" id="matchGrid"></div>
+          <div class="muted" id="matchExtra">No matches found yet because analysis has not been run.</div>
+        </section>
+
+        <section class="layer" id="layer3Card">
+          <div class="layer-head">
+            <h3 class="layer-ttl">Layer 3: Tracking Intelligence</h3>
+            <span class="badge" id="layer3Badge">Tracking not started</span>
+          </div>
+          <div class="tags" id="growthTags">
+            <span class="tag low" id="growthLevelTag">Growth: Low</span>
+            <span class="tag" id="riskTag">Risk: 0%</span>
+            <span class="tag" id="sourceTag">Sources: 0</span>
+          </div>
+          <div class="muted" id="layer3Insight">No spread detected yet. Monitoring will continue over time.</div>
+          <div class="alerts" id="alertList">
+            <div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>
+          </div>
+          <div class="timeline"><canvas id="timelineCanvas" width="1000" height="260"></canvas></div>
+        </section>
+      </section>
+
+      <section class="panel card docs" id="explainabilityPanel">
+        <details class="doc">
+          <summary>Layer 1 Summary (Click to know more...)</summary>
+          <p>Layer 1 combines CLIP, DINOv2, EfficientNet, and FFT frequency signals to classify media as REAL or FAKE. For videos, it samples frames and aggregates probabilities into one file-level decision.</p>
+        </details>
+        <details class="doc">
+          <summary>Layer 2 Summary (Click to know more...)</summary>
+          <p>Layer 2 extends detection with multimodal source matching, external discovery, timeline estimation, and risk scoring. It explains where similar content appears and how confidently it relates to the uploaded media.</p>
+        </details>
+        <details class="doc">
+          <summary>Layer 3 Summary (Click to know more...)</summary>
+          <p>Layer 3 tracks propagation using growth rate, velocity, domain trust weighting, and risk status classification (stable, slow spread, spreading, viral). It powers alerting and long-term spread intelligence.</p>
+        </details>
+      </section>
+    </main>
+
+    <aside class="right">
+      <section class="panel side-card">
+        <h3 class="side-ttl">Session Info</h3>
+        <div class="muted" id="sessionUser">User: loading...</div>
+        <div class="muted" id="sessionType">Type: loading...</div>
+        <div class="muted" id="analysisCount">Analysis count: 0</div>
+        <div class="muted" id="lastScanAt">Last scan: not yet</div>
+      </section>
+
+      <section class="panel side-card">
+        <h3 class="side-ttl">System Intelligence</h3>
+        <div class="muted" id="intelLine1">Model confidence stable.</div>
+        <div class="muted" id="intelLine2">Tracking active and ready.</div>
+        <div class="muted" style="margin-top:4px">API usage</div>
+        <div class="usage"><div id="usageFill"></div></div>
+        <div class="muted" id="usageText">0 / 5</div>
+      </section>
+
+      <section class="panel chat">
+        <h3 class="chat-ttl">Intelligence Chat</h3>
+        <div class="suggest">
+          <button type="button" class="btn secondary sbtn" data-q="Why is this fake?">Why is this fake?</button>
+          <button type="button" class="btn secondary sbtn" data-q="How fast is it spreading?">How fast is it spreading?</button>
+          <button type="button" class="btn secondary sbtn" data-q="Is this dangerous?">Is this dangerous?</button>
+        </div>
+        <div id="chatList" class="chat-list">
+          <div class="msg b">I am ready. Run analysis first and I will explain Layer 1, Layer 2, and Layer 3 decisions with context.</div>
+        </div>
+        <div class="chat-row">
+          <input type="text" id="chatInput" placeholder="Ask about this analysis..." />
+          <button class="btn" id="chatBtn" type="button">Send</button>
+        </div>
+        <div class="muted" style="margin-top:8px">Chat responses are contextual when analysis data is available.</div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    const stages = [
+      "Analyzing authenticity...",
+      "Searching global sources...",
+      "Tracking propagation..."
+    ];
+
+    const state = {
+      file: null,
+      previewObjectUrl: "",
+      analysis: null,
+      processing: false,
+      stageIndex: -1,
+      stageTimer: null,
+      analysisCount: Number(localStorage.getItem("dg_analysis_count") || 0),
+      lastScanAt: localStorage.getItem("dg_last_scan_at") || "",
+      guestUsed: 0,
+      guestLimit: 5,
+      authState: "anonymous"
+    };
+
+    const el = {
+      userChip: document.getElementById("userChip"),
+      attemptChip: document.getElementById("attemptChip"),
+      authChip: document.getElementById("authChip"),
+      themeSelect: document.getElementById("themeSelect"),
+      dropZone: document.getElementById("dropZone"),
+      fileInput: document.getElementById("fileInput"),
+      fileName: document.getElementById("fileName"),
+      previewWrap: document.getElementById("previewWrap"),
+      previewImage: document.getElementById("previewImage"),
+      previewVideo: document.getElementById("previewVideo"),
+      sourceUrlInput: document.getElementById("sourceUrlInput"),
+      processingBox: document.getElementById("processingBox"),
+      runState: document.getElementById("runState"),
+      stage1: document.getElementById("stage1"),
+      stage2: document.getElementById("stage2"),
+      stage3: document.getElementById("stage3"),
+      runBtn: document.getElementById("runBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      errorBox: document.getElementById("errorBox"),
+      insightText: document.getElementById("insightText"),
+      layer1Badge: document.getElementById("layer1Badge"),
+      verdictVal: document.getElementById("verdictVal"),
+      confidenceBar: document.getElementById("confidenceBar"),
+      confidenceVal: document.getElementById("confidenceVal"),
+      layer2Badge: document.getElementById("layer2Badge"),
+      layer2Summary: document.getElementById("layer2Summary"),
+      matchGrid: document.getElementById("matchGrid"),
+      matchExtra: document.getElementById("matchExtra"),
+      layer3Badge: document.getElementById("layer3Badge"),
+      growthLevelTag: document.getElementById("growthLevelTag"),
+      riskTag: document.getElementById("riskTag"),
+      sourceTag: document.getElementById("sourceTag"),
+      layer3Insight: document.getElementById("layer3Insight"),
+      alertList: document.getElementById("alertList"),
+      timelineCanvas: document.getElementById("timelineCanvas"),
+      sessionUser: document.getElementById("sessionUser"),
+      sessionType: document.getElementById("sessionType"),
+      analysisCount: document.getElementById("analysisCount"),
+      lastScanAt: document.getElementById("lastScanAt"),
+      intelLine1: document.getElementById("intelLine1"),
+      intelLine2: document.getElementById("intelLine2"),
+      usageFill: document.getElementById("usageFill"),
+      usageText: document.getElementById("usageText"),
+      chatList: document.getElementById("chatList"),
+      chatInput: document.getElementById("chatInput"),
+      chatBtn: document.getElementById("chatBtn"),
+      suggest: Array.from(document.querySelectorAll("[data-q]"))
+    };
+
+    function setTheme(theme){
+      const allowed = ["dark","light","midnight","blue"];
+      const next = allowed.includes(String(theme)) ? String(theme) : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      el.themeSelect.value = next;
+      localStorage.setItem("dg_theme", next);
+    }
+
+    function showError(message){ el.errorBox.style.display = "block"; el.errorBox.textContent = message; }
+    function clearError(){ el.errorBox.style.display = "none"; el.errorBox.textContent = ""; }
+
+    function setRunEnabled(){
+      const hasUrl = String(el.sourceUrlInput.value || "").trim().length > 0;
+      el.runBtn.disabled = state.processing || !(state.file || hasUrl);
+    }
+
+    function revokePreview(){
+      if(state.previewObjectUrl){ URL.revokeObjectURL(state.previewObjectUrl); state.previewObjectUrl = ""; }
+    }
+
+    function showPreview(file){
+      revokePreview();
+      if(!file){
+        el.previewWrap.classList.remove("on");
+        el.previewImage.style.display = "none";
+        el.previewVideo.style.display = "none";
+        return;
+      }
+      const u = URL.createObjectURL(file);
+      state.previewObjectUrl = u;
+      el.previewWrap.classList.add("on");
+      if(file.type.startsWith("image/")){
+        el.previewImage.src = u; el.previewImage.style.display = "block";
+        el.previewVideo.style.display = "none"; el.previewVideo.removeAttribute("src");
+      }else{
+        el.previewVideo.src = u; el.previewVideo.style.display = "block";
+        el.previewImage.style.display = "none"; el.previewImage.removeAttribute("src");
+      }
+    }
+
+    function setFile(file){
+      if(!file){ return; }
+      const valid = file.type.startsWith("image/") || file.type.startsWith("video/");
+      if(!valid){ showError("Unsupported file format. Please upload image or video media."); return; }
+      clearError();
+      state.file = file;
+      el.fileName.textContent = `Selected media: ${file.name}`;
+      showPreview(file);
+      setRunEnabled();
+    }
+
+    function stageNodes(){ return [el.stage1, el.stage2, el.stage3]; }
+    function renderStage(index, done){
+      const nodes = stageNodes();
+      nodes.forEach((n, i) => {
+        n.classList.remove("active","done");
+        if(done || i < index){ n.classList.add("done"); }
+        else if(i === index){ n.classList.add("active"); }
+      });
+      el.runState.textContent = done ? "Analysis complete. Intelligence layers updated." : stages[Math.max(0, Math.min(index, 2))];
+    }
+
+    function startProcessing(){
+      state.processing = true; state.stageIndex = 0;
+      el.processingBox.classList.add("on");
+      renderStage(0, false);
+      if(state.stageTimer){ clearInterval(state.stageTimer); }
+      state.stageTimer = setInterval(() => {
+        state.stageIndex = (state.stageIndex + 1) % 3;
+        renderStage(state.stageIndex, false);
+      }, 1250);
+      setRunEnabled();
+    }
+
+    function stopProcessing(success){
+      state.processing = false;
+      if(state.stageTimer){ clearInterval(state.stageTimer); state.stageTimer = null; }
+      if(success){ renderStage(2, true); } else { el.runState.textContent = "Ready. Provide a media file or source URL."; stageNodes().forEach((n)=>n.classList.remove("active","done")); }
+      el.processingBox.classList.remove("on");
+      setRunEnabled();
+    }
+
+    async function parseApi(res){
+      const ct = String(res.headers.get("content-type") || "").toLowerCase();
+      if(ct.includes("application/json")){ return await res.json().catch(() => ({})); }
+      const t = await res.text().catch(() => "");
+      return { error: t ? t.slice(0, 220) : `Request failed with ${res.status}` };
+    }
+
+    function safeDate(v){
+      try{ const d = new Date(v); if(Number.isNaN(d.getTime())){ return "unknown"; } return d.toLocaleString(); }
+      catch(_){ return "unknown"; }
+    }
+
+    function addChat(role, text){
+      const row = document.createElement("div");
+      row.className = `msg ${role === "user" ? "u" : "b"}`;
+      row.textContent = text;
+      el.chatList.appendChild(row);
+      el.chatList.scrollTop = el.chatList.scrollHeight;
+    }
+
+    function drawTimeline(points){
+      const ctx = el.timelineCanvas.getContext("2d"); if(!ctx){ return; }
+      const w = el.timelineCanvas.width, h = el.timelineCanvas.height;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = "rgba(10,14,26,.35)"; ctx.fillRect(0,0,w,h);
+      const p = Array.isArray(points) && points.length ? points : [
+        {timestamp:new Date(Date.now()-5*3600000).toISOString(),mentions:0},
+        {timestamp:new Date(Date.now()-4*3600000).toISOString(),mentions:0},
+        {timestamp:new Date(Date.now()-3*3600000).toISOString(),mentions:1},
+        {timestamp:new Date(Date.now()-2*3600000).toISOString(),mentions:1},
+        {timestamp:new Date(Date.now()-1*3600000).toISOString(),mentions:1},
+        {timestamp:new Date().toISOString(),mentions:1}
+      ];
+      const pad = 24, maxY = Math.max(...p.map((x)=>Number(x.mentions||0)),1);
+      ctx.strokeStyle = "rgba(56,189,248,.95)"; ctx.lineWidth = 2.6; ctx.beginPath();
+      p.forEach((x,i)=>{ const px = pad + ((w-pad*2)*i/Math.max(1,p.length-1)); const py = (h-pad)-((h-pad*2)*Number(x.mentions||0)/maxY); if(i===0){ctx.moveTo(px,py);}else{ctx.lineTo(px,py);} });
+      ctx.stroke();
+    }
+    function classifyGrowth(growthRate, riskScore, sourceCount){
+      if(growthRate >= 120 || riskScore >= 0.75 || sourceCount >= 8){ return "viral"; }
+      if(growthRate >= 40 || riskScore >= 0.45 || sourceCount >= 3){ return "medium"; }
+      return "low";
+    }
+
+    function verdictMeta(result, confidence){
+      const r = String(result || "").toUpperCase();
+      const c = Number(confidence || 0);
+      if(r === "REAL" && c >= 60){ return {label:"REAL", cls:"real"}; }
+      if(r === "FAKE" && c >= 60){ return {label:"FAKE", cls:"fake"}; }
+      return {label:"UNCERTAIN", cls:"unc"};
+    }
+
+    function renderLayer1(payload){
+      const l1 = payload.layer1 || {};
+      const conf = Number(l1.confidence || 0);
+      const v = verdictMeta(l1.result, conf);
+      el.verdictVal.className = `verdict v-${v.cls}`;
+      el.verdictVal.textContent = v.label;
+      el.layer1Badge.className = `badge b-${v.cls}`;
+      el.layer1Badge.textContent = v.label === "UNCERTAIN" ? "Uncertain confidence window" : `${v.label} verdict`;
+      el.confidenceBar.style.width = `${Math.max(0,Math.min(100,conf))}%`;
+      el.confidenceVal.textContent = `Model confidence: ${conf.toFixed(2)}%.`;
+    }
+
+    function safeMatchCard(m){
+      const sim = Number(m.similarity || 0);
+      const t = String(m.title || "Source match");
+      const src = String(m.source_url || "#");
+      const seen = safeDate(m.first_seen || "");
+      const p = String(m.preview_url || "");
+      return `<article class="match"><div class="thumb">${p ? `<img src="${p}" alt="${t.replace(/"/g,"&quot;")}" />` : "No preview available"}</div><div class="mb"><div class="mt">${t}</div><div class="mm">${(sim*100).toFixed(1)}% similar</div><div class="mm">Seen: ${seen}</div><a class="ml" href="${src}" target="_blank" rel="noreferrer">Open source</a></div></article>`;
+    }
+
+    function renderLayer2(payload){
+      const l2 = payload.layer2 || {};
+      const matches = Array.isArray(l2.matches) ? l2.matches : [];
+      if(!matches.length){
+        el.layer2Badge.textContent = "No source matches";
+        el.layer2Summary.textContent = "No matches found. This media may be original or not widely circulated yet.";
+        el.matchGrid.innerHTML = "";
+        el.matchExtra.textContent = "First detected source is currently unavailable because no public match has been confirmed.";
+        return;
+      }
+      el.layer2Badge.textContent = `${matches.length} source match${matches.length>1?"es":""}`;
+      el.layer2Summary.textContent = "Matching media found. Similarity and source evidence are shown below.";
+      el.matchGrid.innerHTML = matches.map(safeMatchCard).join("");
+      const best = [...matches].sort((a,b)=>Number(b.similarity||0)-Number(a.similarity||0))[0];
+      const first = [...matches].sort((a,b)=>String(a.first_seen||"").localeCompare(String(b.first_seen||"")))[0];
+      el.matchExtra.textContent = `First detected source: ${first && first.source_url ? first.source_url : "unknown"} | Most similar match: ${(Number(best && best.similarity || 0)*100).toFixed(1)}%.`;
+    }
+
+    function renderLayer3(payload){
+      const l2 = payload.layer2 || {}, l3 = payload.layer3 || {};
+      const srcCount = Array.isArray(l2.matches) ? l2.matches.length : Number(l2.count || 0);
+      const growth = Number((l3.growth && l3.growth.rate_percent) || l3.growth_rate || 0);
+      const risk = Number(l3.risk_score || (l3.risk && l3.risk.risk_score) || 0);
+      const lvl = classifyGrowth(growth, risk, srcCount);
+      const lvlText = lvl === "viral" ? "Viral" : lvl === "medium" ? "Medium" : "Low";
+      el.layer3Badge.textContent = lvl === "viral" ? "High-priority monitoring" : "Active monitoring";
+      el.growthLevelTag.className = `tag ${lvl === "viral" ? "viral" : lvl === "medium" ? "med" : "low"}`;
+      el.growthLevelTag.textContent = `Growth: ${lvlText}`;
+      el.riskTag.textContent = `Risk: ${(risk*100).toFixed(1)}%`;
+      el.sourceTag.textContent = `Sources: ${srcCount}`;
+
+      const fakeProb = Number(payload.layer1 && payload.layer1.confidence ? payload.layer1.confidence/100 : 0);
+      el.layer3Insight.textContent = `Risk insight combines fake probability (${(fakeProb*100).toFixed(1)}%), spread speed (${growth.toFixed(2)}%), and source count (${srcCount}).`;
+
+      const alerts = Array.isArray(l3.alerts) ? l3.alerts : [];
+      if(alerts.length){
+        el.alertList.innerHTML = alerts.map((a)=>`<div class="alert">${a.title}: ${a.message}</div>`).join("");
+      }else{
+        const fallback = lvl === "viral" ? "Spike detected in the latest observation window. Review response priority." : srcCount > 0 ? "New source detected. Continue monitoring for propagation changes." : "No spread detected yet. Monitoring will continue over time.";
+        el.alertList.innerHTML = `<div class="alert">${fallback}</div>`;
+      }
+      drawTimeline(Array.isArray(l3.timeline) ? l3.timeline : []);
+    }
+
+    function generateInsight(payload){
+      const l1 = payload.layer1 || {}, l2 = payload.layer2 || {}, l3 = payload.layer3 || {};
+      const verdict = String(l1.result || "UNKNOWN");
+      const conf = Number(l1.confidence || 0);
+      const matches = Array.isArray(l2.matches) ? l2.matches.length : Number(l2.count || 0);
+      const risk = Number(l3.risk_score || (l3.risk && l3.risk.risk_score) || 0);
+      const growth = Number((l3.growth && l3.growth.rate_percent) || l3.growth_rate || 0);
+      const lvl = classifyGrowth(growth, risk, matches);
+      const spread = matches > 0 ? `It appears in ${matches} tracked source(s).` : "No confirmed external source matches yet.";
+      return `This media is likely ${verdict} with ${conf.toFixed(2)}% confidence. ${spread} Current spread level is ${lvl}, with composite risk ${(risk*100).toFixed(1)}%.`;
+    }
+
+    function showSkeleton(){
+      el.verdictVal.className = "skeleton";
+      el.verdictVal.style.height = "58px";
+      el.confidenceVal.textContent = "Confidence signal is being computed...";
+      el.matchGrid.innerHTML = '<div class="skeleton" style="height:152px"></div><div class="skeleton" style="height:152px"></div>';
+      el.alertList.innerHTML = '<div class="skeleton" style="height:36px"></div>';
+      drawTimeline([]);
+    }
+
+    function clearSkeleton(){ el.verdictVal.removeAttribute("style"); }
+
+    async function progressiveRender(payload){
+      renderStage(0,false); renderLayer1(payload);
+      await new Promise((r)=>setTimeout(r,260));
+      renderStage(1,false); renderLayer2(payload);
+      await new Promise((r)=>setTimeout(r,260));
+      renderStage(2,false); renderLayer3(payload);
+      await new Promise((r)=>setTimeout(r,140));
+      renderStage(2,true);
+    }
+
+    function updateSession(payload){
+      const auth = String(payload.auth_state || state.authState || "anonymous");
+      const user = payload.user_username || payload.user_email || "Guest";
+      const used = Number(payload.guest_used || state.guestUsed || 0);
+      const limit = Number(payload.guest_limit || state.guestLimit || 5);
+      state.authState = auth; state.guestUsed = used; state.guestLimit = limit;
+      el.userChip.textContent = `User: ${user}`;
+      el.authChip.textContent = `Auth: ${auth}`;
+      el.attemptChip.textContent = `Attempts: ${used}/${limit}`;
+      el.sessionUser.textContent = `User: ${user}`;
+      el.sessionType.textContent = `Type: ${auth === "user" ? "Pro" : auth === "guest" ? "Guest" : "Anonymous"}`;
+      const pct = Math.max(0, Math.min(100, limit ? (used / limit) * 100 : 0));
+      el.usageFill.style.width = `${pct}%`;
+      el.usageText.textContent = `${used} / ${limit}`;
+    }
+
+    function renderSidebarIntel(){
+      el.analysisCount.textContent = `Analysis count: ${state.analysisCount}`;
+      el.lastScanAt.textContent = `Last scan: ${state.lastScanAt ? safeDate(state.lastScanAt) : "not yet"}`;
+      if(state.analysis){
+        const conf = Number(state.analysis.layer1 && state.analysis.layer1.confidence || 0);
+        const risk = Number(state.analysis.layer3 && (state.analysis.layer3.risk_score || (state.analysis.layer3.risk && state.analysis.layer3.risk.risk_score)) || 0);
+        el.intelLine1.textContent = conf >= 80 ? "Model confidence stable." : "Confidence moderate. Manual verification recommended.";
+        el.intelLine2.textContent = risk >= 0.7 ? "Tracking active with high-risk signal." : "Tracking active and stable.";
+      }else{
+        el.intelLine1.textContent = "Model confidence stable.";
+        el.intelLine2.textContent = "Tracking active and ready.";
+      }
+    }
+
+    async function loadSession(){
+      try{
+        const res = await fetch("/api/auth/session", { method:"GET", credentials:"same-origin", cache:"no-store" });
+        const data = await parseApi(res);
+        if(!res.ok){ throw new Error(String(data.error || "Could not load session.")); }
+        updateSession(data);
+      }catch(_){
+        updateSession({ auth_state:"anonymous", guest_used:0, guest_limit:5 });
+      }
+      renderSidebarIntel();
+    }
+    async function runAnalysis(){
+      const sourceUrl = String(el.sourceUrlInput.value || "").trim();
+      if(!state.file && !sourceUrl){ showError("Upload a media file or provide a source URL to start analysis."); return; }
+      if(sourceUrl){
+        try{ const p = new URL(sourceUrl); if(!["http:","https:"].includes(p.protocol)){ throw new Error("bad"); } }
+        catch(_){ showError("Source URL must be a valid http/https link."); return; }
+      }
+      clearError();
+      showSkeleton();
+      startProcessing();
+
+      const fd = new FormData();
+      if(state.file){ fd.append("file", state.file); }
+      if(sourceUrl){ fd.append("source_url", sourceUrl); }
+      fd.append("enable_layer1", "true");
+      fd.append("enable_layer2", "true");
+      fd.append("enable_layer3", "true");
+
+      try{
+        const res = await fetch("/api/analyze", { method:"POST", body:fd, credentials:"same-origin" });
+        const data = await parseApi(res);
+        if(!res.ok){ throw new Error(String(data.error || "Analysis failed. Please try again.")); }
+        state.analysis = data;
+        await progressiveRender(data);
+        clearSkeleton();
+        el.insightText.textContent = generateInsight(data);
+        addChat("b", `Initial insight: media is likely ${String(data.layer1 && data.layer1.result || "UNKNOWN")} with ${Number(data.layer1 && data.layer1.confidence || 0).toFixed(2)}% confidence, and ${(Array.isArray(data.layer2 && data.layer2.matches) ? data.layer2.matches.length : Number(data.layer2 && data.layer2.count || 0))} source match(es).`);
+
+        state.analysisCount += 1;
+        localStorage.setItem("dg_analysis_count", String(state.analysisCount));
+        state.lastScanAt = new Date().toISOString();
+        localStorage.setItem("dg_last_scan_at", state.lastScanAt);
+
+        if(data.guest_usage){
+          updateSession({ auth_state:data.auth_state || state.authState, guest_used:data.guest_usage.guest_used, guest_limit:data.guest_usage.guest_limit });
+        }else{
+          await loadSession();
+        }
+        renderSidebarIntel();
+        stopProcessing(true);
+      }catch(err){
+        clearSkeleton();
+        stopProcessing(false);
+        showError(err instanceof Error ? err.message : "Analysis failed unexpectedly.");
+        el.insightText.textContent = "Analysis could not complete. Check media format, network, and authentication session.";
+      }
+      setRunEnabled();
+    }
+
+    async function sendChat(){
+      const message = String(el.chatInput.value || "").trim();
+      if(!message){ return; }
+      addChat("u", message);
+      el.chatInput.value = "";
+      try{
+        const body = { message };
+        if(state.analysis){ body.layer1 = state.analysis.layer1; body.layer2 = state.analysis.layer2; body.layer3 = state.analysis.layer3; }
+        const res = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, credentials:"same-origin", body:JSON.stringify(body) });
+        const data = await parseApi(res);
+        if(!res.ok){ throw new Error(String(data.error || "Chat is unavailable right now.")); }
+        addChat("b", String(data.reply || "No response from assistant."));
+      }catch(err){
+        addChat("b", err instanceof Error ? err.message : "Chat is unavailable right now.");
+      }
+    }
+
+    function resetAll(){
+      state.file = null; state.analysis = null;
+      el.fileInput.value = "";
+      el.fileName.textContent = "Drag and drop image/video here, or click to upload.";
+      el.sourceUrlInput.value = "";
+      revokePreview(); showPreview(null);
+      clearError();
+      el.insightText.textContent = "Run an analysis to generate a combined forensic and propagation insight.";
+      el.layer1Badge.className = "badge b-unc"; el.layer1Badge.textContent = "Awaiting scan";
+      el.verdictVal.className = "verdict v-unc"; el.verdictVal.textContent = "Awaiting analysis";
+      el.confidenceBar.style.width = "0%";
+      el.confidenceVal.textContent = "Confidence will appear after analysis starts.";
+      el.layer2Badge.textContent = "Waiting for analysis";
+      el.layer2Summary.textContent = "No analysis yet. Matching sources and similarity evidence will appear here after scan.";
+      el.matchGrid.innerHTML = "";
+      el.matchExtra.textContent = "No matches found yet because analysis has not been run.";
+      el.layer3Badge.textContent = "Tracking not started";
+      el.growthLevelTag.className = "tag low"; el.growthLevelTag.textContent = "Growth: Low";
+      el.riskTag.textContent = "Risk: 0%"; el.sourceTag.textContent = "Sources: 0";
+      el.layer3Insight.textContent = "No spread detected yet. Monitoring will continue over time.";
+      el.alertList.innerHTML = '<div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>';
+      drawTimeline([]);
+      el.runState.textContent = "Ready. Provide a media file or source URL.";
+      stageNodes().forEach((n)=>n.classList.remove("active","done"));
+      renderSidebarIntel();
+      setRunEnabled();
+    }
+
+    el.themeSelect.addEventListener("change", (e)=>setTheme(e.target.value));
+    el.fileInput.addEventListener("change", (e)=>setFile(e.target.files && e.target.files[0]));
+    el.sourceUrlInput.addEventListener("input", setRunEnabled);
+    el.dropZone.addEventListener("click", ()=>el.fileInput.click());
+    el.dropZone.addEventListener("dragover", (e)=>{e.preventDefault();el.dropZone.classList.add("drag");});
+    el.dropZone.addEventListener("dragleave", ()=>el.dropZone.classList.remove("drag"));
+    el.dropZone.addEventListener("drop", (e)=>{e.preventDefault();el.dropZone.classList.remove("drag");setFile(e.dataTransfer.files && e.dataTransfer.files[0]);});
+    el.runBtn.addEventListener("click", runAnalysis);
+    el.resetBtn.addEventListener("click", resetAll);
+    el.chatBtn.addEventListener("click", sendChat);
+    el.chatInput.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); sendChat(); } });
+    el.suggest.forEach((btn)=>btn.addEventListener("click", ()=>{ el.chatInput.value = String(btn.getAttribute("data-q") || ""); sendChat(); }));
+
+    setTheme(localStorage.getItem("dg_theme") || "dark");
+    loadSession();
+    resetAll();
+  </script>
+</body>
+</html>

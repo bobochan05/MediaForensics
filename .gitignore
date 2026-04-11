@@ -1,0 +1,44 @@
+# Secrets
+.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+tmp_*.json
+pytest-cache-files-*/
+
+# ML artifacts and generated data
+artifacts/
+data/datasets/
+data/embeddings/
+*.pth
+*.pt
+*.ckpt
+*.joblib
+*.npy
+*.npz
+
+# Frontend build output
+frontend/dashboard-app/node_modules/
+frontend/dashboard-app/.next/
+frontend/dashboard-app/out/
+frontend/dashboard-app/.turbo/
+frontend/dashboard-app/*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+

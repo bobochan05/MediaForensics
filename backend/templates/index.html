@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeepGuard Cinematic Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Manrope:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Cormorant+Garamond:ital,wght@1,400;1,500&display=swap" rel="stylesheet" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root { --bg:#2b2b2d; --bg2:#323335; --text:#e5e7eb; --strong:#f9fafb; --muted:#b6bbc5; --line:rgba(229,231,235,.18); --a:#38bdf8; --a2:#2563eb; --ok:#34d399; --warn:#fb923c; --bad:#fb7185; --panel:rgba(25,25,27,.62); --bg-glow1:rgba(255,255,255,.04); --bg-glow2:rgba(0,0,0,.08); --hero-shade1:rgba(22,22,24,.66); --hero-shade2:rgba(40,40,44,.2); --hero-shade3:rgba(20,20,22,.72); --hero-accent1:rgba(56,189,248,.12); --hero-accent2:rgba(37,99,235,.14); --hero-overlay-top:rgba(20,20,22,.58); --hero-overlay-mid:rgba(20,20,22,.16); --hero-overlay-bot:rgba(20,20,22,.66); --display-color:rgba(248,250,252,.95); --content-color:rgba(233,241,252,.82);}
+    html[data-theme="light"]{--bg:#e0e4d7;--bg2:#e0e4d7;--text:#374151;--strong:#111827;--muted:#4b5563;--line:rgba(17,24,39,.18);--a:#0284c7;--a2:#2563eb;--ok:#15803d;--warn:#c2410c;--bad:#b91c1c;--panel:rgba(255,255,255,.74);--bg-glow1:rgba(255,255,255,.18);--bg-glow2:rgba(148,163,184,.12);--hero-shade1:rgba(224,228,215,.66);--hero-shade2:rgba(224,228,215,.2);--hero-shade3:rgba(224,228,215,.72);--hero-accent1:rgba(14,165,233,.1);--hero-accent2:rgba(59,130,246,.1);--hero-overlay-top:rgba(224,228,215,.35);--hero-overlay-mid:rgba(224,228,215,.08);--hero-overlay-bot:rgba(224,228,215,.44);--display-color:#202838;--content-color:#344155}
+    html[data-theme="midnight"]{--bg:#2f3f6e;--bg2:#2f3f6e;--text:#e6ecff;--strong:#f8fbff;--muted:#c2cce7;--line:rgba(191,219,254,.24);--a:#93c5fd;--a2:#60a5fa;--ok:#34d399;--warn:#fb923c;--bad:#fb7185;--panel:rgba(36,50,93,.68);--bg-glow1:rgba(147,197,253,.14);--bg-glow2:rgba(59,130,246,.12);--hero-shade1:rgba(30,42,78,.62);--hero-shade2:rgba(47,63,110,.18);--hero-shade3:rgba(28,39,73,.68);--hero-accent1:rgba(147,197,253,.18);--hero-accent2:rgba(96,165,250,.16);--hero-overlay-top:rgba(28,39,73,.5);--hero-overlay-mid:rgba(47,63,110,.14);--hero-overlay-bot:rgba(28,39,73,.56);--display-color:rgba(243,247,255,.95);--content-color:rgba(219,228,248,.84)}
+    html[data-theme="blue"]{--bg:#b9d7e4;--bg2:#b9d7e4;--text:#1f2937;--strong:#0f172a;--muted:#334155;--line:rgba(15,23,42,.2);--a:#0284c7;--a2:#2563eb;--ok:#15803d;--warn:#c2410c;--bad:#be123c;--panel:rgba(255,255,255,.55);--bg-glow1:rgba(255,255,255,.22);--bg-glow2:rgba(56,189,248,.1);--hero-shade1:rgba(185,215,228,.62);--hero-shade2:rgba(185,215,228,.2);--hero-shade3:rgba(185,215,228,.7);--hero-accent1:rgba(14,165,233,.12);--hero-accent2:rgba(37,99,235,.1);--hero-overlay-top:rgba(185,215,228,.36);--hero-overlay-mid:rgba(185,215,228,.1);--hero-overlay-bot:rgba(185,215,228,.42);--display-color:#1b293e;--content-color:#2f3d55}
+    *{box-sizing:border-box} html,body{margin:0;padding:0;min-height:100vh;overflow:hidden;font-family:Manrope,sans-serif;background:radial-gradient(circle at 82% 14%,var(--bg-glow1),transparent 40%),radial-gradient(circle at 12% 88%,var(--bg-glow2),transparent 42%),linear-gradient(160deg,var(--bg),var(--bg2));color:var(--text)}
+    .top-nav{position:fixed;inset:0 0 auto 0;height:84px;z-index:45;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#ffffff;border-bottom:1px solid #e5e7eb;box-shadow:0 3px 16px rgba(15,23,42,.05);transition:box-shadow .28s ease}
+    .top-nav.scrolled{box-shadow:0 10px 28px rgba(15,23,42,.14)}
+    .nav-left,.nav-right{display:flex;align-items:center;gap:10px}
+    .nav-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .nav-logo{height:62px;width:auto;display:block}
+    .btn,select{border:1px solid rgba(148,163,184,.32);background:rgba(15,23,42,.48);color:var(--strong);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;font-family:inherit;letter-spacing:.01em;transition:all .2s ease;backdrop-filter:blur(6px)}
+    .btn:hover,select:hover{border-color:rgba(148,163,184,.55)}
+    .btn.p{border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-weight:700;box-shadow:0 8px 22px rgba(37,99,235,.35)}
+    .btn.p:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(37,99,235,.42)}
+    .top-nav .btn,.top-nav select{background:transparent;color:#111827;border:none;border-radius:6px;padding:8px 10px;font-size:13px;box-shadow:none}
+    #languageSelect{min-width:104px;padding:5px 6px;font-size:11px;font-weight:700}
+    .top-nav .btn{font-size:13px}
+    .top-nav .btn:hover,.top-nav select:hover{background:rgba(15,23,42,.06);box-shadow:none}
+    .top-nav .btn.p{background:transparent;color:#111827;border:none;box-shadow:none;border-radius:6px;padding:8px 10px}
+    .menu{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--strong)}
+    .side-wrap{position:fixed;inset:0;z-index:50;pointer-events:none}.side-bg{position:absolute;inset:0;background:rgba(2,6,18,.65);opacity:0;transition:.35s}
+    .side{position:absolute;left:0;top:0;bottom:0;width:min(300px,82vw);padding:16px;background:linear-gradient(180deg,rgba(2,10,24,.96),rgba(8,20,39,.94));border-right:1px solid var(--line);transform:translateX(-100%);transition:.35s;display:grid;gap:8px;align-content:start}
+    .side a{color:var(--strong);text-decoration:none;padding:10px 6px;border-bottom:1px solid rgba(148,163,184,.16)}
+    .side-wrap.open{pointer-events:auto}.side-wrap.open .side-bg{opacity:1}.side-wrap.open .side{transform:none}
+    .scroller{position:fixed;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;scroll-behavior:smooth;padding-top:84px;scrollbar-width:thin;scrollbar-color:rgba(148,163,184,.5) transparent}
+    .scroller::-webkit-scrollbar{width:6px}
+    .scroller::-webkit-scrollbar-track{background:transparent}
+    .scroller::-webkit-scrollbar-thumb{background:rgba(148,163,184,.45);border-radius:999px}
+    .scroller::-webkit-scrollbar-thumb:hover{background:rgba(148,163,184,.7)}
+    .sec{min-height:100vh;scroll-snap-align:start;padding:34px 16px;display:grid;align-items:center}
+    .inner{width:min(1180px,100%);margin:0 auto}.fade{opacity:0;transform:translateY(24px);transition:.7s}.fade.in{opacity:1;transform:none}
+    h1,h2,h3,p{margin:0}.hero{font-size:clamp(42px,8vw,96px);line-height:.95;letter-spacing:-.04em;color:var(--strong);max-width:16ch}
+    .sub{margin-top:14px;color:var(--muted);font-size:clamp(15px,1.9vw,23px);line-height:1.45;max-width:36ch;letter-spacing:.24em;text-transform:uppercase;font-weight:500}
+    .cta{display:none}
+    .hero-sec{position:relative;overflow:hidden}
+    .hero-bg{position:absolute;inset:0;background-image:linear-gradient(130deg,var(--hero-shade1),var(--hero-shade2) 48%,var(--hero-shade3)),url('{{ url_for("static", filename="hero-default.jpg") }}'),radial-gradient(circle at 76% 18%,var(--hero-accent1),transparent 34%),radial-gradient(circle at 14% 84%,var(--hero-accent2),transparent 38%);background-size:cover,cover,auto,auto;background-position:center center,center center,center center,center center;background-repeat:no-repeat,no-repeat,no-repeat,no-repeat;z-index:1}
+    .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,var(--hero-overlay-top),var(--hero-overlay-mid) 65%,var(--hero-overlay-bot));z-index:1}
+    .hero-content{position:relative;z-index:2;animation:heroFade 900ms ease both;display:flex;flex-direction:column;align-items:flex-start}
+    .hero-main{font-size:clamp(64px,13vw,170px);max-width:none;letter-spacing:-.055em;line-height:.88;margin-left:-.012em;color:var(--display-color)}
+    #heroTagline{margin-left:.02em;color:var(--content-color)}
+    html[lang="hi"] #heroTitle{font-family:"Noto Sans Devanagari",Manrope,sans-serif;letter-spacing:0;line-height:1.05;margin-left:0;font-weight:700}
+    html[lang="hi"] #heroTagline{font-family:"Noto Sans Devanagari",Manrope,sans-serif;letter-spacing:.04em;line-height:1.35;margin-left:0;text-transform:none}
+    .value-inner{position:relative;max-width:700px;margin:0 auto;text-align:center;padding:24px 16px}
+    .value-text{font-family:Inter,Manrope,sans-serif;font-size:clamp(24px,2.9vw,36px);line-height:1.72;color:rgba(233,241,252,.86);letter-spacing:.012em;text-wrap:balance;font-weight:400}
+    .value-prefix{font-weight:700}
+    #upload .value-inner{text-align:left;max-width:760px}
+    #uploadTitle{font-family:"Plus Jakarta Sans",Inter,Manrope,sans-serif;font-weight:800;letter-spacing:-.025em;line-height:1.08;text-align:left;max-width:760px;margin:0;color:var(--display-color)}
+    #uploadSub{font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:400;font-size:clamp(18px,2.2vw,30px);line-height:1.64;letter-spacing:.004em;color:var(--content-color);max-width:720px;margin:20px 0 0;text-align:left;text-wrap:balance}
+    #upload .value-btn{margin-left:0}
+    .value-btn{margin-top:24px;border:none;border-radius:999px;padding:8px 16px;min-width:auto;background:rgba(255,255,255,.08);color:var(--display-color);font-family:Inter,sans-serif;font-weight:600;font-size:14px;line-height:1.1;cursor:pointer;box-shadow:none;transition:transform .2s ease,background .2s ease}
+    .value-btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.14);box-shadow:none}
+    .site-footer{background:#f6f7f9;color:#111827;border-top:1px solid #e5e7eb;padding:88px 24px 48px;scroll-snap-align:start;min-height:auto}
+    .footer-top{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:44px}
+    .footer-logo{height:58px;width:auto}
+    .footer-tag{font-family:Inter,sans-serif;color:#6b7280;font-size:13px;letter-spacing:.03em}
+    .footer-grid{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));column-gap:36px;row-gap:24px;align-items:start}
+    .footer-col{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+    .footer-col h4{margin:0 0 14px;min-height:22px;font-family:Inter,sans-serif;font-size:15px;font-weight:700;color:#111827;line-height:1.2}
+    .footer-col a{display:block;color:#374151;text-decoration:none;font-family:Inter,sans-serif;font-size:14px;line-height:1.9;transition:color .2s ease,text-decoration-color .2s ease}
+    .footer-col a:hover{color:#111827;text-decoration:underline;text-underline-offset:3px}
+    .footer-link-item{margin:0 0 8px}
+    .footer-col .footer-link-item:last-child{margin-bottom:0}
+    .footer-bottom{max-width:1240px;margin:50px auto 0;padding-top:20px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+    .footer-social{display:flex;gap:16px}
+    .footer-social a{font-family:Inter,sans-serif;font-size:13px;color:#4b5563;text-decoration:none}
+    .footer-social a:hover{color:#111827}
+    .footer-copy{font-family:Inter,sans-serif;font-size:13px;color:#6b7280}
+    .info-modal{position:fixed;inset:0;z-index:72;background:rgba(15,23,42,.58);display:grid;place-items:start center;padding:16px;overflow-y:auto}
+    .info-card{width:min(760px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:26px 24px;box-shadow:0 28px 58px rgba(15,23,42,.22);scrollbar-width:thin;scrollbar-color:rgba(100,116,139,.55) transparent}
+    .info-card::-webkit-scrollbar{width:6px}
+    .info-card::-webkit-scrollbar-track{background:transparent}
+    .info-card::-webkit-scrollbar-thumb{background:rgba(100,116,139,.5);border-radius:999px}
+    .info-card::-webkit-scrollbar-thumb:hover{background:rgba(100,116,139,.7)}
+    .info-card h3{margin:0;font-family:Inter,sans-serif;font-size:30px;line-height:1.15;color:#111827;letter-spacing:-.02em}
+    .info-body{margin:12px 0 0;font-family:Inter,sans-serif;font-size:15px;line-height:1.75;color:#374151;white-space:pre-line}
+    .info-close{margin-top:18px;border:1px solid #d1d5db;background:#fff;color:#111827;border-radius:10px;padding:10px 14px;font-family:Inter,sans-serif;font-weight:600;cursor:pointer}
+    .scroll-cue{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:2;width:24px;height:40px;border:1.5px solid rgba(219,231,255,.48);border-radius:14px;display:grid;justify-items:center;padding-top:8px}
+    .scroll-cue::before{content:"";width:4px;height:8px;border-radius:999px;background:rgba(219,231,255,.85);animation:scrollDot 1.6s ease-in-out infinite}
+    @keyframes scrollDot{0%{transform:translateY(0);opacity:0}20%{opacity:1}70%{transform:translateY(10px);opacity:.85}100%{transform:translateY(14px);opacity:0}}
+    @keyframes heroFade{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+    .models{width:min(860px,100%);margin:14px auto 0;display:grid;gap:12px}
+    .mrow{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 8px;display:flex;justify-content:space-between;align-items:center;font-size:clamp(24px,4vw,42px);color:var(--strong)}
+    .ready{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;color:var(--ok);border:1px solid rgba(52,211,153,.45);padding:6px 9px;border-radius:999px;box-shadow:0 0 24px rgba(52,211,153,.22)}
+    .upload{width:min(760px,100%);margin:0 auto;text-align:center;border:1px solid rgba(148,163,184,.28);background:rgba(7,16,34,.62);border-radius:12px;padding:24px;box-shadow:0 20px 50px rgba(2,8,23,.35)}
+    .drop{margin-top:12px;border:1px dashed rgba(148,163,184,.38);border-radius:10px;padding:18px;background:rgba(2,8,23,.28)}
+    .preview{margin-top:12px;min-height:220px;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;overflow:hidden;background:rgba(2,8,23,.3);transition:.3s}
+    .preview.pop{transform:scale(1.02)} .preview img,.preview video{width:100%;height:100%;object-fit:cover}
+    .result{text-align:center;width:min(920px,100%);margin:0 auto}.verdict{font-size:clamp(56px,16vw,180px);line-height:.8;letter-spacing:-.06em;color:var(--strong)}
+    .conf{font-size:clamp(24px,5vw,56px);margin-top:8px;color:var(--strong)} .exp{margin:8px auto 0;color:var(--muted);max-width:70ch;line-height:1.7}
+    .prog{width:min(520px,100%);height:10px;border-radius:4px;background:rgba(148,163,184,.2);overflow:hidden;margin:14px auto 0}.prog>div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:.45s}
+    .tabs{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0}.tab{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:8px;padding:9px 13px}
+    .tab.on{border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff}.tcontent{text-align:center;color:var(--muted);max-width:900px;margin:0 auto;line-height:1.7}
+    .hide{display:none!important}
+    .gtitle{text-align:center;color:var(--strong);font-size:clamp(34px,8vw,72px);letter-spacing:-.04em}
+    .bars{height:min(48vh,380px);display:grid;grid-template-columns:repeat(8,1fr);gap:12px;align-items:end;margin-top:14px}
+    .bar{border-radius:12px 12px 8px 8px;background:linear-gradient(180deg,var(--a),var(--a2));transform-origin:bottom;animation:r .95s ease forwards}@keyframes r{from{transform:scaleY(.05);opacity:.2}to{transform:scaleY(1);opacity:.92}}
+    .stats{margin-top:12px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:12px;color:var(--strong);background:rgba(2,8,23,.35)}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(1080px,100%);margin:0 auto}.list{border:1px solid rgba(148,163,184,.24);border-radius:10px;margin-top:8px;padding:0 12px;background:rgba(7,16,34,.45)}
+    .row{display:flex;justify-content:space-between;gap:8px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--strong);font-size:14px;cursor:pointer;transition:background .2s ease}
+    .row:hover{background:rgba(34,211,238,.07)}
+    .set{width:min(860px,100%);margin:12px auto 0;border:1px solid rgba(148,163,184,.24);border-radius:10px;padding:16px 14px;display:grid;gap:10px;background:rgba(7,16,34,.45)}
+    .srow{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--strong);font-size:14px}
+    .final{text-align:center;width:min(900px,100%);margin:0 auto}.final h2{font-size:clamp(34px,8vw,84px);letter-spacing:-.05em;line-height:.95;color:var(--strong)}
+    .final p{margin:14px auto 0;color:var(--muted);line-height:1.7;max-width:62ch}
+    .assist{position:fixed;right:14px;bottom:14px;z-index:45}.abtn{border:none;border-radius:8px;padding:12px 14px;color:#fff;background:linear-gradient(135deg,var(--a),var(--a2));font-weight:700}
+    .apanel{width:min(340px,calc(100vw - 22px));margin-bottom:9px;border:1px solid var(--line);border-radius:10px;background:rgba(2,8,23,.9);padding:10px}
+    .msg{margin-top:8px;border-radius:8px;padding:9px;font-size:13px}.bot{background:rgba(148,163,184,.14);color:var(--muted)}.me{background:rgba(34,211,238,.14);color:var(--strong)}
+    .modal{position:fixed;inset:0;z-index:60;background:rgba(2,6,20,.68);display:grid;place-items:center;padding:14px}
+    .mcard{width:min(620px,100%);border:1px solid rgba(148,163,184,.22);border-radius:18px;background:#f8fafc;color:#1f345a;padding:24px 26px;box-shadow:0 30px 70px rgba(2,8,23,.28)}
+    .auth-brand{display:flex;justify-content:center}
+    .auth-brand img{height:64px;width:auto;display:block}
+    .auth-rule{height:1px;background:#d4dbe6;margin:18px -6px 22px}
+    .auth-title{font-size:42px;font-weight:800;line-height:1;letter-spacing:-.04em;color:#1f345a;text-align:left}
+    .auth-desc{margin-top:12px;color:#5d7196;font-size:17px;line-height:1.6}
+    .social{width:100%;margin-top:14px;border:1px solid #cad5e5;border-radius:10px;background:#ffffff;color:#1f345a;padding:12px 14px;text-align:left;font-weight:600}
+    .social:hover{background:#f3f7fd}
+    .or-wrap{display:flex;align-items:center;gap:10px;margin:18px 0 12px;color:#6b7f9d}
+    .or-wrap::before,.or-wrap::after{content:"";flex:1;height:1px;background:#d2dae7}
+    .field-label{display:block;color:#2f4469;font-weight:700;margin:0 0 8px}
+    .email-input{width:100%;border:1px solid #b9c6da;border-radius:10px;background:#fff;color:#1f345a;padding:13px 14px;font-size:16px}
+    .field-label + .email-input{margin-bottom:12px}
+    .auth-password-toggle{display:flex;align-items:center;justify-content:flex-start;margin:10px 0 2px;color:#4f6388;font-size:14px}
+    .auth-password-toggle label{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+    .auth-password-toggle input{width:16px;height:16px}
+    .auth-status{min-height:20px;margin-top:2px;color:#b42318;font-size:13px;line-height:1.4}
+    .auth-login{width:100%;margin-top:16px;border:none;border-radius:10px;background:#3566b3;color:#fff;padding:13px 14px;font-weight:700;font-size:16px}
+    .auth-foot{margin-top:14px;color:#5d7196;text-align:center}
+    .auth-foot button{border:none;background:none;color:#2f5fb3;font-weight:700;cursor:pointer}
+    .auth-actions{display:grid;gap:10px;margin-top:12px}
+    @media (max-width:980px){.split{grid-template-columns:1fr}.btn,select{padding:8px 10px;font-size:12px}.nav-logo{height:50px}.top-nav{height:76px}.scroller{padding-top:76px}.top-nav .btn,.top-nav select{padding:7px 8px;font-size:11px}.top-nav .btn{font-size:11px}#languageSelect{min-width:90px;padding:4px 5px;font-size:10px}.footer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px}.site-footer{padding:64px 18px 40px}}
+  </style>
+</head>
+<body>
+  <div class="top-nav" id="topNav">
+    <div class="nav-left">
+      <select id="languageSelect" aria-label="Select language">
+        <option value="en" selected>EN - English</option>
+        <option value="hi">HI - Hindi</option>
+        <option value="es">ES - Spanish</option>
+        <option value="fr">FR - French</option>
+        <option value="de">DE - German</option>
+        <option value="zh">ZH - Chinese (Simplified)</option>
+        <option value="ar">AR - Arabic</option>
+      </select>
+    </div>
+    <div class="nav-center"><img class="nav-logo" src="{{ url_for('static', filename='tracelyt-logo.png') }}" alt="Logo" /></div>
+    <div class="nav-right">
+      <button class="btn" id="loginBtn">Login</button>
+      <button class="btn p" id="signupBtn">Signup</button>
+      <select id="themeSelect"><option value="dark">Dark</option><option value="light">Light</option><option value="midnight">Midnight</option><option value="blue">Blue</option></select>
+    </div>
+  </div>
+  <main class="scroller">
+    <section class="sec hero-sec" id="hero"><div class="hero-bg"></div><div class="hero-overlay"></div><div class="inner fade hero-content"><h1 class="hero hero-main" id="heroTitle">Tracelyt</h1><p class="sub" id="heroTagline">Detect. Explain. Protect.</p><div class="cta"><button class="btn p" id="startAnalysisBtn">Start Analysis</button><button class="btn" id="showFlowBtn">See Workflow</button><span class="btn" id="guestChip">Guest: 2/5 used</span></div></div><div class="scroll-cue" aria-hidden="true"></div></section>
+    <section class="sec" id="upload"><div class="inner fade"><div class="value-inner"><p class="hero" id="uploadTitle" style="font-size:clamp(34px,6vw,72px);max-width:none;">Tracelyt in Action</p><p class="value-text" id="uploadSub" style="margin-top:20px;">From detection to tracking, Tracelyt gives you complete visibility into deepfake content and its impact. Analyze, understand, and track manipulated media in one unified platform.</p><button class="value-btn" id="startDemoBtn">Get Started</button></div></div></section>
+    <footer class="site-footer">
+      <div class="footer-top">
+        <img class="footer-logo" src="{{ url_for('static', filename='tracelyt-logo.png') }}" alt="Tracelyt logo" />
+        <p class="footer-tag" id="footerTag">Detect. Explain. Protect.</p>
+      </div>
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4 id="footerHeadProduct">Product</h4>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkFeatures" data-page="features">Features</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkHowItWorks" data-page="how-it-works">How it Works</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkUseCases" data-page="use-cases">Use Cases</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkDemo" data-page="demo">Demo</a></div>
+        </div>
+        <div class="footer-col">
+          <h4 id="footerHeadTechnology">Technology</h4>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkDetection" data-page="ai-detection-engine">AI Detection Engine</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkExplainability" data-page="explainability-system">Explainability System</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkTracking" data-page="tracking-engine">Tracking Engine</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkSimilarity" data-page="similarity-search">Similarity Search</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkApi" data-page="api-access">API Access</a></div>
+        </div>
+        <div class="footer-col">
+          <h4 id="footerHeadCompany">Company</h4>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkAbout" data-page="about">About</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkResearch" data-page="research">Research</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkBlog" data-page="blog">Blog</a></div>
+        </div>
+        <div class="footer-col">
+          <h4 id="footerHeadSupport">Support</h4>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkContact" data-page="contact">Contact</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkReport" data-page="report-deepfake">Report Deepfake</a></div>
+        </div>
+        <div class="footer-col">
+          <h4 id="footerHeadLegal">Legal</h4>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkPrivacy" data-page="privacy-policy">Privacy Policy</a></div>
+          <div class="footer-link-item"><a href="#" class="footer-link" id="footerLinkTerms" data-page="terms-of-service">Terms of Service</a></div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-social">
+          <a id="footerSocialGithub" href="https://github.com/bobochan05" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a id="footerSocialLinkedin" href="https://www.linkedin.com/in/soham-biswas-5305b2242/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </div>
+        <div class="footer-copy" id="footerCopy">© 2026 Tracelyt. All rights reserved.</div>
+      </div>
+    </footer>
+  </main>
+  <div class="modal hide" id="authModal">
+    <div class="mcard">
+      <div class="auth-brand"><img src="{{ url_for('static', filename='tracelyt-logo.png') }}" alt="Tracelyt logo" /></div>
+      <div class="auth-rule"></div>
+      <h3 id="authTitle" class="auth-title">Log In to Your Account</h3>
+      <p id="authSub" class="auth-desc">Log in to your account and continue your secure media verification workflow.</p>
+      <button class="social" id="socialGoogle">Continue with Google</button>
+      <div class="or-wrap"><span id="orContinue">Or continue with</span></div>
+      <label class="field-label" id="usernameLabel" for="authUsername">Username</label>
+      <input class="email-input" id="authUsername" type="text" placeholder="Enter Username" />
+      <label class="field-label" id="emailLabel" for="authEmail">Gmail</label>
+      <input class="email-input" id="authEmail" type="email" placeholder="Enter Gmail" />
+      <label class="field-label" id="passwordLabel" for="authPassword">Password</label>
+      <input class="email-input" id="authPassword" type="password" placeholder="Enter Password" />
+      <label class="field-label" id="confirmPasswordLabel" for="authConfirmPassword">Confirm Password</label>
+      <input class="email-input" id="authConfirmPassword" type="password" placeholder="Confirm Password" />
+      <div class="auth-password-toggle">
+        <label for="togglePasswords">
+          <input id="togglePasswords" type="checkbox" />
+          <span id="togglePasswordsLabel">Show passwords</span>
+        </label>
+      </div>
+      <div class="auth-status" id="authStatus" aria-live="polite"></div>
+      <button class="auth-login" id="authLoginBtn">Login</button>
+      <div class="auth-foot"><span id="signupPrompt">Don’t have an account?</span> <button id="authSignupLink" type="button">Signup</button></div>
+      <div class="auth-actions">
+        <button class="social" id="socialGuest">Continue in Guest Mode</button>
+        <button class="social" id="closeAuth">Close</button>
+      </div>
+    </div>
+  </div>
+  <div class="info-modal hide" id="footerInfoModal">
+    <div class="info-card">
+      <h3 id="footerInfoTitle">Title</h3>
+      <div class="info-body" id="footerInfoDesc">Description</div>
+      <button class="info-close" id="footerInfoClose">Close</button>
+    </div>
+  </div>
+  <script>
+    const themeSelect = document.getElementById("themeSelect"), languageSelect = document.getElementById("languageSelect"), themeRead = document.getElementById("themeRead"), loginBtn = document.getElementById("loginBtn"), signupBtn = document.getElementById("signupBtn"), authModal = document.getElementById("authModal"), closeAuth = document.getElementById("closeAuth");
+    const topNav = document.getElementById("topNav"), scroller = document.querySelector(".scroller");
+    const showFlowBtn = document.getElementById("showFlowBtn"), startAnalysisBtn = document.getElementById("startAnalysisBtn"), startTrackingBtn = document.getElementById("startTrackingBtn");
+    const pickBtn = document.getElementById("pickBtn"), fileInput = document.getElementById("fileInput"), dropZone = document.getElementById("dropZone"), previewMedia = document.getElementById("previewMedia"), selectedName = document.getElementById("selectedName"), analyzeBtn = document.getElementById("analyzeBtn"), viewTechnicalBtn = document.getElementById("viewTechnicalBtn");
+    const loadingState = document.getElementById("loadingState"), resultState = document.getElementById("resultState"), emptyState = document.getElementById("emptyState"), progressBar = document.getElementById("progressBar"), resultLabelBig = document.getElementById("resultLabelBig"), resultConfidence = document.getElementById("resultConfidence"), resultSummary = document.getElementById("resultSummary"), resultInsights = document.getElementById("resultInsights");
+    const assistantBtn = document.getElementById("assistantBtn"), assistantPanel = document.getElementById("assistantPanel"), guestChip = document.getElementById("guestChip");
+    const startDemoBtn = document.getElementById("startDemoBtn"), authLoginBtn = document.getElementById("authLoginBtn"), socialGoogle = document.getElementById("socialGoogle"), socialGuest = document.getElementById("socialGuest"), authSignupLink = document.getElementById("authSignupLink"), authTitleEl = document.getElementById("authTitle"), authSubEl = document.getElementById("authSub");
+    const authUsername = document.getElementById("authUsername"), authEmail = document.getElementById("authEmail"), authPassword = document.getElementById("authPassword"), authConfirmPassword = document.getElementById("authConfirmPassword"), authStatus = document.getElementById("authStatus"), usernameLabel = document.getElementById("usernameLabel"), emailLabel = document.getElementById("emailLabel"), passwordLabel = document.getElementById("passwordLabel"), confirmPasswordLabel = document.getElementById("confirmPasswordLabel"), signupPrompt = document.getElementById("signupPrompt"), togglePasswords = document.getElementById("togglePasswords"), togglePasswordsLabel = document.getElementById("togglePasswordsLabel");
+    const footerInfoModal = document.getElementById("footerInfoModal"), footerInfoTitle = document.getElementById("footerInfoTitle"), footerInfoDesc = document.getElementById("footerInfoDesc"), footerInfoClose = document.getElementById("footerInfoClose"), footerInfoCard = footerInfoModal ? footerInfoModal.querySelector(".info-card") : null;
+    const serviceUrl = "{{ url_for('dashboard') }}";
+    const googleOauthClientId = {{ google_oauth_client_id|tojson }};
+    let authState = {{ auth_state|tojson }};
+    let selectedFile = null, freeTotal = {{ guest_limit|tojson }}, freeUsed = {{ guest_used|tojson }}, currentLang = "en", pendingDemoRedirect = false, authMode = "login";
+    const supportedLangs = ["en","hi","es","fr","de","zh","ar"];
+    const footerPageMap = {
+      "features": { title: "footerLinkFeatures", desc: "footerDescFeatures" },
+      "how-it-works": { title: "footerLinkHowItWorks", desc: "footerDescHowItWorks" },
+      "use-cases": { title: "footerLinkUseCases", desc: "footerDescUseCases" },
+      "demo": { title: "footerLinkDemo", desc: "footerDescDemo" },
+      "ai-detection-engine": { title: "footerLinkDetection", desc: "footerDescDetection" },
+      "explainability-system": { title: "footerLinkExplainability", desc: "footerDescExplainability" },
+      "tracking-engine": { title: "footerLinkTracking", desc: "footerDescTracking" },
+      "similarity-search": { title: "footerLinkSimilarity", desc: "footerDescSimilarity" },
+      "api-access": { title: "footerLinkApi", desc: "footerDescApi" },
+      "about": { title: "footerLinkAbout", desc: "footerDescAbout" },
+      "research": { title: "footerLinkResearch", desc: "footerDescResearch" },
+      "blog": { title: "footerLinkBlog", desc: "footerDescBlog" },
+      "contact": { title: "footerLinkContact", desc: "footerDescContact" },
+      "report-deepfake": { title: "footerLinkReport", desc: "footerDescReport" },
+      "privacy-policy": { title: "footerLinkPrivacy", desc: "footerDescPrivacy" },
+      "terms-of-service": { title: "footerLinkTerms", desc: "footerDescTerms" }
+    };
+    const footerLongContentEn = {
+      footerCopy: "© 2026 Tracelyt. All rights reserved.",
+      footerDescFeatures: "Tracelyt brings together deepfake detection, explainability, and web-scale tracking into a single platform.\n\n- Detect manipulated media using advanced AI models\n- Understand why content is flagged with clear explanations\n- Track how media spreads and evolves across the web\n- Analyze both uploaded files and external sources\n\nDesigned for speed, accuracy, and real-world usability.",
+      footerDescHowItWorks: "Tracelyt follows a multi-stage pipeline to analyze media:\n\n1. Upload or Input\nProvide an image, video, or URL.\n\n2. Detection\nAI models analyze the content for signs of manipulation.\n\n3. Explainability\nThe system highlights why the content was flagged.\n\n4. Tracking\nSimilar content is searched and tracked across the web.\n\n5. Results\nUsers receive a complete report including authenticity and spread insights.",
+      footerDescUseCases: "Tracelyt supports multiple real-world applications:\n\nJournalism\nVerify media authenticity before publishing.\n\nInvestigations\nTrace origins and variations of manipulated content.\n\nSocial Platforms\nDetect and reduce the spread of misinformation.\n\nResearch\nStudy deepfake patterns and propagation behavior.\n\nPublic Awareness\nHelp individuals understand and identify fake media.",
+      footerDescDemo: "Try Tracelyt in action by analyzing sample or uploaded media.\n\nExperience:\n- Real-time deepfake detection\n- Explanation of results\n- Tracking of similar content\n\nLogin is required to access full demo features.",
+      footerDescDetection: "The detection engine combines multiple AI models to identify deepfake media with high accuracy.\n\nIt analyzes visual patterns, inconsistencies, and learned features from real-world datasets to classify content reliably.",
+      footerDescExplainability: "Tracelyt does not rely on black-box outputs.\n\nThe explainability system provides insights into why content is flagged, helping users understand model decisions with clarity and confidence.",
+      footerDescTracking: "The tracking engine monitors how content spreads across the web.\n\nIt identifies where similar media appears, tracks its propagation, and helps users understand the reach and impact of manipulated content.",
+      footerDescSimilarity: "Using advanced embedding techniques, Tracelyt finds visually and contextually similar media.\n\nThis helps uncover reused, modified, or redistributed content across different sources.",
+      footerDescApi: "Tracelyt provides API access for developers to integrate detection and tracking capabilities into their own applications.\n\nAutomate workflows, analyze content at scale, and build custom solutions powered by Tracelyt.",
+      footerDescAbout: "Developed as part of the Google Solution Challenge, Tracelyt is a response to one of the most critical challenges in today’s digital world—deepfake misinformation.\n\nBy combining AI-powered detection, explainability, and tracking, the platform aims to provide meaningful tools to identify and limit the spread of manipulated content.",
+      footerDescResearch: "Tracelyt is built on modern machine learning techniques, combining classification, similarity search, and intelligent pipelines.\n\nThe system focuses on accuracy, explainability, and real-world applicability, ensuring reliable performance in diverse scenarios.",
+      footerDescBlog: "Explore insights on deepfakes, AI safety, misinformation, and emerging technologies.\n\nStay updated with trends, research developments, and best practices in digital media verification.",
+      footerDescContact: "Need help or have questions?\n\nReach us at:\n- Gmail: sohambiswas205@gmail.com\n- GitHub: github.com/bobochan05\n- LinkedIn: linkedin.com/in/soham-biswas-5305b2242/\n\nWe’re here to help with support, feedback, and collaboration.",
+      footerDescReport: "Submit suspicious or incorrectly flagged content for review.\n\nFor reporting, email: sohambiswas205@gmail.com\n\nYour reports help improve detection accuracy and strengthen the platform’s ability to combat misinformation.",
+      footerDescPrivacy: `Privacy Policy
+
+Last Updated: [8.4.2026]
+
+Welcome to Tracelyt. Your privacy is important to us. This Privacy Policy explains how we collect, use, store, and protect your information when you use our platform.
+
+By using Tracelyt, you agree to the practices described in this policy.
+
+--------------------------------------------------
+
+1. Information We Collect
+
+We may collect the following types of information:
+
+a) User Information
+- Name and email address (when you sign up)
+- Account credentials (encrypted)
+
+b) Uploaded Content
+- Images, videos, or media files you upload for analysis
+- URLs submitted for detection and tracking
+
+c) Usage Data
+- Pages visited
+- Features used
+- Interaction logs (for improving the system)
+
+d) Technical Data
+- IP address
+- Browser type and device information
+- Basic analytics data
+
+--------------------------------------------------
+
+2. How We Use Your Information
+
+We use your data to:
+
+- Provide deepfake detection and analysis services
+- Improve accuracy and performance of our AI models
+- Enhance user experience and platform functionality
+- Respond to user queries and support requests
+- Ensure security and prevent misuse of the platform
+
+--------------------------------------------------
+
+3. Uploaded Media and Content
+
+- Uploaded media is processed for analysis and may be temporarily stored.
+- We do NOT claim ownership of your content.
+- Content may be used in anonymized form to improve system performance.
+- Sensitive or personal media should be uploaded with caution.
+
+--------------------------------------------------
+
+4. Data Storage and Security
+
+We take reasonable measures to protect your data:
+
+- Secure storage and encryption practices
+- Restricted access to sensitive information
+- Regular monitoring for vulnerabilities
+
+However, no system is completely secure, and we cannot guarantee absolute security.
+
+--------------------------------------------------
+
+5. Data Sharing
+
+We do NOT sell your personal data.
+
+We may share data only in the following cases:
+- To comply with legal obligations
+- To prevent fraud or misuse
+- With trusted service providers (e.g., hosting or analytics), under strict confidentiality
+
+--------------------------------------------------
+
+6. Cookies and Tracking
+
+Tracelyt may use cookies or similar technologies to:
+- Improve user experience
+- Analyze usage patterns
+- Maintain session data
+
+You can control cookies through your browser settings.
+
+--------------------------------------------------
+
+7. Your Rights
+
+You have the right to:
+- Access your personal data
+- Request deletion of your data
+- Update or correct your information
+
+To exercise these rights, contact us at:
+[Email: sohambiswas205@gmail.com]
+
+--------------------------------------------------
+
+8. Third-Party Services
+
+Our platform may integrate third-party tools or services. These services have their own privacy policies, and we are not responsible for their practices.
+
+--------------------------------------------------
+
+9. Changes to This Policy
+
+We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated date.
+
+--------------------------------------------------
+
+10. Contact Us
+
+If you have any questions or concerns about this Privacy Policy, you can contact us at:
+
+[Email: sohambiswas205@gmail.com]
+
+--------------------------------------------------
+
+By using Tracelyt, you acknowledge that you have read and understood this Privacy Policy.`,
+      footerDescTerms: `Terms of Service
+
+Last Updated: [8.4.2026]
+
+Welcome to Tracelyt. These Terms of Service ("Terms") govern your access to and use of the Tracelyt platform.
+
+By accessing or using Tracelyt, you agree to be bound by these Terms. If you do not agree, please do not use the platform.
+
+--------------------------------------------------
+
+1. Use of the Platform
+
+Tracelyt provides AI-powered tools for detecting, analyzing, and tracking deepfake media.
+
+You agree to use the platform only for lawful purposes and in accordance with these Terms.
+
+You must NOT:
+- Use the platform for illegal or harmful activities
+- Upload content that violates laws or rights of others
+- Attempt to exploit, reverse-engineer, or disrupt the system
+
+--------------------------------------------------
+
+2. User Accounts
+
+To access certain features, you may need to create an account.
+
+You are responsible for:
+- Maintaining the confidentiality of your login credentials
+- All activities under your account
+
+Tracelyt reserves the right to suspend or terminate accounts that violate these Terms.
+
+--------------------------------------------------
+
+3. User Content
+
+You retain ownership of any content you upload.
+
+By uploading content, you grant Tracelyt a limited right to:
+- Process and analyze the content
+- Use anonymized data to improve system performance
+
+You are responsible for ensuring that you have the right to upload and use the content.
+
+--------------------------------------------------
+
+4. Platform Functionality
+
+Tracelyt provides analysis based on AI models. While we strive for accuracy:
+
+- Results may not always be perfect or definitive
+- The platform should not be solely relied upon for critical decisions
+
+Use results as guidance, not absolute proof.
+
+--------------------------------------------------
+
+5. Prohibited Use
+
+You agree NOT to:
+
+- Upload malicious, harmful, or illegal content
+- Attempt to bypass system limits or security
+- Use the platform to generate or spread misinformation
+- Interfere with platform operations or infrastructure
+
+--------------------------------------------------
+
+6. Intellectual Property
+
+All platform content, design, and technology (excluding user uploads) are the property of Tracelyt.
+
+You may not copy, distribute, or reuse any part of the platform without permission.
+
+--------------------------------------------------
+
+7. Limitation of Liability
+
+Tracelyt is provided "as is" without warranties of any kind.
+
+We are not liable for:
+- Errors or inaccuracies in detection results
+- Loss of data or content
+- Any damages arising from use of the platform
+
+Use the platform at your own risk.
+
+--------------------------------------------------
+
+8. Termination
+
+We may suspend or terminate access if:
+- You violate these Terms
+- You misuse the platform
+
+You may stop using the platform at any time.
+
+--------------------------------------------------
+
+9. Changes to Terms
+
+We may update these Terms from time to time. Continued use of the platform means you accept the updated Terms.
+
+--------------------------------------------------
+
+10. Governing Law
+
+These Terms are governed by applicable laws in your jurisdiction.
+
+--------------------------------------------------
+
+11. Contact
+
+For questions regarding these Terms, contact:
+
+Email: sohambiswas205@gmail.com
+
+--------------------------------------------------
+
+By using Tracelyt, you acknowledge that you have read, understood, and agreed to these Terms of Service.`
+    };
+    const footerI18n = {
+      en: {
+        footerTag: "Detect. Explain. Protect.",
+        footerHeadProduct: "Product", footerHeadTechnology: "Technology", footerHeadCompany: "Company", footerHeadSupport: "Support", footerHeadLegal: "Legal",
+        footerLinkFeatures: "Features", footerLinkHowItWorks: "How it Works", footerLinkUseCases: "Use Cases", footerLinkDemo: "Demo",
+        footerLinkDetection: "AI Detection Engine", footerLinkExplainability: "Explainability System", footerLinkTracking: "Tracking Engine", footerLinkSimilarity: "Similarity Search", footerLinkApi: "API Access",
+        footerLinkAbout: "About", footerLinkResearch: "Research", footerLinkBlog: "Blog",
+        footerLinkContact: "Contact", footerLinkReport: "Report Deepfake",
+        footerLinkPrivacy: "Privacy Policy", footerLinkTerms: "Terms of Service",
+        footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn",
+        footerCopy: "© 2026 Tracelyt. All rights reserved.", footerClose: "Close",
+        footerDescFeatures: "Explore detection, tracking, and explainability in one unified platform.",
+        footerDescHowItWorks: "Upload content, run analysis, and review clear results in one guided flow.",
+        footerDescUseCases: "See how journalists, investigators, and platforms use Tracelyt in real work.",
+        footerDescDemo: "Try Tracelyt and experience the platform before full onboarding.",
+        footerDescDetection: "Detect deepfake content with trained AI built for practical accuracy.",
+        footerDescExplainability: "Understand why content was flagged with plain-language reasoning.",
+        footerDescTracking: "Track how content appears and spreads across online sources.",
+        footerDescSimilarity: "Find related or reused media to connect matching content quickly.",
+        footerDescApi: "Integrate Tracelyt into your own product and existing workflows.",
+        footerDescAbout: "Learn what Tracelyt does and the mission behind the platform.",
+        footerDescResearch: "Read our approach, methodology, and product foundation in simple terms.",
+        footerDescBlog: "Stay updated with insights on AI, deepfakes, and digital safety.",
+        footerDescContact: "Reach out for support, product questions, or partnership requests.",
+        footerDescReport: "Submit suspicious or incorrectly flagged content for review.",
+        footerDescPrivacy: "See how user data is handled and protected across Tracelyt.",
+        footerDescTerms: "Review the rules and responsibilities for using the platform."
+      },
+      hi: {
+        footerTag: "डिटेक्ट. एक्सप्लेन. प्रोटेक्ट.", footerHeadProduct: "प्रोडक्ट", footerHeadTechnology: "टेक्नोलॉजी", footerHeadCompany: "कंपनी", footerHeadSupport: "सपोर्ट", footerHeadLegal: "लीगल",
+        footerLinkFeatures: "फीचर्स", footerLinkHowItWorks: "यह कैसे काम करता है", footerLinkUseCases: "उपयोग के मामले", footerLinkDemo: "डेमो",
+        footerLinkDetection: "एआई डिटेक्शन इंजन", footerLinkExplainability: "एक्सप्लेनेबिलिटी सिस्टम", footerLinkTracking: "ट्रैकिंग इंजन", footerLinkSimilarity: "सिमिलैरिटी सर्च", footerLinkApi: "एपीआई एक्सेस",
+        footerLinkAbout: "हमारे बारे में", footerLinkResearch: "रिसर्च", footerLinkBlog: "ब्लॉग", footerLinkContact: "संपर्क", footerLinkReport: "डीपफेक रिपोर्ट करें",
+        footerLinkPrivacy: "प्राइवेसी पॉलिसी", footerLinkTerms: "सेवा की शर्तें", footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn",
+        footerCopy: "© 2026 Tracelyt. सर्वाधिकार सुरक्षित।", footerClose: "बंद करें",
+        footerDescFeatures: "एक ही प्लेटफॉर्म में डिटेक्शन, ट्रैकिंग और एक्सप्लेनेबिलिटी देखें।",
+        footerDescHowItWorks: "कंटेंट अपलोड करें, विश्लेषण चलाएं और स्पष्ट परिणाम देखें।",
+        footerDescUseCases: "जानें पत्रकार, जाँचकर्ता और प्लेटफॉर्म Tracelyt का कैसे उपयोग करते हैं।",
+        footerDescDemo: "पूरा ऑनबोर्डिंग शुरू करने से पहले Tracelyt डेमो आज़माएँ।",
+        footerDescDetection: "प्रशिक्षित एआई मॉडल से डीपफेक कंटेंट की पहचान करें।",
+        footerDescExplainability: "साधारण भाषा में समझें कि कंटेंट क्यों फ्लैग हुआ।",
+        footerDescTracking: "देखें कंटेंट ऑनलाइन कहाँ और कैसे फैल रहा है।",
+        footerDescSimilarity: "मिलते-जुलते या दोबारा उपयोग किए गए मीडिया को जल्दी खोजें।",
+        footerDescApi: "Tracelyt को अपने प्रोडक्ट और वर्कफ्लो में जोड़ें।",
+        footerDescAbout: "जानें Tracelyt क्या करता है और इसका मिशन क्या है।",
+        footerDescResearch: "हमारा तरीका और आधार सरल शब्दों में पढ़ें।",
+        footerDescBlog: "एआई, डीपफेक और डिजिटल सुरक्षा पर अपडेट पढ़ें।",
+        footerDescContact: "सहायता, प्रश्न या साझेदारी के लिए संपर्क करें।",
+        footerDescReport: "संदिग्ध या गलत फ्लैग किए गए कंटेंट की रिपोर्ट करें।",
+        footerDescPrivacy: "जानें Tracelyt में आपका डेटा कैसे सुरक्षित रखा जाता है।",
+        footerDescTerms: "प्लेटफॉर्म उपयोग के नियम और जिम्मेदारियाँ पढ़ें।"
+      },
+      es: {
+        footerTag: "Detecta. Explica. Protege.", footerHeadProduct: "Producto", footerHeadTechnology: "Tecnología", footerHeadCompany: "Compañía", footerHeadSupport: "Soporte", footerHeadLegal: "Legal",
+        footerLinkFeatures: "Funciones", footerLinkHowItWorks: "Cómo funciona", footerLinkUseCases: "Casos de uso", footerLinkDemo: "Demo",
+        footerLinkDetection: "Motor de detección IA", footerLinkExplainability: "Sistema explicable", footerLinkTracking: "Motor de rastreo", footerLinkSimilarity: "Búsqueda por similitud", footerLinkApi: "Acceso API",
+        footerLinkAbout: "Acerca de", footerLinkResearch: "Investigación", footerLinkBlog: "Blog", footerLinkContact: "Contacto", footerLinkReport: "Reportar deepfake",
+        footerLinkPrivacy: "Política de privacidad", footerLinkTerms: "Términos de servicio", footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn",
+        footerCopy: "© 2026 Tracelyt. Todos los derechos reservados.", footerClose: "Cerrar",
+        footerDescFeatures: "Explora detección, rastreo y explicabilidad en una sola plataforma.",
+        footerDescHowItWorks: "Sube contenido, ejecuta análisis y revisa resultados claros.",
+        footerDescUseCases: "Mira cómo periodistas, investigadores y plataformas usan Tracelyt.",
+        footerDescDemo: "Prueba Tracelyt antes de completar el registro.",
+        footerDescDetection: "Detecta deepfakes con IA entrenada para precisión práctica.",
+        footerDescExplainability: "Entiende por qué el contenido fue marcado con lenguaje claro.",
+        footerDescTracking: "Sigue cómo aparece y se difunde el contenido en línea.",
+        footerDescSimilarity: "Encuentra contenido relacionado o reutilizado rápidamente.",
+        footerDescApi: "Integra Tracelyt en tu producto y flujo de trabajo.",
+        footerDescAbout: "Conoce qué hace Tracelyt y su misión.",
+        footerDescResearch: "Lee nuestro enfoque y metodología en términos simples.",
+        footerDescBlog: "Mantente al día sobre IA, deepfakes y seguridad digital.",
+        footerDescContact: "Contáctanos para soporte, preguntas o alianzas.",
+        footerDescReport: "Envía contenido sospechoso o mal clasificado para revisión.",
+        footerDescPrivacy: "Consulta cómo se manejan y protegen tus datos.",
+        footerDescTerms: "Revisa reglas y responsabilidades para usar la plataforma."
+      },
+      fr: {
+        footerTag: "Détecter. Expliquer. Protéger.", footerHeadProduct: "Produit", footerHeadTechnology: "Technologie", footerHeadCompany: "Entreprise", footerHeadSupport: "Support", footerHeadLegal: "Mentions",
+        footerLinkFeatures: "Fonctionnalités", footerLinkHowItWorks: "Comment ça marche", footerLinkUseCases: "Cas d’usage", footerLinkDemo: "Démo",
+        footerLinkDetection: "Moteur IA de détection", footerLinkExplainability: "Système d’explicabilité", footerLinkTracking: "Moteur de suivi", footerLinkSimilarity: "Recherche de similarité", footerLinkApi: "Accès API",
+        footerLinkAbout: "À propos", footerLinkResearch: "Recherche", footerLinkBlog: "Blog", footerLinkContact: "Contact", footerLinkReport: "Signaler un deepfake",
+        footerLinkPrivacy: "Politique de confidentialité", footerLinkTerms: "Conditions d’utilisation", footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn",
+        footerCopy: "© 2026 Tracelyt. Tous droits réservés.", footerClose: "Fermer",
+        footerDescFeatures: "Découvrez détection, suivi et explicabilité sur une plateforme unique.",
+        footerDescHowItWorks: "Importez, analysez, puis consultez des résultats clairs.",
+        footerDescUseCases: "Voyez comment journalistes et enquêteurs utilisent Tracelyt.",
+        footerDescDemo: "Essayez Tracelyt avant l’onboarding complet.",
+        footerDescDetection: "Détectez les deepfakes avec une IA entraînée.",
+        footerDescExplainability: "Comprenez pourquoi un contenu est signalé simplement.",
+        footerDescTracking: "Suivez où et comment le contenu se propage en ligne.",
+        footerDescSimilarity: "Trouvez rapidement des médias liés ou réutilisés.",
+        footerDescApi: "Intégrez Tracelyt à vos produits et workflows.",
+        footerDescAbout: "Découvrez la mission et la vision de Tracelyt.",
+        footerDescResearch: "Consultez notre approche et méthodologie en termes simples.",
+        footerDescBlog: "Lisez nos analyses sur l’IA et la sécurité numérique.",
+        footerDescContact: "Contactez-nous pour assistance ou partenariats.",
+        footerDescReport: "Soumettez un contenu suspect ou mal signalé.",
+        footerDescPrivacy: "Voyez comment vos données sont protégées.",
+        footerDescTerms: "Consultez les règles d’utilisation de la plateforme."
+      },
+      de: {
+        footerTag: "Erkennen. Erklären. Schützen.", footerHeadProduct: "Produkt", footerHeadTechnology: "Technologie", footerHeadCompany: "Unternehmen", footerHeadSupport: "Support", footerHeadLegal: "Rechtliches",
+        footerLinkFeatures: "Funktionen", footerLinkHowItWorks: "So funktioniert’s", footerLinkUseCases: "Anwendungsfälle", footerLinkDemo: "Demo",
+        footerLinkDetection: "KI-Erkennungsengine", footerLinkExplainability: "Erklärbarkeits-System", footerLinkTracking: "Tracking-Engine", footerLinkSimilarity: "Ähnlichkeitssuche", footerLinkApi: "API-Zugang",
+        footerLinkAbout: "Über uns", footerLinkResearch: "Forschung", footerLinkBlog: "Blog", footerLinkContact: "Kontakt", footerLinkReport: "Deepfake melden",
+        footerLinkPrivacy: "Datenschutzerklärung", footerLinkTerms: "Nutzungsbedingungen", footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn",
+        footerCopy: "© 2026 Tracelyt. Alle Rechte vorbehalten.", footerClose: "Schließen",
+        footerDescFeatures: "Entdecken Sie Erkennung, Tracking und Erklärbarkeit auf einer Plattform.",
+        footerDescHowItWorks: "Inhalt hochladen, Analyse starten, klare Ergebnisse prüfen.",
+        footerDescUseCases: "Sehen Sie, wie Journalisten und Ermittler Tracelyt einsetzen.",
+        footerDescDemo: "Testen Sie Tracelyt vor dem vollständigen Onboarding.",
+        footerDescDetection: "Erkennen Sie Deepfakes mit trainierter KI.",
+        footerDescExplainability: "Verstehen Sie in klarer Sprache, warum Inhalte markiert werden.",
+        footerDescTracking: "Verfolgen Sie, wie sich Inhalte online verbreiten.",
+        footerDescSimilarity: "Finden Sie ähnliche oder wiederverwendete Medien schnell.",
+        footerDescApi: "Integrieren Sie Tracelyt in Produkte und Workflows.",
+        footerDescAbout: "Erfahren Sie mehr über Tracelyt und unsere Mission.",
+        footerDescResearch: "Lesen Sie Ansatz und Methodik in einfachen Worten.",
+        footerDescBlog: "Aktuelle Einblicke zu KI, Deepfakes und digitaler Sicherheit.",
+        footerDescContact: "Kontaktieren Sie uns für Hilfe oder Anfragen.",
+        footerDescReport: "Melden Sie verdächtige oder falsch markierte Inhalte.",
+        footerDescPrivacy: "Erfahren Sie, wie Daten geschützt und verarbeitet werden.",
+        footerDescTerms: "Prüfen Sie Regeln und Verantwortlichkeiten der Plattform."
+      },
+      zh: {
+        footerTag: "检测・解释・保护。", footerHeadProduct: "产品", footerHeadTechnology: "技术", footerHeadCompany: "公司", footerHeadSupport: "支持", footerHeadLegal: "法律",
+        footerLinkFeatures: "功能", footerLinkHowItWorks: "工作原理", footerLinkUseCases: "使用场景", footerLinkDemo: "演示",
+        footerLinkDetection: "AI 检测引擎", footerLinkExplainability: "可解释系统", footerLinkTracking: "传播追踪引擎", footerLinkSimilarity: "相似内容检索", footerLinkApi: "API 接入",
+        footerLinkAbout: "关于我们", footerLinkResearch: "研究", footerLinkBlog: "博客", footerLinkContact: "联系我们", footerLinkReport: "举报深度伪造",
+        footerLinkPrivacy: "隐私政策", footerLinkTerms: "服务条款", footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn",
+        footerCopy: "© 2026 Tracelyt。保留所有权利。", footerClose: "关闭",
+        footerDescFeatures: "在一个平台中查看检测、追踪与可解释能力。",
+        footerDescHowItWorks: "上传内容，运行分析，查看清晰结果。",
+        footerDescUseCases: "了解记者、调查员与平台如何使用 Tracelyt。",
+        footerDescDemo: "在完整接入前先体验 Tracelyt 演示。",
+        footerDescDetection: "使用训练好的 AI 模型检测深度伪造内容。",
+        footerDescExplainability: "用易懂语言说明内容为何被标记。",
+        footerDescTracking: "追踪内容在网络中的出现与传播。",
+        footerDescSimilarity: "快速找到相关或被复用的媒体内容。",
+        footerDescApi: "将 Tracelyt 集成到你的产品和流程中。",
+        footerDescAbout: "了解 Tracelyt 的使命与定位。",
+        footerDescResearch: "用简明方式查看我们的研究方法。",
+        footerDescBlog: "获取 AI、深度伪造与数字安全洞察。",
+        footerDescContact: "如需支持、咨询或合作，请联系我们。",
+        footerDescReport: "提交可疑或误判内容进行复核。",
+        footerDescPrivacy: "查看用户数据如何被处理与保护。",
+        footerDescTerms: "查看使用本平台的规则与责任。"
+      },
+      ar: {
+        footerTag: "اكشف. اشرح. احمِ.", footerHeadProduct: "المنتج", footerHeadTechnology: "التقنية", footerHeadCompany: "الشركة", footerHeadSupport: "الدعم", footerHeadLegal: "القانوني",
+        footerLinkFeatures: "الميزات", footerLinkHowItWorks: "كيف يعمل", footerLinkUseCases: "حالات الاستخدام", footerLinkDemo: "تجربة",
+        footerLinkDetection: "محرك كشف الذكاء الاصطناعي", footerLinkExplainability: "نظام التفسير", footerLinkTracking: "محرك التتبع", footerLinkSimilarity: "البحث عن التشابه", footerLinkApi: "وصول API",
+        footerLinkAbout: "من نحن", footerLinkResearch: "الأبحاث", footerLinkBlog: "المدونة", footerLinkContact: "تواصل", footerLinkReport: "الإبلاغ عن تزييف عميق",
+        footerLinkPrivacy: "سياسة الخصوصية", footerLinkTerms: "شروط الخدمة", footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn",
+        footerCopy: "© 2026 Tracelyt. جميع الحقوق محفوظة.", footerClose: "إغلاق",
+        footerDescFeatures: "استكشف الكشف والتتبع والتفسير في منصة واحدة.",
+        footerDescHowItWorks: "ارفع المحتوى، شغّل التحليل، وراجع النتائج بوضوح.",
+        footerDescUseCases: "تعرّف كيف يستخدم الصحفيون والمحققون Tracelyt.",
+        footerDescDemo: "جرّب Tracelyt قبل بدء الإعداد الكامل.",
+        footerDescDetection: "اكتشف المحتوى المزيف عبر نماذج ذكاء اصطناعي مدرّبة.",
+        footerDescExplainability: "افهم سبب وضع علامة على المحتوى بلغة بسيطة.",
+        footerDescTracking: "تتبّع ظهور المحتوى وانتشاره عبر الإنترنت.",
+        footerDescSimilarity: "اعثر بسرعة على وسائط مشابهة أو معاد استخدامها.",
+        footerDescApi: "ادمج Tracelyt داخل منتجك وتدفقات العمل لديك.",
+        footerDescAbout: "تعرّف على Tracelyt ورسالتنا.",
+        footerDescResearch: "اقرأ منهجيتنا والأساس التقني بلغة بسيطة.",
+        footerDescBlog: "تابع رؤى حول الذكاء الاصطناعي والأمان الرقمي.",
+        footerDescContact: "تواصل معنا للدعم أو الاستفسارات أو الشراكات.",
+        footerDescReport: "أرسل محتوى مشبوهاً أو مُعلّماً بشكل خاطئ للمراجعة.",
+        footerDescPrivacy: "اطّلع على كيفية التعامل مع بياناتك وحمايتها.",
+        footerDescTerms: "راجع قواعد ومسؤوليات استخدام المنصة."
+      }
+    };
+    Object.assign(footerI18n.en, footerLongContentEn);
+    const footerLongKeys = Object.keys(footerLongContentEn);
+    supportedLangs.forEach(lang=>{
+      if(lang==="en" || !footerI18n[lang]) return;
+      footerLongKeys.forEach(key=>{if(!(key in footerI18n[lang]))footerI18n[lang][key]=footerI18n.en[key]});
+    });
+    Object.assign(footerI18n.hi, {
+      footerDescAbout: "Google Solution Challenge के हिस्से के रूप में विकसित Tracelyt आज की डिजिटल दुनिया की सबसे महत्वपूर्ण चुनौतियों में से एक—डीपफेक गलत सूचना—का जवाब है।\n\nAI-आधारित डिटेक्शन, एक्सप्लेनेबिलिटी और ट्रैकिंग को जोड़कर यह प्लेटफ़ॉर्म ऐसे उपयोगी टूल प्रदान करता है जो छेड़छाड़ किए गए कंटेंट की पहचान और उसके प्रसार को सीमित करने में मदद करते हैं।",
+      footerDescContact: "क्या आपको सहायता चाहिए या कोई प्रश्न है?\n\nहमसे संपर्क करें:\n- Gmail: sohambiswas205@gmail.com\n- GitHub: github.com/bobochan05\n- LinkedIn: linkedin.com/in/soham-biswas-5305b2242/\n\nसपोर्ट, फीडबैक और सहयोग के लिए हम आपकी मदद के लिए उपलब्ध हैं।",
+      footerDescReport: "संदिग्ध या गलत रूप से फ्लैग किए गए कंटेंट की समीक्षा के लिए रिपोर्ट भेजें।\n\nरिपोर्ट के लिए ईमेल करें: sohambiswas205@gmail.com\n\nआपकी रिपोर्ट्स हमारी डिटेक्शन सटीकता और गलत सूचना से लड़ने की क्षमता को बेहतर बनाती हैं।",
+      footerDescPrivacy: `प्राइवेसी पॉलिसी
+
+अंतिम अपडेट: [8.4.2026]
+
+Tracelyt में आपका स्वागत है। आपकी गोपनीयता हमारे लिए महत्वपूर्ण है। यह प्राइवेसी पॉलिसी बताती है कि जब आप हमारे प्लेटफ़ॉर्म का उपयोग करते हैं तो हम आपकी जानकारी कैसे एकत्र, उपयोग, संग्रहीत और सुरक्षित करते हैं।
+
+Tracelyt का उपयोग करके, आप इस नीति में वर्णित प्रक्रियाओं से सहमत होते हैं।
+
+--------------------------------------------------
+
+1. हम कौन-कौन सी जानकारी एकत्र करते हैं
+
+हम निम्न प्रकार की जानकारी एकत्र कर सकते हैं:
+
+a) उपयोगकर्ता जानकारी
+- नाम और ईमेल पता (जब आप साइन अप करते हैं)
+- अकाउंट क्रेडेंशियल्स (एन्क्रिप्टेड)
+
+b) अपलोड किया गया कंटेंट
+- विश्लेषण के लिए अपलोड की गई इमेज, वीडियो या मीडिया फ़ाइलें
+- डिटेक्शन और ट्रैकिंग के लिए सबमिट किए गए URL
+
+c) उपयोग डेटा
+- देखे गए पेज
+- उपयोग किए गए फीचर्स
+- इंटरैक्शन लॉग्स (सिस्टम सुधार हेतु)
+
+d) तकनीकी डेटा
+- IP एड्रेस
+- ब्राउज़र प्रकार और डिवाइस जानकारी
+- बेसिक एनालिटिक्स डेटा
+
+--------------------------------------------------
+
+2. आपकी जानकारी का उपयोग कैसे करते हैं
+
+हम आपके डेटा का उपयोग निम्न के लिए करते हैं:
+
+- डीपफेक डिटेक्शन और विश्लेषण सेवाएँ प्रदान करना
+- AI मॉडल्स की सटीकता और प्रदर्शन सुधारना
+- उपयोगकर्ता अनुभव और प्लेटफ़ॉर्म कार्यक्षमता बेहतर बनाना
+- उपयोगकर्ता प्रश्नों और सपोर्ट अनुरोधों का उत्तर देना
+- सुरक्षा सुनिश्चित करना और प्लेटफ़ॉर्म के दुरुपयोग को रोकना
+
+--------------------------------------------------
+
+3. अपलोडेड मीडिया और कंटेंट
+
+- अपलोड किया गया मीडिया विश्लेषण के लिए प्रोसेस होता है और अस्थायी रूप से स्टोर हो सकता है।
+- हम आपके कंटेंट पर स्वामित्व का दावा नहीं करते।
+- सिस्टम प्रदर्शन सुधार हेतु कंटेंट का अनाम (anonymized) रूप में उपयोग हो सकता है।
+- संवेदनशील या निजी मीडिया अपलोड करते समय सावधानी रखें।
+
+--------------------------------------------------
+
+4. डेटा स्टोरेज और सुरक्षा
+
+हम आपके डेटा की सुरक्षा के लिए उचित उपाय अपनाते हैं:
+
+- सुरक्षित स्टोरेज और एन्क्रिप्शन प्रथाएँ
+- संवेदनशील जानकारी पर सीमित एक्सेस
+- कमजोरियों की नियमित निगरानी
+
+फिर भी, कोई भी सिस्टम पूरी तरह सुरक्षित नहीं होता, इसलिए पूर्ण सुरक्षा की गारंटी नहीं दी जा सकती।
+
+--------------------------------------------------
+
+5. डेटा शेयरिंग
+
+हम आपका व्यक्तिगत डेटा बेचते नहीं हैं।
+
+हम केवल निम्न स्थितियों में डेटा साझा कर सकते हैं:
+- कानूनी दायित्वों का पालन करने हेतु
+- धोखाधड़ी या दुरुपयोग रोकने हेतु
+- विश्वसनीय सेवा प्रदाताओं (जैसे होस्टिंग या एनालिटिक्स) के साथ, सख्त गोपनीयता के तहत
+
+--------------------------------------------------
+
+6. कुकीज़ और ट्रैकिंग
+
+Tracelyt कुकीज़ या समान तकनीकों का उपयोग कर सकता है:
+- उपयोगकर्ता अनुभव बेहतर करने हेतु
+- उपयोग पैटर्न समझने हेतु
+- सेशन डेटा बनाए रखने हेतु
+
+आप अपने ब्राउज़र सेटिंग्स से कुकीज़ नियंत्रित कर सकते हैं।
+
+--------------------------------------------------
+
+7. आपके अधिकार
+
+आपको अधिकार है:
+- अपने व्यक्तिगत डेटा तक पहुँच प्राप्त करने का
+- अपने डेटा को हटाने का अनुरोध करने का
+- अपनी जानकारी अपडेट या सुधारने का
+
+इन अधिकारों का उपयोग करने के लिए संपर्क करें:
+[Email: sohambiswas205@gmail.com]
+
+--------------------------------------------------
+
+8. तृतीय-पक्ष सेवाएँ
+
+हमारा प्लेटफ़ॉर्म तृतीय-पक्ष टूल्स या सेवाओं से जुड़ सकता है। इन सेवाओं की अपनी प्राइवेसी नीतियाँ होती हैं और उनकी प्रक्रियाओं के लिए हम जिम्मेदार नहीं हैं।
+
+--------------------------------------------------
+
+9. इस नीति में बदलाव
+
+हम समय-समय पर इस प्राइवेसी पॉलिसी को अपडेट कर सकते हैं। परिवर्तन इस पेज पर अपडेटेड तारीख के साथ प्रकाशित किए जाएंगे।
+
+--------------------------------------------------
+
+10. संपर्क करें
+
+यदि इस प्राइवेसी पॉलिसी के बारे में आपके कोई प्रश्न हैं, तो संपर्क करें:
+
+[Email: sohambiswas205@gmail.com]
+
+--------------------------------------------------
+
+Tracelyt का उपयोग करके, आप स्वीकार करते हैं कि आपने इस प्राइवेसी पॉलिसी को पढ़ा और समझा है।`,
+      footerDescTerms: `सेवा की शर्तें
+
+अंतिम अपडेट: [8.4.2026]
+
+Tracelyt में आपका स्वागत है। ये सेवा की शर्तें ("Terms") Tracelyt प्लेटफ़ॉर्म तक आपकी पहुँच और उपयोग को नियंत्रित करती हैं।
+
+Tracelyt का उपयोग करके, आप इन शर्तों से बंधने के लिए सहमत होते हैं। यदि आप सहमत नहीं हैं, तो कृपया प्लेटफ़ॉर्म का उपयोग न करें।
+
+--------------------------------------------------
+
+1. प्लेटफ़ॉर्म का उपयोग
+
+Tracelyt डीपफेक मीडिया के डिटेक्शन, विश्लेषण और ट्रैकिंग के लिए AI-सक्षम टूल्स प्रदान करता है।
+
+आप सहमत हैं कि प्लेटफ़ॉर्म का उपयोग केवल वैध उद्देश्यों के लिए और इन शर्तों के अनुसार करेंगे।
+
+आपको निम्न कार्य नहीं करने हैं:
+- प्लेटफ़ॉर्म का उपयोग किसी अवैध या हानिकारक गतिविधि के लिए
+- ऐसा कंटेंट अपलोड करना जो कानून या दूसरों के अधिकारों का उल्लंघन करे
+- सिस्टम का दुरुपयोग, रिवर्स-इंजीनियरिंग या बाधित करने का प्रयास
+
+--------------------------------------------------
+
+2. उपयोगकर्ता खाते
+
+कुछ फीचर्स के लिए आपको अकाउंट बनाना पड़ सकता है।
+
+आप निम्न के लिए जिम्मेदार हैं:
+- अपने लॉगिन क्रेडेंशियल्स की गोपनीयता बनाए रखना
+- आपके अकाउंट के अंतर्गत होने वाली सभी गतिविधियाँ
+
+इन शर्तों का उल्लंघन होने पर Tracelyt अकाउंट निलंबित या समाप्त कर सकता है।
+
+--------------------------------------------------
+
+3. उपयोगकर्ता कंटेंट
+
+आप अपने अपलोड किए गए कंटेंट के स्वामी बने रहते हैं।
+
+कंटेंट अपलोड करके, आप Tracelyt को सीमित अधिकार देते हैं:
+- कंटेंट प्रोसेस और विश्लेषित करने का
+- सिस्टम प्रदर्शन सुधार हेतु अनाम डेटा का उपयोग करने का
+
+आपकी जिम्मेदारी है कि आपके पास कंटेंट अपलोड और उपयोग करने का अधिकार हो।
+
+--------------------------------------------------
+
+4. प्लेटफ़ॉर्म कार्यक्षमता
+
+Tracelyt AI मॉडल्स पर आधारित विश्लेषण प्रदान करता है। हम सटीकता के लिए प्रयास करते हैं, फिर भी:
+
+- परिणाम हमेशा पूर्ण या अंतिम नहीं हो सकते
+- महत्वपूर्ण निर्णयों के लिए केवल प्लेटफ़ॉर्म पर निर्भर नहीं रहना चाहिए
+
+परिणामों का उपयोग मार्गदर्शन के रूप में करें, पूर्ण प्रमाण के रूप में नहीं।
+
+--------------------------------------------------
+
+5. निषिद्ध उपयोग
+
+आप सहमत हैं कि आप यह नहीं करेंगे:
+
+- दुर्भावनापूर्ण, हानिकारक या अवैध कंटेंट अपलोड
+- सिस्टम सीमाओं या सुरक्षा को बायपास करने का प्रयास
+- गलत सूचना बनाने या फैलाने के लिए प्लेटफ़ॉर्म का उपयोग
+- प्लेटफ़ॉर्म संचालन या इन्फ्रास्ट्रक्चर में हस्तक्षेप
+
+--------------------------------------------------
+
+6. बौद्धिक संपदा
+
+प्लेटफ़ॉर्म की सभी सामग्री, डिज़ाइन और तकनीक (उपयोगकर्ता अपलोड को छोड़कर) Tracelyt की संपत्ति है।
+
+बिना अनुमति प्लेटफ़ॉर्म के किसी भी हिस्से की कॉपी, वितरण या पुन: उपयोग नहीं किया जा सकता।
+
+--------------------------------------------------
+
+7. दायित्व की सीमा
+
+Tracelyt "as is" आधार पर बिना किसी वारंटी के प्रदान किया जाता है।
+
+हम निम्न के लिए जिम्मेदार नहीं हैं:
+- डिटेक्शन परिणामों में त्रुटियाँ या असंगतियाँ
+- डेटा या कंटेंट का नुकसान
+- प्लेटफ़ॉर्म के उपयोग से होने वाली कोई भी क्षति
+
+प्लेटफ़ॉर्म का उपयोग अपने जोखिम पर करें।
+
+--------------------------------------------------
+
+8. समाप्ति
+
+हम आपकी पहुँच निलंबित या समाप्त कर सकते हैं यदि:
+- आप इन शर्तों का उल्लंघन करते हैं
+- आप प्लेटफ़ॉर्म का दुरुपयोग करते हैं
+
+आप किसी भी समय प्लेटफ़ॉर्म का उपयोग बंद कर सकते हैं।
+
+--------------------------------------------------
+
+9. शर्तों में बदलाव
+
+हम समय-समय पर इन शर्तों को अपडेट कर सकते हैं। प्लेटफ़ॉर्म का निरंतर उपयोग अपडेटेड शर्तों की स्वीकृति माना जाएगा।
+
+--------------------------------------------------
+
+10. लागू कानून
+
+ये शर्तें आपके क्षेत्राधिकार में लागू कानूनों के अधीन हैं।
+
+--------------------------------------------------
+
+11. संपर्क
+
+इन शर्तों से संबंधित प्रश्नों के लिए संपर्क करें:
+
+Email: sohambiswas205@gmail.com
+
+--------------------------------------------------
+
+Tracelyt का उपयोग करके, आप स्वीकार करते हैं कि आपने इन सेवा शर्तों को पढ़ा, समझा और स्वीकार किया है।`
+    });
+    const heroNames = { en:"Tracelyt", hi:"ट्रेसलिट", es:"Tracelyt", fr:"Tracelyt", de:"Tracelyt", zh:"追踪盾", ar:"تراسيليت" };
+    const i18n = {
+      en:{heroName:"Tracelyt",heroTagline:"Detect. Explain. Protect.",valuePrefix:"What we do",valueBody:"From detection to tracking, Tracelyt gives you complete visibility into deepfake content and its impact...",startDemo:"Get Started",login:"Login",signup:"Signup",startAnalysis:"Start Analysis",seeWorkflow:"See Workflow",modelStatus:"Model Status",uploadTitle:"Tracelyt in Action",uploadSub:"From detection to tracking, Tracelyt gives you complete visibility into deepfake content and its impact.",chooseFile:"Choose File",selectedNone:"Selected: none",noMedia:"No media selected",analyzeContent:"Analyze content",viewTechnical:"View Technical Details",loading:"Analyzing content...",noResult:"No result yet.",awaiting:"Awaiting detection result",awaitingSub:"Run analysis to reveal FAKE/REAL verdict, confidence score, and explanation.",techTitle:"Technical Insights",tabOverview:"Overview",tabTechnical:"Technical",tabEvidence:"Evidence",tabOverviewText:"Overview summarizes confidence band, model reasoning, and practical verdict context.",tabAnalysisText:"Fusion pipeline combines CLIP, EfficientNet, DINO, and FFT-informed features before final classification.",tabEvidenceText:"Top source matches: news-share.net (91%), clipburst.media (88%), mirrorwire.co (81%).",spread:"Spread Over Time",totalSources:"Total sources: 184",newSources:"New sources: +26",statusViral:"Status: Viral",alertsTitle:"Priority Alerts",activityTitle:"Activity Feed",alertHigh:"<b style='color:var(--bad)'>High</b> Coordinated reposting spike",alertMedium:"<b style='color:var(--warn)'>Medium</b> New domain cluster match",alertLow:"<b style='color:var(--ok)'>Low</b> Threshold update notice",activity1:"+3 new sources detected",activity2:"Case marked viral",activity3:"Evidence overlay refreshed",activity4:"Manual review requested",settingsTitle:"Controls and Settings",setThemeLabel:"Theme",setApiLabel:"API usage",setRiskLabel:"Risk threshold",finalTitle:"Monitor deepfake spread in real time",finalSub:"From first detection to propagation tracking, this full-screen flow keeps focus on what matters for high-risk content operations.",startTracking:"Start Tracking",assistant:"Assistant",assistantMsg1:"This case is spreading quickly. Want the strongest evidence summary?",assistantMsg2:"Yes, explain it clearly.",assistantMsg3:"Top signal is facial geometry instability supported by frequency artifacts.",authTitle:"Log In to Your Account",authSub:"Log in to your account and continue your secure media verification workflow.",orContinue:"Or continue with",emailLabel:"Email",emailPlaceholder:"Enter Email",authLoginLabel:"Login",signupPrompt:"Don’t have an account?",socialGoogle:"Continue with Google",socialEmail:"Continue with Email",socialGuest:"Continue in Guest Mode",close:"Close",guestUsage:"Guest: {used}/{total} used",selectedFile:"Selected: {name}",audioSelected:"Audio file selected: {name}",confidence:"{value}% confidence",noSummary:"No summary returned.",error:"ERROR",analysisFailed:"Analysis failed",themeDark:"Dark",themeLight:"Light",themeMidnight:"Midnight",themeBlue:"Blue"},
+      hi:{heroTagline:"डिटेक्ट. एक्सप्लेन. प्रोटेक्ट.",login:"लॉगिन",signup:"साइनअप",startAnalysis:"विश्लेषण शुरू करें",seeWorkflow:"वर्कफ़्लो देखें",modelStatus:"मॉडल स्थिति",uploadTitle:"विश्लेषण के लिए मीडिया अपलोड करें",uploadSub:"इमेज, वीडियो या ऑडियो ड्रैग-ड्रॉप करें और यहीं से डिटेक्शन शुरू करें।",chooseFile:"फ़ाइल चुनें",selectedNone:"चयनित: कोई नहीं",noMedia:"कोई मीडिया चयनित नहीं",analyzeContent:"कंटेंट विश्लेषित करें",viewTechnical:"तकनीकी विवरण देखें",loading:"कंटेंट का विश्लेषण हो रहा है...",noResult:"अभी कोई परिणाम नहीं।",awaiting:"डिटेक्शन परिणाम की प्रतीक्षा",awaitingSub:"FAKE/REAL परिणाम, कॉन्फिडेंस स्कोर और व्याख्या देखने के लिए विश्लेषण चलाएँ।",techTitle:"तकनीकी इनसाइट्स",tabOverview:"ओवरव्यू",tabTechnical:"टेक्निकल",tabEvidence:"एविडेंस",tabOverviewText:"ओवरव्यू में कॉन्फिडेंस, मॉडल कारण और व्यावहारिक निष्कर्ष शामिल हैं।",tabAnalysisText:"फ्यूज़न पाइपलाइन CLIP, EfficientNet, DINO और FFT फीचर्स को जोड़कर वर्गीकरण करती है।",tabEvidenceText:"शीर्ष स्रोत मिलान: news-share.net (91%), clipburst.media (88%), mirrorwire.co (81%).",spread:"समय के साथ प्रसार",totalSources:"कुल स्रोत: 184",newSources:"नए स्रोत: +26",statusViral:"स्थिति: वायरल",alertsTitle:"प्राथमिकता अलर्ट",activityTitle:"एक्टिविटी फ़ीड",alertHigh:"<b style='color:var(--bad)'>उच्च</b> समन्वित रीपोस्टिंग स्पाइक",alertMedium:"<b style='color:var(--warn)'>मध्यम</b> नया डोमेन क्लस्टर मैच",alertLow:"<b style='color:var(--ok)'>निम्न</b> थ्रेशोल्ड अपडेट सूचना",activity1:"+3 नए स्रोत पाए गए",activity2:"केस को वायरल चिह्नित किया गया",activity3:"एविडेंस ओवरले रीफ़्रेश हुआ",activity4:"मैन्युअल समीक्षा का अनुरोध",settingsTitle:"कंट्रोल्स और सेटिंग्स",setThemeLabel:"थीम",setApiLabel:"API उपयोग",setRiskLabel:"जोखिम सीमा",finalTitle:"रीयल टाइम में डीपफेक प्रसार मॉनिटर करें",finalSub:"पहले डिटेक्शन से लेकर प्रसार ट्रैकिंग तक, यह फ्लो उच्च-जोखिम कंटेंट पर फोकस बनाए रखता है।",startTracking:"ट्रैकिंग शुरू करें",assistant:"सहायक",assistantMsg1:"यह केस तेज़ी से फैल रहा है। क्या सबसे मज़बूत प्रमाण सारांश चाहिए?",assistantMsg2:"हाँ, साफ़-साफ़ समझाइए।",assistantMsg3:"शीर्ष संकेत चेहरे की ज्यामिति अस्थिरता और फ्रीक्वेंसी आर्टिफैक्ट्स हैं।",authTitle:"लॉगिन / साइनअप",authSub:"Google, GitHub, LinkedIn, Email या Guest mode।",socialGoogle:"Google से जारी रखें",socialGithub:"GitHub से जारी रखें",socialLinkedIn:"LinkedIn से जारी रखें",socialEmail:"Email से जारी रखें",socialGuest:"Guest मोड में जारी रखें",close:"बंद करें",guestUsage:"गेस्ट: {used}/{total} उपयोग",selectedFile:"चयनित: {name}",audioSelected:"ऑडियो फ़ाइल चयनित: {name}",confidence:"{value}% कॉन्फिडेंस",noSummary:"कोई सारांश उपलब्ध नहीं।",error:"त्रुटि",analysisFailed:"विश्लेषण विफल",themeDark:"डार्क",themeLight:"लाइट",themeMidnight:"मिडनाइट",themeBlue:"ब्लू"},
+      es:{heroTagline:"Detecta. Explica. Protege.",login:"Iniciar sesión",signup:"Registrarse",startAnalysis:"Iniciar análisis",seeWorkflow:"Ver flujo",modelStatus:"Estado del modelo",uploadTitle:"Sube medios para análisis",uploadSub:"Arrastra y suelta imagen, video o audio e inicia la detección aquí mismo.",chooseFile:"Elegir archivo",selectedNone:"Seleccionado: ninguno",noMedia:"Ningún medio seleccionado",analyzeContent:"Analizar contenido",viewTechnical:"Ver detalles técnicos",loading:"Analizando contenido...",noResult:"Aún no hay resultado.",awaiting:"Esperando resultado de detección",awaitingSub:"Ejecuta el análisis para ver FAKE/REAL, confianza y explicación.",techTitle:"Información técnica",tabOverview:"Resumen",tabTechnical:"Técnico",tabEvidence:"Evidencia",tabOverviewText:"El resumen muestra banda de confianza, razonamiento del modelo y contexto del veredicto.",tabAnalysisText:"La canalización combina CLIP, EfficientNet, DINO y características FFT antes de clasificar.",tabEvidenceText:"Principales coincidencias: news-share.net (91%), clipburst.media (88%), mirrorwire.co (81%).",spread:"Propagación en el tiempo",totalSources:"Fuentes totales: 184",newSources:"Fuentes nuevas: +26",statusViral:"Estado: Viral",alertsTitle:"Alertas prioritarias",activityTitle:"Actividad en vivo",alertHigh:"<b style='color:var(--bad)'>Alta</b> Pico de republicación coordinada",alertMedium:"<b style='color:var(--warn)'>Media</b> Nueva coincidencia de clúster de dominios",alertLow:"<b style='color:var(--ok)'>Baja</b> Aviso de actualización de umbral",activity1:"+3 nuevas fuentes detectadas",activity2:"Caso marcado como viral",activity3:"Superposición de evidencia actualizada",activity4:"Revisión manual solicitada",settingsTitle:"Controles y ajustes",setThemeLabel:"Tema",setApiLabel:"Uso de API",setRiskLabel:"Umbral de riesgo",finalTitle:"Monitorea la propagación deepfake en tiempo real",finalSub:"Desde la detección inicial hasta el seguimiento de propagación, este flujo mantiene el foco en lo importante.",startTracking:"Iniciar seguimiento",assistant:"Asistente",assistantMsg1:"Este caso se está propagando rápido. ¿Quieres el resumen de evidencia más fuerte?",assistantMsg2:"Sí, explícalo claramente.",assistantMsg3:"La señal principal es la inestabilidad geométrica facial con artefactos de frecuencia.",authTitle:"Iniciar sesión / Registro",authSub:"Google, GitHub, LinkedIn, Email o modo invitado.",socialGoogle:"Continuar con Google",socialGithub:"Continuar con GitHub",socialLinkedIn:"Continuar con LinkedIn",socialEmail:"Continuar con Email",socialGuest:"Continuar como invitado",close:"Cerrar",guestUsage:"Invitado: {used}/{total} usados",selectedFile:"Seleccionado: {name}",audioSelected:"Audio seleccionado: {name}",confidence:"{value}% de confianza",noSummary:"No se devolvió resumen.",error:"ERROR",analysisFailed:"Análisis fallido",themeDark:"Oscuro",themeLight:"Claro",themeMidnight:"Medianoche",themeBlue:"Azul"},
+      fr:{heroTagline:"Détecter. Expliquer. Protéger.",login:"Connexion",signup:"Inscription",startAnalysis:"Démarrer l’analyse",seeWorkflow:"Voir le flux",modelStatus:"État du modèle",uploadTitle:"Téléverser un média pour l’analyse",uploadSub:"Glissez-déposez une image, vidéo ou audio et lancez la détection ici.",chooseFile:"Choisir un fichier",selectedNone:"Sélectionné : aucun",noMedia:"Aucun média sélectionné",analyzeContent:"Analyser le contenu",viewTechnical:"Voir les détails techniques",loading:"Analyse du contenu...",noResult:"Aucun résultat pour le moment.",awaiting:"En attente du résultat",awaitingSub:"Lancez l’analyse pour afficher FAKE/REAL, confiance et explication.",techTitle:"Informations techniques",tabOverview:"Aperçu",tabTechnical:"Technique",tabEvidence:"Preuves",tabOverviewText:"L’aperçu résume la confiance, le raisonnement du modèle et le contexte du verdict.",tabAnalysisText:"Le pipeline fusionne CLIP, EfficientNet, DINO et des signaux FFT avant la classification.",tabEvidenceText:"Sources correspondantes : news-share.net (91%), clipburst.media (88%), mirrorwire.co (81%).",spread:"Propagation dans le temps",totalSources:"Sources totales : 184",newSources:"Nouvelles sources : +26",statusViral:"Statut : Viral",alertsTitle:"Alertes prioritaires",activityTitle:"Flux d’activité",alertHigh:"<b style='color:var(--bad)'>Élevée</b> Pic de republication coordonnée",alertMedium:"<b style='color:var(--warn)'>Moyenne</b> Nouveau cluster de domaines",alertLow:"<b style='color:var(--ok)'>Faible</b> Mise à jour du seuil",activity1:"+3 nouvelles sources détectées",activity2:"Cas marqué viral",activity3:"Superposition de preuves mise à jour",activity4:"Revue manuelle demandée",settingsTitle:"Contrôles et paramètres",setThemeLabel:"Thème",setApiLabel:"Utilisation API",setRiskLabel:"Seuil de risque",finalTitle:"Surveillez la propagation deepfake en temps réel",finalSub:"De la première détection au suivi de propagation, ce flux garde l’attention sur l’essentiel.",startTracking:"Démarrer le suivi",assistant:"Assistant",assistantMsg1:"Ce cas se propage rapidement. Voulez-vous le résumé de preuve le plus fort ?",assistantMsg2:"Oui, explique clairement.",assistantMsg3:"Le signal principal est l’instabilité géométrique du visage avec des artefacts fréquentiels.",authTitle:"Connexion / Inscription",authSub:"Google, GitHub, LinkedIn, Email, ou mode invité.",socialGoogle:"Continuer avec Google",socialGithub:"Continuer avec GitHub",socialLinkedIn:"Continuer avec LinkedIn",socialEmail:"Continuer avec Email",socialGuest:"Continuer en mode invité",close:"Fermer",guestUsage:"Invité : {used}/{total} utilisés",selectedFile:"Sélectionné : {name}",audioSelected:"Fichier audio sélectionné : {name}",confidence:"{value}% de confiance",noSummary:"Aucun résumé renvoyé.",error:"ERREUR",analysisFailed:"Échec de l’analyse",themeDark:"Sombre",themeLight:"Clair",themeMidnight:"Minuit",themeBlue:"Bleu"},
+      de:{heroTagline:"Erkennen. Erklären. Schützen.",login:"Anmelden",signup:"Registrieren",startAnalysis:"Analyse starten",seeWorkflow:"Ablauf ansehen",modelStatus:"Modellstatus",uploadTitle:"Medien zur Analyse hochladen",uploadSub:"Bild, Video oder Audio per Drag-and-drop hochladen und Analyse starten.",chooseFile:"Datei wählen",selectedNone:"Ausgewählt: keine",noMedia:"Keine Medien ausgewählt",analyzeContent:"Inhalt analysieren",viewTechnical:"Technische Details",loading:"Inhalt wird analysiert...",noResult:"Noch kein Ergebnis.",awaiting:"Warte auf Erkennungsergebnis",awaitingSub:"Analyse ausführen, um FAKE/REAL, Konfidenz und Erklärung zu sehen.",techTitle:"Technische Einblicke",tabOverview:"Überblick",tabTechnical:"Technik",tabEvidence:"Belege",tabOverviewText:"Der Überblick fasst Konfidenz, Modellbegründung und Urteilskontext zusammen.",tabAnalysisText:"Die Pipeline kombiniert CLIP, EfficientNet, DINO und FFT-Merkmale vor der Klassifikation.",tabEvidenceText:"Top-Quellen: news-share.net (91%), clipburst.media (88%), mirrorwire.co (81%).",spread:"Verbreitung im Zeitverlauf",totalSources:"Gesamtquellen: 184",newSources:"Neue Quellen: +26",statusViral:"Status: Viral",alertsTitle:"Prioritätswarnungen",activityTitle:"Aktivitäts-Feed",alertHigh:"<b style='color:var(--bad)'>Hoch</b> Koordinierter Reposting-Anstieg",alertMedium:"<b style='color:var(--warn)'>Mittel</b> Neuer Domain-Cluster-Treffer",alertLow:"<b style='color:var(--ok)'>Niedrig</b> Schwellenwert-Update",activity1:"+3 neue Quellen erkannt",activity2:"Fall als viral markiert",activity3:"Evidenz-Overlay aktualisiert",activity4:"Manuelle Prüfung angefordert",settingsTitle:"Steuerung und Einstellungen",setThemeLabel:"Thema",setApiLabel:"API-Nutzung",setRiskLabel:"Risikoschwelle",finalTitle:"Deepfake-Verbreitung in Echtzeit überwachen",finalSub:"Von der Erst-Erkennung bis zum Verbreitungs-Tracking behält dieser Ablauf das Wesentliche im Fokus.",startTracking:"Tracking starten",assistant:"Assistent",assistantMsg1:"Dieser Fall verbreitet sich schnell. Soll ich die stärkste Evidenz zusammenfassen?",assistantMsg2:"Ja, bitte klar erklären.",assistantMsg3:"Top-Signal ist geometrische Gesichtsinstabilität mit Frequenzartefakten.",authTitle:"Anmelden / Registrieren",authSub:"Google, GitHub, LinkedIn, Email oder Gastmodus.",socialGoogle:"Mit Google fortfahren",socialGithub:"Mit GitHub fortfahren",socialLinkedIn:"Mit LinkedIn fortfahren",socialEmail:"Mit Email fortfahren",socialGuest:"Im Gastmodus fortfahren",close:"Schließen",guestUsage:"Gast: {used}/{total} verwendet",selectedFile:"Ausgewählt: {name}",audioSelected:"Audiodatei ausgewählt: {name}",confidence:"{value}% Konfidenz",noSummary:"Keine Zusammenfassung zurückgegeben.",error:"FEHLER",analysisFailed:"Analyse fehlgeschlagen",themeDark:"Dunkel",themeLight:"Hell",themeMidnight:"Mitternacht",themeBlue:"Blau"},
+      zh:{heroTagline:"检测。解释。防护。",login:"登录",signup:"注册",startAnalysis:"开始分析",seeWorkflow:"查看流程",modelStatus:"模型状态",uploadTitle:"上传媒体进行分析",uploadSub:"拖拽上传图片、视频或音频，并在当前页面启动检测。",chooseFile:"选择文件",selectedNone:"已选择：无",noMedia:"未选择媒体",analyzeContent:"分析内容",viewTechnical:"查看技术细节",loading:"正在分析内容...",noResult:"暂无结果。",awaiting:"等待检测结果",awaitingSub:"运行分析以查看 FAKE/REAL、置信度和解释。",techTitle:"技术洞察",tabOverview:"概览",tabTechnical:"技术",tabEvidence:"证据",tabOverviewText:"概览总结置信区间、模型推理与结论上下文。",tabAnalysisText:"融合管线结合 CLIP、EfficientNet、DINO 和 FFT 特征后进行分类。",tabEvidenceText:"主要来源匹配：news-share.net (91%), clipburst.media (88%), mirrorwire.co (81%).",spread:"传播趋势",totalSources:"来源总数：184",newSources:"新增来源：+26",statusViral:"状态：病毒式传播",alertsTitle:"优先级告警",activityTitle:"活动动态",alertHigh:"<b style='color:var(--bad)'>高</b> 协同转发激增",alertMedium:"<b style='color:var(--warn)'>中</b> 新域名簇匹配",alertLow:"<b style='color:var(--ok)'>低</b> 阈值更新通知",activity1:"+3 个新来源已检测",activity2:"案例已标记为病毒式传播",activity3:"证据图层已刷新",activity4:"已请求人工复核",settingsTitle:"控制与设置",setThemeLabel:"主题",setApiLabel:"API 用量",setRiskLabel:"风险阈值",finalTitle:"实时监控深度伪造传播",finalSub:"从首次检测到传播追踪，全屏流程始终聚焦高风险内容。",startTracking:"开始追踪",assistant:"助手",assistantMsg1:"该案例传播很快，需要最强证据摘要吗？",assistantMsg2:"好的，请清晰说明。",assistantMsg3:"首要信号是面部几何不稳定并伴随频域伪影。",authTitle:"登录 / 注册",authSub:"Google、GitHub、LinkedIn、Email 或游客模式。",socialGoogle:"使用 Google 继续",socialGithub:"使用 GitHub 继续",socialLinkedIn:"使用 LinkedIn 继续",socialEmail:"使用 Email 继续",socialGuest:"以游客模式继续",close:"关闭",guestUsage:"游客：已用 {used}/{total}",selectedFile:"已选择：{name}",audioSelected:"已选择音频文件：{name}",confidence:"置信度 {value}%",noSummary:"未返回摘要。",error:"错误",analysisFailed:"分析失败",themeDark:"深色",themeLight:"浅色",themeMidnight:"午夜",themeBlue:"蓝色"},
+      ar:{heroTagline:"اكشف. اشرح. احمِ.",login:"تسجيل الدخول",signup:"إنشاء حساب",startAnalysis:"بدء التحليل",seeWorkflow:"عرض التدفق",modelStatus:"حالة النماذج",uploadTitle:"ارفع الوسائط للتحليل",uploadSub:"اسحب وأفلت صورة أو فيديو أو صوت وابدأ الكشف مباشرة.",chooseFile:"اختر ملفًا",selectedNone:"المحدد: لا شيء",noMedia:"لا توجد وسائط محددة",analyzeContent:"تحليل المحتوى",viewTechnical:"عرض التفاصيل التقنية",loading:"جارٍ تحليل المحتوى...",noResult:"لا توجد نتيجة بعد.",awaiting:"بانتظار نتيجة الكشف",awaitingSub:"شغّل التحليل لإظهار FAKE/REAL ونسبة الثقة والتفسير.",techTitle:"رؤى تقنية",tabOverview:"نظرة عامة",tabTechnical:"تقني",tabEvidence:"الأدلة",tabOverviewText:"تعرض النظرة العامة نطاق الثقة ومنطق النموذج وسياق الحكم.",tabAnalysisText:"تجمع المنظومة CLIP وEfficientNet وDINO وميزات FFT قبل التصنيف.",tabEvidenceText:"أفضل المطابقات: news-share.net (91%)، clipburst.media (88%)، mirrorwire.co (81%).",spread:"الانتشار عبر الزمن",totalSources:"إجمالي المصادر: 184",newSources:"مصادر جديدة: +26",statusViral:"الحالة: فيروسي",alertsTitle:"تنبيهات الأولوية",activityTitle:"سجل النشاط",alertHigh:"<b style='color:var(--bad)'>عالية</b> ارتفاع منسق في إعادة النشر",alertMedium:"<b style='color:var(--warn)'>متوسطة</b> تطابق جديد لمجموعة نطاقات",alertLow:"<b style='color:var(--ok)'>منخفضة</b> إشعار تحديث العتبة",activity1:"+3 مصادر جديدة تم اكتشافها",activity2:"تم وسم الحالة كفيروسية",activity3:"تم تحديث طبقة الأدلة",activity4:"تم طلب مراجعة يدوية",settingsTitle:"عناصر التحكم والإعدادات",setThemeLabel:"السمة",setApiLabel:"استخدام API",setRiskLabel:"عتبة المخاطر",finalTitle:"راقب انتشار التزييف العميق في الوقت الفعلي",finalSub:"من أول كشف حتى تتبع الانتشار، يحافظ هذا التدفق على التركيز في المحتوى عالي الخطورة.",startTracking:"بدء التتبع",assistant:"المساعد",assistantMsg1:"هذه الحالة تنتشر بسرعة. هل تريد أقوى ملخص للأدلة؟",assistantMsg2:"نعم، اشرحها بوضوح.",assistantMsg3:"الإشارة الأقوى هي عدم استقرار هندسة الوجه مع آثار ترددية.",authTitle:"تسجيل الدخول / إنشاء حساب",authSub:"Google وGitHub وLinkedIn وEmail أو وضع الضيف.",socialGoogle:"المتابعة عبر Google",socialGithub:"المتابعة عبر GitHub",socialLinkedIn:"المتابعة عبر LinkedIn",socialEmail:"المتابعة عبر Email",socialGuest:"المتابعة كضيف",close:"إغلاق",guestUsage:"ضيف: {used}/{total} مستخدم",selectedFile:"المحدد: {name}",audioSelected:"تم اختيار ملف صوتي: {name}",confidence:"ثقة {value}%",noSummary:"لا يوجد ملخص.",error:"خطأ",analysisFailed:"فشل التحليل",themeDark:"داكن",themeLight:"فاتح",themeMidnight:"منتصف الليل",themeBlue:"أزرق"}
+    };
+
+    Object.assign(i18n.hi, { startDemo: "शुरू करें" });
+    Object.assign(i18n.es, { startDemo: "Comenzar" });
+    Object.assign(i18n.fr, { startDemo: "Commencer" });
+    Object.assign(i18n.de, { startDemo: "Starten" });
+    Object.assign(i18n.zh, { startDemo: "开始" });
+    Object.assign(i18n.ar, { startDemo: "ابدأ" });
+
+    Object.assign(footerI18n.hi, { footerSocialGithub: "गिटहब", footerSocialLinkedin: "लिंक्डइन" });
+    Object.assign(footerI18n.es, { footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn" });
+    Object.assign(footerI18n.fr, { footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn" });
+    Object.assign(footerI18n.de, { footerSocialGithub: "GitHub", footerSocialLinkedin: "LinkedIn" });
+    Object.assign(footerI18n.zh, { footerSocialGithub: "GitHub", footerSocialLinkedin: "领英" });
+    Object.assign(footerI18n.ar, { footerSocialGithub: "جيت هب", footerSocialLinkedin: "لينكدإن" });
+
+    const openAuth = () => { if(authModal) authModal.classList.remove("hide"); };
+    const closeAuthModal = () => { if(authModal) authModal.classList.add("hide"); clearAuthStatus(); };
+    const demoUrl = serviceUrl;
+    function clearAuthStatus(){ if(authStatus) authStatus.textContent = ""; }
+    function setAuthStatus(message){ if(authStatus) authStatus.textContent = String(message || ""); }
+    function applyPasswordVisibility(){
+      const reveal = !!(togglePasswords && togglePasswords.checked);
+      if(authPassword) authPassword.type = reveal ? "text" : "password";
+      if(authConfirmPassword) authConfirmPassword.type = reveal ? "text" : "password";
+    }
+    async function parseJsonSafe(response){
+      try{return await response.json();}catch(_error){return {};}
+    }
+    async function refreshAccessToken(){
+      const refreshRes = await fetch("/api/auth/refresh",{method:"POST",credentials:"same-origin"});
+      const refreshData = await parseJsonSafe(refreshRes);
+      if(!refreshRes.ok){return false;}
+      updateSessionStateFromPayload(refreshData);
+      return true;
+    }
+    async function fetchWithAuth(url, options = {}, retryOnExpiry = true){
+      const mergedOptions = Object.assign({credentials:"same-origin"}, options || {});
+      const res = await fetch(url, mergedOptions);
+      const data = await parseJsonSafe(res);
+      if(res.status === 401 && retryOnExpiry && data && data.code === "token_expired"){
+        const refreshed = await refreshAccessToken();
+        if(refreshed){return fetchWithAuth(url, options, false);}
+      }
+      return {res, data};
+    }
+    function setAuthMode(mode){
+      authMode = mode === "signup" ? "signup" : "login";
+      const isSignup = authMode === "signup";
+      if(authTitleEl) authTitleEl.textContent = isSignup ? "Create Your Account" : tr("authTitle");
+      if(authSubEl) authSubEl.textContent = isSignup ? "Sign up to access Tracelyt securely." : tr("authSub");
+      if(authLoginBtn) authLoginBtn.textContent = authMode === "signup" ? tr("signup") : tr("authLoginLabel");
+      if(authSignupLink) authSignupLink.textContent = authMode === "signup" ? tr("login") : tr("signup");
+      if(signupPrompt){
+        signupPrompt.textContent = authMode === "signup" ? "Already have an account?" : tr("signupPrompt");
+      }
+      if(usernameLabel) usernameLabel.style.display = isSignup ? "block" : "none";
+      if(authUsername) authUsername.style.display = isSignup ? "block" : "none";
+      if(confirmPasswordLabel) confirmPasswordLabel.style.display = isSignup ? "block" : "none";
+      if(authConfirmPassword) authConfirmPassword.style.display = isSignup ? "block" : "none";
+      if(!isSignup && authConfirmPassword) authConfirmPassword.value = "";
+      if(!isSignup && authUsername) authUsername.value = "";
+      applyPasswordVisibility();
+      clearAuthStatus();
+    }
+    function goToDemo(){ window.location.href = demoUrl; }
+    function hasServiceAccess(){ return authState === "user" || authState === "guest"; }
+    function updateSessionStateFromPayload(payload){
+      if(!payload || typeof payload !== "object") return;
+      if(typeof payload.auth_state === "string") authState = payload.auth_state;
+      if(Number.isFinite(payload.guest_limit)) freeTotal = payload.guest_limit;
+      if(Number.isFinite(payload.guest_used)) freeUsed = payload.guest_used;
+      setGuestUsage();
+    }
+    async function bootstrapAuthState(){
+      const {res, data} = await fetchWithAuth("/api/auth/session",{method:"GET"},true);
+      if(res.ok && data){ updateSessionStateFromPayload(data); }
+    }
+    function startDemoFlow(){
+      pendingDemoRedirect = true;
+      setAuthMode("login");
+      clearAuthStatus();
+      openAuth();
+    }
+    async function handleEmailAuth(){
+      if(!authEmail || !authPassword) return;
+      const username = String((authUsername && authUsername.value) || "").trim();
+      const email = String(authEmail.value || "").trim();
+      const password = String(authPassword.value || "");
+      const confirmPassword = String((authConfirmPassword && authConfirmPassword.value) || "");
+      if(authMode === "signup" && !username){ setAuthStatus("Enter your username."); return; }
+      if(!email){ setAuthStatus("Enter your gmail address."); return; }
+      if(!password){ setAuthStatus("Enter your password."); return; }
+      if(authMode === "signup" && !confirmPassword){ setAuthStatus("Confirm your password."); return; }
+      if(authMode === "signup" && password !== confirmPassword){ setAuthStatus("Password and confirm password do not match."); return; }
+      const endpoint = authMode === "signup" ? "/api/auth/signup" : "/api/auth/login";
+      const authPayload = authMode === "signup"
+        ? {username, email, password, confirm_password: confirmPassword}
+        : {email, password};
+      try{
+        setAuthStatus("Please wait...");
+        const {res, data} = await fetchWithAuth(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(authPayload)},false);
+        if(!res.ok){ setAuthStatus(data.error || "Authentication failed."); return; }
+        updateSessionStateFromPayload(data);
+        closeAuthModal();
+        pendingDemoRedirect = false;
+        window.location.href = data.redirect_url || serviceUrl;
+      }catch(_error){
+        setAuthStatus("Authentication failed. Try again.");
+      }
+    }
+    async function continueAsGuest(){
+      try{
+        clearAuthStatus();
+        const {res, data} = await fetchWithAuth("/api/auth/guest",{method:"POST"},false);
+        if(!res.ok){ setAuthStatus(data.error || "Could not start guest mode."); return; }
+        updateSessionStateFromPayload(data);
+        closeAuthModal();
+        pendingDemoRedirect = false;
+        window.location.href = data.redirect_url || serviceUrl;
+      }catch(_error){
+        setAuthStatus("Could not start guest mode. Try again.");
+      }
+    }
+    async function handleGoogleAuthResponse(credential){
+      if(!credential){ setAuthStatus("Google authentication was canceled."); return; }
+      setAuthStatus("Please wait...");
+      const {res, data} = await fetchWithAuth("/api/auth/google",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({id_token: credential})
+      },false);
+      if(!res.ok){ setAuthStatus(data.error || "Google login failed."); return; }
+      updateSessionStateFromPayload(data);
+      closeAuthModal();
+      pendingDemoRedirect = false;
+      window.location.href = data.redirect_url || serviceUrl;
+    }
+    function beginGoogleLogin(){
+      if(!googleOauthClientId){ setAuthStatus("Google login is not configured on this server."); return; }
+      if(!window.google || !window.google.accounts || !window.google.accounts.id){
+        setAuthStatus("Google sign-in is unavailable right now. Try email login.");
+        return;
+      }
+      window.google.accounts.id.initialize({
+        client_id: googleOauthClientId,
+        callback: async (response)=>{
+          const credential = response && response.credential ? String(response.credential) : "";
+          await handleGoogleAuthResponse(credential);
+        }
+      });
+      window.google.accounts.id.prompt();
+    }
+    function tr(key){return (i18n[currentLang]&&i18n[currentLang][key])||i18n.en[key]||key}
+    function ftr(key){return (footerI18n[currentLang]&&footerI18n[currentLang][key])||footerI18n.en[key]||key}
+    function format(key,vars={}){return tr(key).replace(/\{(\w+)\}/g,(_,k)=>String(vars[k]??""))}
+    function setText(id,key){const el=document.getElementById(id);if(el)el.textContent=tr(key)}
+    function setFooterText(id,key){const el=document.getElementById(id);if(el)el.textContent=ftr(key)}
+    function setTheme(t){
+      const nextTheme = ["dark","light","midnight","blue"].includes(String(t)) ? String(t) : "dark";
+      document.documentElement.setAttribute("data-theme",nextTheme);
+      if(themeRead)themeRead.textContent=tr("theme"+nextTheme.charAt(0).toUpperCase()+nextTheme.slice(1));
+      themeSelect.value=nextTheme;
+      localStorage.setItem("dg_theme",nextTheme);
+    }
+    function setGuestUsage(){
+      if(!guestChip) return;
+      if(authState === "user"){
+        guestChip.style.display = "none";
+        return;
+      }
+      guestChip.style.display = "";
+      guestChip.textContent = format("guestUsage",{used:freeUsed,total:freeTotal});
+    }
+    function applyTranslations(){
+      document.documentElement.lang=currentLang;
+      document.documentElement.dir=currentLang==="ar"?"rtl":"ltr";
+      const heroTitleEl=document.getElementById("heroTitle"); if(heroTitleEl)heroTitleEl.textContent=heroNames[currentLang]||tr("heroName");
+      setText("heroTagline","heroTagline"); setText("valuePrefix","valuePrefix"); setText("valueBody","valueBody"); setText("startDemoBtn","startDemo"); setText("loginBtn","login"); setText("signupBtn","signup");
+      setText("startAnalysisBtn","startAnalysis"); setText("showFlowBtn","seeWorkflow");
+      setText("modelTitle","modelStatus"); setText("uploadTitle","uploadTitle"); setText("uploadSub","uploadSub");
+      setText("pickBtn","chooseFile"); setText("analyzeBtn","analyzeContent"); setText("viewTechnicalBtn","viewTechnical");
+      setText("loadingText","loading"); setText("resultSummary","noResult"); setText("emptyTitle","awaiting"); setText("emptySub","awaitingSub");
+      setText("techTitle","techTitle"); setText("trackingTitle","spread"); setText("alertsTitle","alertsTitle"); setText("activityTitle","activityTitle");
+      setText("settingsTitle","settingsTitle"); setText("setThemeLabel","setThemeLabel"); setText("setApiLabel","setApiLabel"); setText("setRiskLabel","setRiskLabel");
+      setText("finalTitle","finalTitle"); setText("finalSub","finalSub"); setText("startTrackingBtn","startTracking");
+      setText("assistantBtn","assistant"); setText("assistantMsg1","assistantMsg1"); setText("assistantMsg2","assistantMsg2"); setText("assistantMsg3","assistantMsg3");
+      setText("authTitle","authTitle"); setText("authSub","authSub"); setText("orContinue","orContinue");
+      setText("authLoginBtn","authLoginLabel"); setText("signupPrompt","signupPrompt"); setText("authSignupLink","signup");
+      setText("socialGoogle","socialGoogle"); setText("socialEmail","socialEmail"); setText("socialGuest","socialGuest"); setText("closeAuth","close");
+      if(usernameLabel)usernameLabel.textContent="Username";
+      if(emailLabel)emailLabel.textContent="Gmail";
+      if(passwordLabel)passwordLabel.textContent="Password";
+      if(confirmPasswordLabel)confirmPasswordLabel.textContent="Confirm Password";
+      setFooterText("footerTag","footerTag");
+      setFooterText("footerHeadProduct","footerHeadProduct"); setFooterText("footerHeadTechnology","footerHeadTechnology"); setFooterText("footerHeadCompany","footerHeadCompany");
+      setFooterText("footerHeadSupport","footerHeadSupport"); setFooterText("footerHeadLegal","footerHeadLegal");
+      setFooterText("footerLinkFeatures","footerLinkFeatures"); setFooterText("footerLinkHowItWorks","footerLinkHowItWorks"); setFooterText("footerLinkUseCases","footerLinkUseCases"); setFooterText("footerLinkDemo","footerLinkDemo");
+      setFooterText("footerLinkDetection","footerLinkDetection"); setFooterText("footerLinkExplainability","footerLinkExplainability"); setFooterText("footerLinkTracking","footerLinkTracking"); setFooterText("footerLinkSimilarity","footerLinkSimilarity"); setFooterText("footerLinkApi","footerLinkApi");
+      setFooterText("footerLinkAbout","footerLinkAbout"); setFooterText("footerLinkResearch","footerLinkResearch"); setFooterText("footerLinkBlog","footerLinkBlog");
+      setFooterText("footerLinkContact","footerLinkContact"); setFooterText("footerLinkReport","footerLinkReport");
+      setFooterText("footerLinkPrivacy","footerLinkPrivacy"); setFooterText("footerLinkTerms","footerLinkTerms");
+      setFooterText("footerSocialGithub","footerSocialGithub"); setFooterText("footerSocialLinkedin","footerSocialLinkedin");
+      setFooterText("footerCopy","footerCopy"); setFooterText("footerInfoClose","footerClose");
+      const authEmail=document.getElementById("authEmail"); if(authEmail)authEmail.placeholder="Enter Gmail";
+      if(authUsername)authUsername.placeholder="Enter Username";
+      if(authPassword)authPassword.placeholder="Enter Password";
+      if(authConfirmPassword)authConfirmPassword.placeholder="Confirm Password";
+      if(togglePasswordsLabel)togglePasswordsLabel.textContent="Show passwords";
+      setText("statTotal","totalSources"); setText("statNew","newSources"); setText("statStatus","statusViral");
+      const alertHigh=document.getElementById("alertHigh"), alertMedium=document.getElementById("alertMedium"), alertLow=document.getElementById("alertLow");
+      if(alertHigh)alertHigh.innerHTML=tr("alertHigh"); if(alertMedium)alertMedium.innerHTML=tr("alertMedium"); if(alertLow)alertLow.innerHTML=tr("alertLow");
+      setText("activity1","activity1"); setText("activity2","activity2"); setText("activity3","activity3"); setText("activity4","activity4");
+      if(!selectedFile && selectedName){selectedName.textContent=tr("selectedNone"); const ph=document.getElementById("previewPlaceholder"); if(ph)ph.textContent=tr("noMedia");}
+      const tabOverviewBtn=document.querySelector('[data-tab="overview"]'), tabAnalysisBtn=document.querySelector('[data-tab="analysis"]'), tabEvidenceBtn=document.querySelector('[data-tab="evidence"]');
+      if(tabOverviewBtn)tabOverviewBtn.textContent=tr("tabOverview");
+      if(tabAnalysisBtn)tabAnalysisBtn.textContent=tr("tabTechnical");
+      if(tabEvidenceBtn)tabEvidenceBtn.textContent=tr("tabEvidence");
+      const tabOverviewText=document.getElementById("tab-overview"), tabAnalysisText=document.getElementById("tab-analysis"), tabEvidenceText=document.getElementById("tab-evidence");
+      if(tabOverviewText)tabOverviewText.textContent=tr("tabOverviewText");
+      if(tabAnalysisText)tabAnalysisText.textContent=tr("tabAnalysisText");
+      if(tabEvidenceText)tabEvidenceText.textContent=tr("tabEvidenceText");
+      themeSelect.querySelector('option[value="dark"]').textContent=tr("themeDark");
+      themeSelect.querySelector('option[value="light"]').textContent=tr("themeLight");
+      themeSelect.querySelector('option[value="midnight"]').textContent=tr("themeMidnight");
+      themeSelect.querySelector('option[value="blue"]').textContent=tr("themeBlue");
+      setTheme(themeSelect.value);
+      setGuestUsage();
+      setAuthMode(authMode);
+    }
+    function setLanguage(lang){
+      currentLang=supportedLangs.includes(lang)?lang:"en";
+      languageSelect.value=currentLang;
+      localStorage.setItem("dg_lang",currentLang);
+      applyTranslations();
+    }
+    function openFooterPage(pageKey){
+      const page = footerPageMap[pageKey];
+      if(!page || !footerInfoModal) return;
+      footerInfoTitle.textContent = ftr(page.title);
+      footerInfoDesc.textContent = ftr(page.desc);
+      footerInfoModal.classList.remove("hide");
+      if(footerInfoCard) footerInfoCard.scrollTop = 0;
+    }
+    function closeFooterPage(){if(footerInfoModal)footerInfoModal.classList.add("hide")}
+    function updateNavState(){if(scroller.scrollTop>18){topNav.classList.add("scrolled")}else{topNav.classList.remove("scrolled")}}
+
+    function previewFile(file){selectedFile=file;analyzeBtn.disabled=false;selectedName.textContent=format("selectedFile",{name:file.name});const url=URL.createObjectURL(file);previewMedia.innerHTML="";if(file.type.startsWith("image/")){const img=document.createElement("img");img.src=url;previewMedia.appendChild(img)}else if(file.type.startsWith("video/")){const v=document.createElement("video");v.src=url;v.controls=true;previewMedia.appendChild(v)}else{previewMedia.innerHTML="<span style='color:var(--muted)'>"+format("audioSelected",{name:file.name})+"</span>"}previewMedia.classList.remove("pop");requestAnimationFrame(()=>previewMedia.classList.add("pop"))}
+
+    async function runAnalysis(){
+      if(!selectedFile) return;
+      if(!hasServiceAccess()){
+        pendingDemoRedirect = true;
+        setAuthMode("login");
+        openAuth();
+        return;
+      }
+      if(authState==="guest" && freeUsed>=freeTotal){
+        pendingDemoRedirect = true;
+        setAuthMode("signup");
+        setAuthStatus(`Guest mode limit reached (${freeUsed}/${freeTotal}). Please sign up to continue.`);
+        openAuth();
+        return;
+      }
+      loadingState.classList.remove("hide");
+      resultState.classList.add("hide");
+      emptyState.classList.add("hide");
+      progressBar.style.width="10%";
+      let p=10;
+      const timer=setInterval(()=>{p=Math.min(90,p+8);progressBar.style.width=p+"%"},250);
+      try{
+        const form=new FormData();
+        form.append("file",selectedFile);
+        const {res, data} = await fetchWithAuth("/api/predict",{method:"POST",body:form},true);
+        if(data && data.guest_usage){updateSessionStateFromPayload({auth_state:data.auth_state,...data.guest_usage});}
+        if(!res.ok){
+          if(res.status===401){
+            pendingDemoRedirect = true;
+            setAuthMode("login");
+            setAuthStatus(data.error || "Please log in to continue.");
+            openAuth();
+          }else if(res.status===403){
+            pendingDemoRedirect = true;
+            setAuthMode("signup");
+            setAuthStatus(data.error || "Guest limit reached. Please sign up.");
+            openAuth();
+          }
+          throw new Error(data.error||tr("analysisFailed"));
+        }
+        progressBar.style.width="100%";
+        clearInterval(timer);
+        const isFake=(data.label_raw||"").toLowerCase()==="fake";
+        resultLabelBig.textContent=isFake?"FAKE":"REAL";
+        resultLabelBig.style.color=isFake?"var(--bad)":"var(--ok)";
+        resultLabelBig.style.textShadow=isFake?"0 0 44px rgba(251,113,133,.32)":"0 0 44px rgba(52,211,153,.3)";
+        resultConfidence.textContent=format("confidence",{value:(data.confidence||0).toFixed(2)});
+        resultSummary.textContent=(data.reasoning&&data.reasoning.summary)?data.reasoning.summary:tr("noSummary");
+        resultInsights.innerHTML="";
+        ((data.reasoning&&data.reasoning.factors)||[]).slice(0,3).forEach(it=>{const el=document.createElement("p");el.className="exp";el.textContent=it;resultInsights.appendChild(el)});
+        resultState.classList.remove("hide");
+        document.getElementById("result").scrollIntoView({behavior:"smooth"});
+      }catch(e){
+        clearInterval(timer);
+        resultLabelBig.textContent=tr("error");
+        resultLabelBig.style.color="var(--warn)";
+        resultConfidence.textContent="";
+        resultSummary.textContent=e.message;
+        resultInsights.innerHTML="";
+        resultState.classList.remove("hide");
+      }finally{
+        setTimeout(()=>{loadingState.classList.add("hide");progressBar.style.width="0%"},350);
+      }
+    }
+
+    themeSelect.addEventListener("change",e=>setTheme(e.target.value));
+    languageSelect.addEventListener("change",e=>setLanguage(e.target.value));
+    loginBtn.addEventListener("click",()=>{pendingDemoRedirect=false;setAuthMode("login");openAuth();});
+    signupBtn.addEventListener("click",()=>{pendingDemoRedirect=false;setAuthMode("signup");openAuth();});
+    closeAuth.addEventListener("click",closeAuthModal);
+    authModal.addEventListener("click",e=>{if(e.target===authModal)closeAuthModal()});
+    if(startDemoBtn)startDemoBtn.addEventListener("click",startDemoFlow);
+    if(authLoginBtn)authLoginBtn.addEventListener("click",handleEmailAuth);
+    if(authPassword)authPassword.addEventListener("keydown",e=>{if(e.key==="Enter")handleEmailAuth();});
+    if(authConfirmPassword)authConfirmPassword.addEventListener("keydown",e=>{if(e.key==="Enter")handleEmailAuth();});
+    if(togglePasswords)togglePasswords.addEventListener("change",applyPasswordVisibility);
+    if(socialGoogle)socialGoogle.addEventListener("click",beginGoogleLogin);
+    if(authSignupLink)authSignupLink.addEventListener("click",()=>setAuthMode(authMode==="signup"?"login":"signup"));
+    if(socialGuest)socialGuest.addEventListener("click",continueAsGuest);
+    document.querySelectorAll(".footer-link").forEach(link=>link.addEventListener("click",e=>{e.preventDefault();openFooterPage(link.getAttribute("data-page"));}));
+    if(footerInfoClose)footerInfoClose.addEventListener("click",closeFooterPage);
+    if(footerInfoModal)footerInfoModal.addEventListener("click",e=>{if(e.target===footerInfoModal)closeFooterPage()});
+    if(showFlowBtn)showFlowBtn.addEventListener("click",()=>document.getElementById("upload").scrollIntoView({behavior:"smooth"}));
+    if(startAnalysisBtn)startAnalysisBtn.addEventListener("click",()=>document.getElementById("upload").scrollIntoView({behavior:"smooth"}));
+    if(startTrackingBtn)startTrackingBtn.addEventListener("click",()=>document.getElementById("upload").scrollIntoView({behavior:"smooth"}));
+    if(pickBtn&&fileInput){pickBtn.addEventListener("click",()=>fileInput.click()); fileInput.addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)previewFile(f)});}
+    if(dropZone){dropZone.addEventListener("dragover",e=>{e.preventDefault();dropZone.style.borderColor="var(--a)"}); dropZone.addEventListener("dragleave",()=>dropZone.style.borderColor="var(--line)"); dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.style.borderColor="var(--line)";const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f)previewFile(f)});}
+    if(analyzeBtn)analyzeBtn.addEventListener("click",runAnalysis);
+    if(viewTechnicalBtn)viewTechnicalBtn.addEventListener("click",()=>document.getElementById("technical").scrollIntoView({behavior:"smooth"}));
+    document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));btn.classList.add("on");const t=btn.getAttribute("data-tab");["overview","analysis","evidence"].forEach(n=>{const el=document.getElementById("tab-"+n);if(el)el.classList.toggle("hide",n!==t)})}));
+    document.querySelectorAll(".row[data-case]").forEach(r=>r.addEventListener("click",()=>document.getElementById("result").scrollIntoView({behavior:"smooth"})));
+    if(assistantBtn&&assistantPanel)assistantBtn.addEventListener("click",()=>assistantPanel.classList.toggle("hide"));
+    const ob=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.classList.add("in")),{threshold:.2}); document.querySelectorAll(".fade").forEach(el=>ob.observe(el));
+    scroller.addEventListener("scroll",updateNavState);
+    const savedLang = localStorage.getItem("dg_lang") || "en";
+    const savedTheme = localStorage.getItem("dg_theme") || "dark";
+    themeSelect.value = savedTheme;
+    setTheme(savedTheme);
+    setLanguage(savedLang);
+    updateNavState();
+    bootstrapAuthState();
+  </script>
+</body>
+</html>

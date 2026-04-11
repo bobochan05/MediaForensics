@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deepfake Detector</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111827;
+      --border: #243041;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #5eead4;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --danger-border: rgba(239, 68, 68, 0.35);
+      --ok-bg: rgba(16, 185, 129, 0.12);
+      --ok-border: rgba(16, 185, 129, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+    }
+    p {
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0 0 18px;
+    }
+    .build {
+      display: inline-block;
+      margin-bottom: 16px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .status {
+      margin: 14px 0 18px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #0d1728;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .error {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--danger-border);
+      background: var(--danger-bg);
+      color: #fecaca;
+      white-space: pre-wrap;
+      display: none;
+    }
+    .result {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--ok-border);
+      background: var(--ok-bg);
+      display: none;
+    }
+    .row {
+      display: grid;
+      gap: 14px;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 14px;
+      background: #0d1728;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    button {
+      padding: 14px 18px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #06251f;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    ul {
+      margin: 8px 0 0 18px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="build">Flask Build {{ app_build }}</div>
+    <h1>Deepfake Detector</h1>
+    <p>This is a simplified recovery frontend wired directly to the working backend inference path.</p>
+
+    <div class="status">
+      <strong>Model files:</strong>
+      <ul>
+        {% for model in model_paths %}
+        <li>{{ model.label }}: {{ "OK" if model.exists else "Missing" }} ({{ model.path }})</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if missing_models %}
+    <div class="error" style="display:block;">
+      Missing model files: {{ missing_models | join(', ') }}
+    </div>
+    {% endif %}
+
+    <div class="row">
+      <input id="fileInput" type="file" accept=".jpg,.jpeg,.png,.mp4,.avi,.mov,.mkv,.webm" />
+      <button id="analyzeBtn" type="button" onclick="runAnalysis()">Analyze</button>
+    </div>
+
+    <div id="errorBox" class="error"></div>
+    <div id="resultBox" class="result"></div>
+  </div>
+
+  <script>
+    async function runAnalysis() {
+      const fileInput = document.getElementById('fileInput');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      const errorBox = document.getElementById('errorBox');
+      const resultBox = document.getElementById('resultBox');
+
+      errorBox.style.display = 'none';
+      errorBox.textContent = '';
+      resultBox.style.display = 'none';
+      resultBox.textContent = '';
+
+      if (!fileInput.files.length) {
+        errorBox.textContent = 'Choose a file first.';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('file', fileInput.files[0]);
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = 'Analyzing...';
+      try {
+        const res = await fetch('/api/predict', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) {
+          errorBox.textContent = data.error || 'Analysis failed.';
+          errorBox.style.display = 'block';
+          return;
+        }
+
+        resultBox.innerHTML =
+          '<strong>Prediction:</strong> ' + data.label +
+          '<br><strong>Confidence:</strong> ' + data.confidence + '%' +
+          '<br><strong>File:</strong> ' + data.filename;
+        resultBox.style.display = 'block';
+      } catch (error) {
+        errorBox.textContent = 'Request failed. Check that the Flask server is still running.';
+        errorBox.style.display = 'block';
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = 'Analyze';
+      }
+    }
+  </script>
+</body>
+</html>

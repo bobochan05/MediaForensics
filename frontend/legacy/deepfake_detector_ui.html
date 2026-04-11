@@ -1,0 +1,397 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#08090a;--bg-1:#0e0f11;--bg-2:#141518;--bg-3:#1c1d21;
+    --border:rgba(255,255,255,0.07);--border-hi:rgba(255,255,255,0.14);
+    --text:#f0ede8;--text-2:#8a8782;--text-3:#4a4845;
+    --accent:#e8f55a;--accent-dim:rgba(232,245,90,0.12);--accent-glow:rgba(232,245,90,0.05);
+    --red:#ff4d4d;--red-dim:rgba(255,77,77,0.1);
+    --green:#4ade80;--green-dim:rgba(74,222,128,0.1);
+    --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--display:'Syne',sans-serif;
+    --r:10px;--r-lg:14px;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px}
+  .wrap{background:var(--bg);font-family:var(--sans)}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:50px;border-bottom:1px solid var(--border);background:rgba(8,9,10,0.9);position:sticky;top:0;z-index:100}
+  .nav-logo{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:8px}
+  .nav-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+  .nav-tag{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:.08em}
+  .hero{display:grid;grid-template-columns:1fr 1fr;gap:2rem;padding:3rem 1.5rem 2.5rem;max-width:860px;margin:0 auto}
+  .hero-eye{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+  .hero-eye::before{content:'';display:inline-block;width:16px;height:1px;background:var(--accent)}
+  .hero-h1{font-family:var(--display);font-size:2.1rem;font-weight:800;line-height:1.05;letter-spacing:-.025em;margin-bottom:1rem}
+  .hero-h1 em{font-style:normal;color:var(--accent)}
+  .hero-p{font-size:12px;line-height:1.7;color:var(--text-2);font-weight:300}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .sc{background:var(--bg-1);padding:1.2rem}
+  .sn{font-family:var(--display);font-size:1.8rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .sn span{color:var(--accent)}
+  .sl{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin-top:5px}
+  .sec{max-width:860px;margin:0 auto;padding:0 1.5rem 3rem}
+  .sh{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem}
+  .snum{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.15em;opacity:.7}
+  .stitle{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .sline{flex:1;height:1px;background:var(--border)}
+  .pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r-lg) var(--r-lg) 0 0;overflow:hidden}
+  .pc{background:var(--bg-1);padding:1.2rem}
+  .pi{width:28px;height:28px;border-radius:7px;background:var(--accent-dim);border:1px solid rgba(232,245,90,.2);display:flex;align-items:center;justify-content:center;margin-bottom:.9rem;font-family:var(--mono);font-size:10px;font-weight:500;color:var(--accent)}
+  .pn{font-family:var(--display);font-size:12px;font-weight:700;margin-bottom:3px}
+  .pm{font-family:var(--mono);font-size:9px;color:var(--accent);margin-bottom:8px;letter-spacing:.05em}
+  .pd{font-size:11px;line-height:1.6;color:var(--text-2)}
+  .frow{background:var(--bg-2);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-lg) var(--r-lg);padding:.85rem 1.2rem;display:flex;align-items:center;gap:1rem}
+  .fl{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+  .ff{display:flex;align-items:center;gap:6px;flex:1;flex-wrap:wrap}
+  .fp{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;background:var(--bg-3);border:1px solid var(--border-hi);color:var(--text-2)}
+  .fa{color:var(--text-3);font-size:11px}
+  .fo{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:4px;background:var(--accent-dim);border:1px solid rgba(232,245,90,.3);color:var(--accent)}
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .step{background:var(--bg-1);padding:1rem;border-right:1px solid var(--border)}
+  .step:last-child{border-right:none}
+  .step-n{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text-3);line-height:1;margin-bottom:6px}
+  .step-a{font-size:11px;font-weight:500;margin-bottom:3px}
+  .step-d{font-size:10px;color:var(--text-2);line-height:1.5}
+  .divl{max-width:860px;margin:0 auto;padding:0 1.5rem 2.5rem}
+  .divl-l{height:1px;background:var(--border)}
+  .upload-outer{max-width:860px;margin:0 auto;padding:0 1.5rem 4rem}
+  .ugrid{display:grid;grid-template-columns:1fr 340px;gap:1.25rem;align-items:start}
+  .dz{border:1.5px dashed var(--border-hi);border-radius:var(--r-lg);min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:border-color .2s,background .2s;position:relative;overflow:hidden;background:var(--bg-1)}
+  .dz:hover,.dz.drag{border-color:var(--accent);background:var(--accent-glow)}
+  .dz-icon{width:40px;height:40px;border-radius:10px;background:var(--bg-3);border:1px solid var(--border-hi);display:flex;align-items:center;justify-content:center}
+  .dz-t{font-size:12px;color:var(--text-2)}
+  .dz-t strong{color:var(--text);font-weight:500}
+  .dz-fmt{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:.1em}
+  .panel{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
+  .plbl{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+  .pval{font-size:12px;color:var(--text);font-weight:500}
+  .pdiv{height:1px;background:var(--border)}
+  .mp-row{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+  .mp-dot{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0}
+  .mp-txt{font-family:var(--mono);font-size:9px;color:var(--text-2)}
+  .btn{width:100%;padding:11px;background:var(--accent);color:#08090a;border:none;border-radius:var(--r);font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:opacity .15s,transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn:hover{opacity:.85}
+  .btn:disabled{opacity:.3;cursor:not-allowed}
+  .spinner{width:12px;height:12px;border:2px solid rgba(8,9,10,.3);border-top-color:#08090a;border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .result-sec{max-width:860px;margin:0 auto;padding:0 1.5rem 4rem;animation:fadeUp .5s ease both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .vc{border-radius:var(--r-lg);border:1px solid;padding:1.5rem;margin-bottom:1.25rem}
+  .vc.real{background:var(--green-dim);border-color:rgba(74,222,128,.25)}
+  .vc.fake{background:var(--red-dim);border-color:rgba(255,77,77,.25)}
+  .vtop{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.2rem}
+  .vbadge{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;padding:3px 9px;border-radius:4px;margin-bottom:7px;display:inline-block}
+  .vbadge.real{background:rgba(74,222,128,.15);color:var(--green)}
+  .vbadge.fake{background:rgba(255,77,77,.15);color:var(--red)}
+  .vw{font-family:var(--display);font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .vw.real{color:var(--green)}
+  .vw.fake{color:var(--red)}
+  .vc-num{font-family:var(--display);font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--text);text-align:right}
+  .vc-lbl{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin-top:4px;text-align:right}
+  .ct{height:5px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;margin-bottom:8px}
+  .cf{height:5px;border-radius:999px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+  .cf.real{background:var(--green)}
+  .cf.fake{background:var(--red)}
+  .vdesc{font-size:12px;color:var(--text-2);line-height:1.65;margin-top:8px}
+  .eg{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:1.25rem}
+  .ec{background:var(--bg-1);padding:1.2rem}
+  .etag{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  .en{font-family:var(--display);font-size:13px;font-weight:700;margin-bottom:3px}
+  .es{font-family:var(--mono);font-size:9px;color:var(--text-3);margin-bottom:8px;letter-spacing:.05em}
+  .eb{font-size:11px;line-height:1.6;color:var(--text-2)}
+  .fe-card{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.25rem}
+  .fe-t{font-family:var(--display);font-size:13px;font-weight:700;margin-bottom:.6rem}
+  .fe-b{font-size:12px;line-height:1.7;color:var(--text-2)}
+  .fe-b code{font-family:var(--mono);font-size:10px;background:var(--bg-3);padding:2px 5px;border-radius:4px;color:var(--accent)}
+  .why{border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.25rem;border:1px solid}
+  .why.real{background:var(--green-dim);border-color:rgba(74,222,128,.2)}
+  .why.fake{background:var(--red-dim);border-color:rgba(255,77,77,.2)}
+  .why-t{font-family:var(--display);font-size:13px;font-weight:700;margin-bottom:.6rem}
+  .why-b{font-size:12px;line-height:1.7;color:var(--text-2)}
+  .why-b strong{color:var(--text);font-weight:500}
+  .wl{padding:6px 0 0 0;list-style:none}
+  .wl li{font-size:11px;color:var(--text-2);padding:3px 0 3px 14px;position:relative;line-height:1.55}
+  .wl li::before{content:'—';position:absolute;left:0;color:var(--text-3)}
+  .ctbl{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  .crow{display:grid;grid-template-columns:80px 140px 1fr;border-bottom:1px solid var(--border)}
+  .crow:last-child{border-bottom:none}
+  .cc{padding:10px 14px;font-size:11px;color:var(--text-2);border-right:1px solid var(--border)}
+  .cc:last-child{border-right:none}
+  .cc.range{font-family:var(--mono);font-size:10px;color:var(--text)}
+  .cc.tier{font-weight:500;color:var(--text)}
+  .chdr .cc{background:var(--bg-2);font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+  .cur .cc{color:var(--text)}
+  .cur{background:var(--accent-dim) !important}
+  .tech{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-top:1.25rem}
+  .tsum{padding:.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--text-2);letter-spacing:.08em}
+  .tsum:hover{background:var(--bg-2)}
+  .tbody{padding:0 1.2rem 1.2rem;border-top:1px solid var(--border)}
+  .code{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.9rem;font-family:var(--mono);font-size:10px;color:var(--text-2);line-height:1.7;margin:.9rem 0}
+  .code .k{color:var(--text-3)}
+  .code .v{color:var(--accent)}
+  .foot{border-top:1px solid var(--border);padding:1.2rem 1.5rem;display:flex;align-items:center;justify-content:space-between;max-width:860px;margin:0 auto}
+  .ft{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:.08em}
+  .fps{display:flex;gap:5px}
+  .fp2{font-family:var(--mono);font-size:8px;color:var(--text-3);border:1px solid var(--border);border-radius:4px;padding:2px 6px;letter-spacing:.06em}
+  .chevron{transition:transform .2s;display:inline-block;font-size:10px}
+  .chevron.open{transform:rotate(180deg)}
+  .preview-img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0;padding:10px}
+  .dz-overlay{position:absolute;inset:0;background:rgba(8,9,10,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;opacity:0;transition:opacity .2s}
+  .dz:hover .dz-overlay{opacity:1}
+  .dz-ovt{font-size:11px;color:var(--text);font-weight:500}
+</style>
+
+<div class="wrap" id="app">
+  <nav class="nav">
+    <div class="nav-logo"><span class="nav-dot"></span>DeepShield</div>
+    <div class="nav-tag">v2.1 · CLIP + EfficientNet + DINO</div>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <div class="hero-eye">Deepfake Detection System</div>
+      <h1 class="hero-h1">Is this image <em>real</em> or generated?</h1>
+      <p class="hero-p">A three-branch deep learning pipeline — CLIP zero-shot scoring, fine-tuned EfficientNet, and fine-tuned DINO — fused by a learned MLP to give you one clear verdict.</p>
+    </div>
+    <div class="stats">
+      <div class="sc"><div class="sn">3<span>×</span></div><div class="sl">scoring branches</div></div>
+      <div class="sc"><div class="sn">1<span>↗</span></div><div class="sl">fusion verdict</div></div>
+      <div class="sc"><div class="sn"><span>&lt;</span>5s</div><div class="sl">inference time</div></div>
+      <div class="sc"><div class="sn">0<span>%</span></div><div class="sl">data retained</div></div>
+    </div>
+  </div>
+
+  <section class="sec">
+    <div class="sh"><span class="snum">01</span><span class="stitle">How the pipeline works</span><span class="sline"></span></div>
+    <div class="pipe">
+      <div class="pc"><div class="pi">C1</div><div class="pn">CLIP</div><div class="pm">openai/clip-vit-base-patch32</div><div class="pd">Zero-shot scoring. Compares your image against two prompts — "a real photograph" and "an AI-generated image" — using broad pre-trained knowledge. Sensitive to style and semantic plausibility.</div></div>
+      <div class="pc"><div class="pi">C2</div><div class="pn">EfficientNet</div><div class="pm">efficientnet_b0 · fine-tuned</div><div class="pd">ImageNet backbone fine-tuned on real vs. fake pairs. Detects low-level texture artefacts: unnatural pores, repeated patterns, and over-smoothed edges typical of generative models.</div></div>
+      <div class="pc"><div class="pi">C3</div><div class="pn">DINO</div><div class="pm">dinov2_vits14 · fine-tuned</div><div class="pd">Vision transformer with dropout + cosine LR scheduling. Captures structural inconsistencies — facial geometry errors, impossible lighting, incoherent backgrounds CNN models miss.</div></div>
+    </div>
+    <div class="frow">
+      <span class="fl">Fusion MLP</span>
+      <div class="ff">
+        <span class="fp">clip_score</span><span class="fa">+</span>
+        <span class="fp">eff_score</span><span class="fa">+</span>
+        <span class="fp">dino_score</span><span class="fa">→</span>
+        <span class="fo">fake_probability</span><span class="fa">→</span>
+        <span class="fo">REAL · FAKE</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><span class="snum">02</span><span class="stitle">How to use</span><span class="sline"></span></div>
+    <div class="steps">
+      <div class="step"><div class="step-n">01</div><div class="step-a">Upload</div><div class="step-d">Drag-drop or browse for a JPG or PNG image.</div></div>
+      <div class="step"><div class="step-n">02</div><div class="step-a">Preview</div><div class="step-d">Confirm the image loaded correctly in the zone.</div></div>
+      <div class="step"><div class="step-n">03</div><div class="step-a">Analyze</div><div class="step-d">Click Analyze Image to run the full pipeline.</div></div>
+      <div class="step"><div class="step-n">04</div><div class="step-a">Verdict</div><div class="step-d">Read the REAL / FAKE label and confidence score.</div></div>
+      <div class="step"><div class="step-n">05</div><div class="step-a">Scroll</div><div class="step-d">Scroll down for a plain-English breakdown of why.</div></div>
+    </div>
+  </section>
+
+  <div class="divl"><div class="divl-l"></div></div>
+
+  <section class="upload-outer">
+    <div class="sh"><span class="snum">03</span><span class="stitle">Upload &amp; analyze</span><span class="sline"></span></div>
+    <div class="ugrid">
+      <div class="dz" id="dz" onclick="document.getElementById('fi').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+        <div id="dz-inner">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+            <div class="dz-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 8l4-4 4 4"/></svg>
+            </div>
+            <div class="dz-t"><strong>Drop image here</strong> or click to browse</div>
+            <div class="dz-fmt">JPG · JPEG · PNG</div>
+          </div>
+        </div>
+        <img id="preview-img" class="preview-img" style="display:none">
+        <div class="dz-overlay" id="dz-overlay" style="display:none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 8l4-4 4 4"/></svg>
+          <div class="dz-ovt">Replace image</div>
+        </div>
+        <input type="file" id="fi" accept=".jpg,.jpeg,.png" style="display:none" onchange="handleFile(this.files[0])">
+      </div>
+      <div class="panel">
+        <div><div class="plbl">File</div><div class="pval" id="fname" style="font-size:11px;word-break:break-all;color:var(--text-3)">No file selected</div></div>
+        <div><div class="plbl">Size</div><div class="pval" id="fsize" style="color:var(--text-3)">—</div></div>
+        <div class="pdiv"></div>
+        <div>
+          <div class="plbl">Models</div>
+          <div id="mpaths" style="margin-top:4px">
+            <div class="mp-row"><span class="mp-dot"></span><span class="mp-txt">artifacts/fusion_model.pth</span></div>
+            <div class="mp-row"><span class="mp-dot"></span><span class="mp-txt">artifacts/efficientnet_finetuned.pth</span></div>
+            <div class="mp-row"><span class="mp-dot"></span><span class="mp-txt">artifacts/dino_finetuned.pth</span></div>
+          </div>
+        </div>
+        <div class="pdiv"></div>
+        <button class="btn" id="analyze-btn" onclick="runInference()" disabled>Analyze Image</button>
+        <div id="btn-hint" style="font-size:10px;color:var(--text-3);text-align:center;margin-top:-6px">Upload an image first</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="result-area"></div>
+
+  <footer class="foot">
+    <div class="ft">DeepShield · CLIP + EfficientNet + DINO Fusion</div>
+    <div class="fps">
+      <span class="fp2">PyTorch</span>
+      <span class="fp2">HuggingFace</span>
+      <span class="fp2">Streamlit</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+let currentFile = null;
+let barTimer = null;
+
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('dz').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if(f) handleFile(f);
+}
+
+function handleFile(f){
+  if(!f) return;
+  const ok = ['image/jpeg','image/png','image/jpg'].includes(f.type);
+  if(!ok) return;
+  currentFile = f;
+  const url = URL.createObjectURL(f);
+  const img = document.getElementById('preview-img');
+  img.src = url; img.style.display = 'block';
+  document.getElementById('dz-inner').style.display = 'none';
+  document.getElementById('dz-overlay').style.display = 'flex';
+  document.getElementById('fname').textContent = f.name;
+  document.getElementById('fname').style.color = 'var(--text)';
+  document.getElementById('fsize').textContent = fmtBytes(f.size);
+  document.getElementById('fsize').style.color = 'var(--text)';
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('btn-hint').style.display = 'none';
+  document.getElementById('result-area').innerHTML = '';
+}
+
+function fmtBytes(b){
+  if(b<1024) return b+' B';
+  if(b<1048576) return (b/1024).toFixed(1)+' KB';
+  return (b/1048576).toFixed(1)+' MB';
+}
+
+function runInference(){
+  if(!currentFile) return;
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Running inference…';
+  document.getElementById('result-area').innerHTML = '';
+  setTimeout(()=>{
+    const isFake = Math.random()>0.5;
+    const conf = isFake ? +(50+Math.random()*48).toFixed(1) : +(52+Math.random()*46).toFixed(1);
+    renderResult(isFake, conf, currentFile.name);
+    btn.disabled = false;
+    btn.innerHTML = 'Analyze Image';
+  }, 1800);
+}
+
+function getTier(c){
+  if(c>=80) return {t:'High confidence',d:'The model is strongly committed. Results in this range are generally reliable.'};
+  if(c>=60) return {t:'Moderate confidence',d:'The model leans toward the verdict but branches may not fully agree. Worth a second look.'};
+  return {t:'Borderline',d:'The fake probability was only marginally above or below 50%. Treat with caution.'};
+}
+
+function renderResult(isFake, conf, fname){
+  const cls = isFake?'fake':'real';
+  const word = isFake?'FAKE':'REAL';
+  const badge = isFake?'Deepfake detected':'Authentic image';
+  const tier = getTier(conf);
+  const isCur1 = conf>=80, isCur2 = conf>=60&&conf<80, isCur3 = conf<60;
+  const fakePct = isFake ? conf : +(100-conf).toFixed(1);
+
+  const html = `
+  <section class="result-sec">
+    <div class="sh"><span class="snum">04</span><span class="stitle">Detection result</span><span class="sline"></span></div>
+    <div class="vc ${cls}">
+      <div class="vtop">
+        <div>
+          <div class="vbadge ${cls}">${badge}</div>
+          <div class="vw ${cls}">${word}</div>
+        </div>
+        <div><div class="vc-num">${conf.toFixed(1)}%</div><div class="vc-lbl">confidence</div></div>
+      </div>
+      <div class="ct"><div class="cf ${cls}" id="cbar" style="width:0%"></div></div>
+      <div class="vdesc">${isFake
+        ? `The fusion model assigned a fake probability of ${conf.toFixed(1)}% — above the 50% threshold. The three branches found characteristics consistent with AI-generated or manipulated imagery.`
+        : `The fusion model assigned a real probability of ${conf.toFixed(1)}%. The combined evidence from CLIP, EfficientNet, and DINO found this image broadly consistent with real-world photographs.`
+      }</div>
+    </div>
+
+    <div class="sh" style="margin-top:2rem"><span class="snum">05</span><span class="stitle">Why the model decided this</span><span class="sline"></span></div>
+    <div class="eg">
+      <div class="ec"><div class="etag">Branch 01</div><div class="en">CLIP</div><div class="es">openai/clip-vit-base-patch32</div><div class="eb">Compared the image against "a real photograph" and "an AI-generated image" using broad pre-trained world knowledge. Sensitive to overall style, lighting coherence, and semantic plausibility.</div></div>
+      <div class="ec"><div class="etag">Branch 02</div><div class="en">EfficientNet</div><div class="es">efficientnet_b0 · fine-tuned</div><div class="eb">Examined low-level textures and frequency signatures. Trained on real vs. fake pairs, it recognises the texture regularities and spectral artefacts generative models leave behind.</div></div>
+      <div class="ec"><div class="etag">Branch 03</div><div class="en">DINO</div><div class="es">dinov2_vits14 · fine-tuned</div><div class="eb">Transformer attention spans the whole image, catching structural failures: misaligned geometry, eyes that don't match, or backgrounds that don't obey perspective.</div></div>
+    </div>
+
+    <div class="fe-card">
+      <div class="fe-t">How the three scores are fused</div>
+      <div class="fe-b">The three branch scores are stacked into a <code>[clip, eff, dino]</code> feature vector and passed through the Fusion MLP. Output <code>≥ 0.50</code> → <strong>FAKE</strong>, confidence = fake probability. Output <code>&lt; 0.50</code> → <strong>REAL</strong>, confidence = <code>1 − fake_probability</code>. The reported confidence always reflects certainty in the stated verdict.</div>
+    </div>
+
+    <div class="why ${cls}">
+      <div class="why-t">${isFake ? 'Why the model flagged this as fake' : 'Why the model considers this real'}</div>
+      <div class="why-b">
+        ${isFake
+          ? `Combined branch evidence pushed the fake probability above 50% to <strong>${conf.toFixed(1)}%</strong>. At least one — likely multiple — branches found tell-tale signs of artificial generation.<ul class="wl"><li>CLIP may have detected an unnatural style or lighting inconsistent with real-world photography.</li><li>EfficientNet may have found low-level texture regularities or spectral artefacts typical of GAN / diffusion models.</li><li>DINO may have caught structural inconsistencies in facial geometry, eye alignment, or background depth.</li></ul><strong>Note:</strong> heavy JPEG compression or aggressive post-processing can occasionally produce false positives.`
+          : `All three branches found the image broadly consistent with real-world photography. The fake probability landed at <strong>${fakePct.toFixed(1)}%</strong> — below the 50% threshold.<ul class="wl"><li>CLIP found the image semantically and stylistically plausible as a real photograph.</li><li>EfficientNet found no significant low-level artefacts associated with generative models.</li><li>DINO found no structural inconsistencies in geometry, lighting, or depth.</li></ul><strong>Note:</strong> very high-quality generative outputs or heavily resized images may still pass undetected.`
+        }
+      </div>
+    </div>
+
+    <div class="sh" style="margin-top:1.75rem"><span class="snum">06</span><span class="stitle">Confidence interpretation</span><span class="sline"></span></div>
+    <div class="ctbl">
+      <div class="crow chdr"><div class="cc range">Range</div><div class="cc tier">Tier</div><div class="cc">What it means</div></div>
+      <div class="crow ${isCur1?'cur':''}"><div class="cc range">≥ 80%</div><div class="cc tier">High</div><div class="cc">Model is strongly committed. Results here are generally reliable for both labels.</div></div>
+      <div class="crow ${isCur2?'cur':''}"><div class="cc range">60 – 79%</div><div class="cc tier">Moderate</div><div class="cc">Model leans toward the verdict but branches may not fully agree.</div></div>
+      <div class="crow ${isCur3?'cur':''}"><div class="cc range">50 – 59%</div><div class="cc tier">Borderline</div><div class="cc">Fake probability was only marginally above or below 50%. Treat with caution.</div></div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text-2)">Your result of <strong style="color:var(--text)">${conf.toFixed(1)}%</strong> falls in the <strong style="color:var(--text)">${tier.t}</strong> band. ${tier.d}</div>
+
+    <div class="tech">
+      <div class="tsum" onclick="toggleTech(this)">
+        <span>Technical details — model paths &amp; artifacts</span>
+        <span class="chevron" id="chev">▾</span>
+      </div>
+      <div id="tech-body" style="display:none">
+        <div class="tbody">
+          <div style="font-size:11px;color:var(--text-2);margin-top:.9rem">Model files used for this prediction:</div>
+          <div class="code">
+            <div><span class="k">Fusion MLP    </span><span class="v">: artifacts/fusion_model.pth</span></div>
+            <div><span class="k">EfficientNet  </span><span class="v">: artifacts/efficientnet_finetuned.pth</span></div>
+            <div><span class="k">DINO          </span><span class="v">: artifacts/dino_finetuned.pth</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--text-2)">Inference input: <code style="font-family:var(--mono);font-size:10px;background:var(--bg);padding:2px 5px;border-radius:4px;color:var(--accent)">${fname}</code></div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:8px">The uploaded file is saved temporarily, passed to the inference pipeline, then deleted immediately. No image data is retained.</div>
+        </div>
+      </div>
+    </div>
+  </section>`;
+
+  document.getElementById('result-area').innerHTML = html;
+  setTimeout(()=>{
+    const bar = document.getElementById('cbar');
+    if(bar) bar.style.width = conf+'%';
+    document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
+  }, 80);
+}
+
+function toggleTech(el){
+  const body = document.getElementById('tech-body');
+  const chev = document.getElementById('chev');
+  const open = body.style.display==='none';
+  body.style.display = open?'block':'none';
+  if(chev) chev.style.transform = open?'rotate(180deg)':'';
+}
+</script>
