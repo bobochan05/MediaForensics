@@ -22,11 +22,19 @@
     html[data-theme="blue"] .chip,
     html[data-theme="blue"] .theme{background:rgba(255,255,255,.84);border-color:rgba(148,163,184,.2)}
 
-    .app{display:grid;grid-template-columns:260px minmax(0,1fr) 330px;gap:24px;min-height:calc(100vh - 90px);padding:24px}
+    .app{display:grid;grid-template-columns:72px minmax(0,1fr) 330px;gap:20px;min-height:calc(100vh - 90px);padding:24px;align-items:start}
     .panel{border:1px solid var(--line);border-radius:24px;background:var(--panel);backdrop-filter:blur(18px);box-shadow:var(--shadow-soft)}
-    .left{padding:22px;display:grid;gap:10px;align-content:start}
-    .left a{text-decoration:none;color:var(--text);padding:13px 14px;border-radius:16px;border:1px solid transparent;font-size:14px;font-weight:700;transition:background .2s ease,border-color .2s ease,transform .2s ease}
+    .left{position:sticky;top:112px;width:72px;min-height:calc(100vh - 138px);padding:16px 12px;display:grid;gap:10px;align-content:start;overflow:hidden;transition:width .2s ease,padding .2s ease,box-shadow .2s ease}
+    .left:hover,.left:focus-within{width:220px;padding:16px}
+    .left a{position:relative;display:flex;align-items:center;gap:14px;min-height:46px;text-decoration:none;color:var(--text);padding:11px 12px;border-radius:16px;border:1px solid transparent;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;transition:background .2s ease,border-color .2s ease,transform .2s ease,color .2s ease}
     .left a:hover,.left a.active{background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.22);transform:translateY(-1px)}
+    .left a::before{content:attr(data-icon);display:inline-grid;place-items:center;width:22px;min-width:22px;height:22px;font-size:18px;line-height:1}
+    .left-label{opacity:0;transform:translateX(-6px);transition:opacity .18s ease,transform .18s ease}
+    .left:hover .left-label,.left:focus-within .left-label{opacity:1;transform:translateX(0)}
+    .left a::after{content:attr(data-tip);position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);padding:7px 10px;border-radius:10px;background:rgba(7,12,22,.96);border:1px solid rgba(148,163,184,.14);color:var(--strong);font-size:12px;font-weight:700;white-space:nowrap;opacity:0;pointer-events:none;box-shadow:var(--shadow-card);transition:opacity .18s ease,transform .18s ease}
+    .left a:hover::after{opacity:1;transform:translateY(-50%) translateX(0)}
+    .left:hover a::after,.left:focus-within a::after{display:none}
+    .left a.active::before{color:var(--a)}
 
     .main{display:grid;gap:36px;align-content:start}.header{padding:28px}.ttl{margin:0;color:var(--strong);font-size:38px;letter-spacing:-.035em}.sub{margin-top:10px;color:var(--muted);font-size:15px;line-height:1.65;max-width:760px}
     .card{padding:24px}.sec-ttl{margin:0;color:var(--strong);font-size:30px;letter-spacing:-.03em}
@@ -136,9 +144,13 @@
     .match-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
     .match{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:start;border:1px solid rgba(148,163,184,.18);border-radius:14px;padding:12px;background:#171b24;box-shadow:0 10px 22px rgba(2,8,23,.12);transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease}
     .match:hover{transform:scale(1.02);box-shadow:0 14px 28px rgba(56,189,248,.12);border-color:rgba(56,189,248,.28)}
+    .match.top-match{border-color:rgba(56,189,248,.34);box-shadow:0 16px 34px rgba(56,189,248,.12)}
+    .match.top-match .thumb{width:104px;height:104px}
     .thumb{width:96px;height:96px;border-radius:12px;overflow:hidden;background:#243041;display:grid;place-items:center;color:var(--muted);font-size:11px;text-align:center;padding:8px}
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
     .mb{min-width:0;display:grid;gap:8px}
+    .match-kicker{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .top-chip{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.26);color:var(--strong);font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
     .mt{font-size:14px;font-weight:800;color:var(--strong);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
     .mm{font-size:12px;color:var(--muted);line-height:1.45}
     .ml{font-size:12px;color:#93c5fd;text-decoration:none}
@@ -148,6 +160,7 @@
     .meta-score{font-size:12px;color:var(--muted)}
     .match-desc{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
     .match-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .match-more{margin-top:4px}
     .domain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
     .domain-card{border:1px solid rgba(148,163,184,.08);border-radius:18px;padding:18px;background:rgba(9,17,31,.32);display:grid;gap:8px;box-shadow:var(--shadow-card)}
     .domain-name{font-size:13px;font-weight:700;color:var(--strong)}
@@ -201,7 +214,8 @@
 
     .skeleton{position:relative;overflow:hidden;background:rgba(148,163,184,.16);border-radius:8px}.skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);animation:shim 1.35s infinite} @keyframes shim{100%{transform:translateX(100%)}}
 
-    @media (max-width:1220px){.app{grid-template-columns:1fr;gap:20px;padding:18px}.match-grid,.chart-grid,.strength-grid{grid-template-columns:1fr}.right{order:3}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:84px;flex-wrap:wrap;padding:14px 18px 12px;gap:10px}.top-left,.top-right{min-width:unset}.main{gap:28px}.card,.header,.chat,.side-card{padding:20px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:18px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}}
+    @media (max-width:1220px){.app{grid-template-columns:72px minmax(0,1fr);gap:18px;padding:18px}.match-grid,.chart-grid,.strength-grid{grid-template-columns:1fr}.right{grid-column:1/-1;order:3}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:84px;flex-wrap:wrap;padding:14px 18px 12px;gap:10px}.top-left,.top-right{min-width:unset}.main{gap:28px}.card,.header,.chat,.side-card{padding:20px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:18px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.left{top:100px;min-height:auto}}
+    @media (max-width:900px){.app{grid-template-columns:1fr;padding:16px}.left{position:static;width:100%;min-height:auto;padding:12px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.left:hover,.left:focus-within{width:100%;padding:12px}.left a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.left a::after{display:none}}
   </style>
 </head>
 <body>
@@ -224,12 +238,12 @@
 
   <div class="app">
     <aside class="panel left">
-      <a class="active" href="/dashboard">Dashboard</a>
-      <a href="#uploadBlock">Upload & Analyze</a>
-      <a href="#resultPanel">Results</a>
-      <a href="#resultPanel">Tracking</a>
-      <a href="/">Back To Landing</a>
-      <a href="/service">Legacy Experience</a>
+      <a class="active" href="/dashboard" data-icon="◫" data-tip="Dashboard" title="Dashboard"><span class="left-label">Dashboard</span></a>
+      <a href="#uploadBlock" data-icon="⇪" data-tip="Upload & Analyze" title="Upload & Analyze"><span class="left-label">Upload & Analyze</span></a>
+      <a href="#resultPanel" data-icon="⌕" data-tip="Results" title="Results"><span class="left-label">Results</span></a>
+      <a href="#resultPanel" data-icon="◔" data-tip="Tracking" title="Tracking"><span class="left-label">Tracking</span></a>
+      <a href="/" data-icon="↩" data-tip="Back To Landing" title="Back To Landing"><span class="left-label">Back To Landing</span></a>
+      <a href="/service" data-icon="⋯" data-tip="Legacy Experience" title="Legacy Experience"><span class="left-label">Legacy Experience</span></a>
     </aside>
 
     <main class="main">
@@ -747,10 +761,48 @@
       return items.reduce((sum, item)=>sum + layer2Similarity(item), 0) / items.length;
     }
 
-    function typeColor(type){
-      if(type === "exact"){ return "var(--ok)"; }
-      if(type === "visual"){ return "var(--a2)"; }
-      return "var(--related)";
+    function confidenceWeight(confidence){
+      const label = String(confidence || "").toUpperCase();
+      if(label === "HIGH"){ return 3; }
+      if(label === "MEDIUM"){ return 2; }
+      return 1;
+    }
+
+    function matchTypeWeight(matchType){
+      const label = String(matchType || "").toLowerCase();
+      if(label === "exact"){ return 3; }
+      if(label === "visual"){ return 2; }
+      return 1;
+    }
+
+    function domainImportanceWeight(domain){
+      const value = canonicalDomain(domain);
+      if(!value){ return 0; }
+      if(value.includes("wikipedia.org")){ return 5; }
+      const majorNews = ["reuters.com","apnews.com","bbc.com","cnn.com","nytimes.com","washingtonpost.com","theguardian.com","wsj.com","bloomberg.com","npr.org","cbsnews.com","nbcnews.com","abcnews.go.com","foxnews.com","aljazeera.com","time.com","forbes.com","theverge.com","techcrunch.com"];
+      const social = ["twitter.com","reddit.com","youtube.com","instagram.com","facebook.com","tiktok.com","linkedin.com"];
+      if(majorNews.some((item)=>value === item || value.endsWith(`.${item}`))){ return 4; }
+      if(social.some((item)=>value === item || value.endsWith(`.${item}`))){ return 3; }
+      return 1;
+    }
+
+    function rankMatches(items){
+      return [...items].sort((a, b)=>{
+        const aConfidence = String(a.confidence_label || a.confidence || a.confidence_level || "LOW").toUpperCase();
+        const bConfidence = String(b.confidence_label || b.confidence || b.confidence_level || "LOW").toUpperCase();
+        const aScore = (matchTypeWeight(a.match_type) * 3) + (layer2Similarity(a) * 2) + confidenceWeight(aConfidence);
+        const bScore = (matchTypeWeight(b.match_type) * 3) + (layer2Similarity(b) * 2) + confidenceWeight(bConfidence);
+        if(bScore !== aScore){ return bScore - aScore; }
+        const similarityDiff = layer2Similarity(b) - layer2Similarity(a);
+        if(similarityDiff !== 0){ return similarityDiff; }
+        const confidenceDiff = confidenceWeight(bConfidence) - confidenceWeight(aConfidence);
+        if(confidenceDiff !== 0){ return confidenceDiff; }
+        const domainDiff = domainImportanceWeight(b.domain || b.platform || "") - domainImportanceWeight(a.domain || a.platform || "");
+        if(domainDiff !== 0){ return domainDiff; }
+        const aKey = `${canonicalDomain(a.domain || a.platform || "")}|${String(a.title || a.id || "")}`;
+        const bKey = `${canonicalDomain(b.domain || b.platform || "")}|${String(b.title || b.id || "")}`;
+        return aKey.localeCompare(bKey);
+      });
     }
 
     function filterLabel(domain, l2){
@@ -842,37 +894,46 @@
       }
     }
 
-    function safeDiscoveryCard(item, fallbackTitle){
+    function safeDiscoveryCard(item, fallbackTitle, index){
       const sim = layer2Similarity(item);
       const m = item && item.metadata ? item.metadata : {};
       const title = escapeHtml(layer2Title(item, fallbackTitle));
       const src = escapeHtml(layer2SourceUrl(item));
       const seen = safeDate(item.timestamp || item.first_seen || "");
       const preview = layer2PreviewUrl(item);
-      const confidence = String(item.confidence || item.confidence_level || "").trim();
+      const confidence = String(item.confidence_label || item.confidence || item.confidence_level || "").trim();
       const note = String(item.note || item.match_reason || "").trim();
       const platform = String(item.platform || "").trim();
-      const matchType = String(item.match_type || fallbackTitle || "").trim();
       const explanation = String(item.explanation || note || "").trim();
       const rank = Number(m.rank || 0);
       const hasSimilarity = Number(item.visual_similarity || m.embedding_similarity || 0) > 0;
       const domain = escapeHtml(String(item.domain || platform || "unknown"));
       const scoreText = hasSimilarity ? `${(sim*100).toFixed(1)}% match` : (rank > 0 ? `Result #${rank}` : "Match found");
       const confidenceMarkup = `<span class="confidence-badge ${confidenceClass(confidence)}">${escapeHtml(confidence || "LOW")}</span>`;
+      const topMatchMarkup = index === 0 ? `<div class="match-kicker"><span class="top-chip">Top Match</span></div>` : "";
       const linkMarkup = src
         ? `<a class="ml" href="${src}" target="_blank" rel="noreferrer">Open page</a>`
         : `<span class="ml disabled">No public page available</span>`;
       const shortExplanation = explanation || "Match found through reverse search.";
-      return `<article class="match"><div class="thumb">${preview ? `<img src="${escapeHtml(preview)}" alt="${title}" />` : "No preview available"}</div><div class="mb"><div class="mt">${title}</div><div class="match-meta"><span class="meta-domain">${domain}</span><span class="meta-score">${scoreText}</span>${confidenceMarkup}</div><div class="mm match-desc">${escapeHtml(shortExplanation)}</div><div class="match-footer"><span class="mm">Seen: ${escapeHtml(seen)}</span>${linkMarkup}</div></div></article>`;
+      return `<article class="match${index === 0 ? " top-match" : ""}"><div class="thumb">${preview ? `<img src="${escapeHtml(preview)}" alt="${title}" />` : "No preview available"}</div><div class="mb">${topMatchMarkup}<div class="mt">${title}</div><div class="match-meta"><span class="meta-domain">${domain}</span><span class="meta-score">${scoreText}</span>${confidenceMarkup}</div><div class="mm match-desc">${escapeHtml(shortExplanation)}</div><div class="match-footer"><span class="mm">Seen: ${escapeHtml(seen)}</span>${linkMarkup}</div></div></article>`;
     }
 
     function renderDiscoverySection(gridEl, countEl, items, emptyText, fallbackTitle){
-      countEl.textContent = String(items.length);
-      if(!items.length){
+      const ranked = rankMatches(items);
+      countEl.textContent = String(ranked.length);
+      if(!ranked.length){
         gridEl.innerHTML = `<div class="empty-note">${escapeHtml(emptyText)}</div>`;
         return;
       }
-      gridEl.innerHTML = items.map((item)=>safeDiscoveryCard(item, fallbackTitle)).join("");
+      const visible = ranked.slice(0, 5);
+      const hidden = ranked.slice(5);
+      const visibleMarkup = visible.map((item, index)=>safeDiscoveryCard(item, fallbackTitle, index)).join("");
+      if(!hidden.length){
+        gridEl.innerHTML = visibleMarkup;
+        return;
+      }
+      const hiddenMarkup = hidden.map((item, index)=>safeDiscoveryCard(item, fallbackTitle, index + 5)).join("");
+      gridEl.innerHTML = `${visibleMarkup}<details class="match-more fold"><summary class="search-link">Show ${hidden.length} more</summary><div class="fold-content"><div class="match-grid">${hiddenMarkup}</div></div></details>`;
     }
 
     function renderManualSearch(l2){

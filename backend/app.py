@@ -251,17 +251,133 @@ def _match_explanation(item: dict[str, object], match_type: str) -> str:
     return "Contextually related result surfaced by reverse-image search."
 
 
+def _match_confidence_label(item: dict[str, object], similarity_score: float, match_type: str) -> str:
+    raw = str(item.get("confidence") or item.get("confidence_level") or "").strip().upper()
+    if raw in {"HIGH", "MEDIUM", "LOW"}:
+        return raw
+    if match_type == "exact":
+        if similarity_score >= 0.9:
+            return "HIGH"
+        if similarity_score >= 0.75:
+            return "MEDIUM"
+        return "LOW"
+    if match_type == "visual":
+        if similarity_score >= 0.8:
+            return "HIGH"
+        if similarity_score >= 0.62:
+            return "MEDIUM"
+        return "LOW"
+    if similarity_score >= 0.72:
+        return "HIGH"
+    if similarity_score >= 0.55:
+        return "MEDIUM"
+    return "LOW"
+
+
+def _domain_importance_weight(domain: str) -> int:
+    value = str(domain or "").strip().lower()
+    if not value or value == "unknown":
+        return 0
+    if "wikipedia.org" in value:
+        return 5
+    high_priority_news = (
+        "reuters.com",
+        "apnews.com",
+        "bbc.com",
+        "bbc.co.uk",
+        "cnn.com",
+        "nytimes.com",
+        "washingtonpost.com",
+        "theguardian.com",
+        "wsj.com",
+        "bloomberg.com",
+        "npr.org",
+        "cbsnews.com",
+        "nbcnews.com",
+        "abcnews.go.com",
+        "foxnews.com",
+        "aljazeera.com",
+        "time.com",
+        "forbes.com",
+        "theverge.com",
+        "techcrunch.com",
+    )
+    social_priority = (
+        "twitter.com",
+        "x.com",
+        "reddit.com",
+        "youtube.com",
+        "youtu.be",
+        "instagram.com",
+        "facebook.com",
+        "fb.com",
+        "tiktok.com",
+        "linkedin.com",
+    )
+    if any(value == domain_name or value.endswith(f".{domain_name}") for domain_name in high_priority_news):
+        return 4
+    if any(value == domain_name or value.endswith(f".{domain_name}") for domain_name in social_priority):
+        return 3
+    return 1
+
+
+def _confidence_weight(label: str) -> int:
+    return {"HIGH": 3, "MEDIUM": 2, "LOW": 1}.get(str(label or "").strip().upper(), 1)
+
+
+def _match_type_weight(match_type: str) -> int:
+    normalized = str(match_type or "").strip().lower()
+    if normalized == "exact":
+        return 3
+    if normalized == "visual":
+        return 2
+    return 1
+
+
+def _rank_matches(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    ranked: list[dict[str, object]] = []
+    for index, item in enumerate(items):
+        enriched = deepcopy(item)
+        match_type = str(enriched.get("match_type") or "related").strip().lower() or "related"
+        similarity = float(enriched.get("similarity_score") or 0.0)
+        confidence_label = str(enriched.get("confidence_label") or enriched.get("confidence") or "LOW").strip().upper() or "LOW"
+        domain = str(enriched.get("domain") or "unknown").strip().lower()
+        final_score = (_match_type_weight(match_type) * 3) + (similarity * 2) + _confidence_weight(confidence_label)
+        enriched["confidence_label"] = confidence_label
+        enriched["final_score"] = round(final_score, 4)
+        enriched["_sort_index"] = index
+        ranked.append(enriched)
+    ranked.sort(
+        key=lambda item: (
+            -float(item.get("final_score") or 0.0),
+            -float(item.get("similarity_score") or 0.0),
+            -_confidence_weight(str(item.get("confidence_label") or "")),
+            -_domain_importance_weight(str(item.get("domain") or "")),
+            str(item.get("domain") or ""),
+            str(item.get("title") or item.get("id") or ""),
+            int(item.get("_sort_index") or 0),
+        )
+    )
+    for item in ranked:
+        item.pop("_sort_index", None)
+    return ranked
+
+
 def _annotate_matches(items: list[dict[str, object]], *, default_type: str) -> list[dict[str, object]]:
     annotated: list[dict[str, object]] = []
     for item in items:
         enriched = deepcopy(item)
         match_type = _match_type_label(enriched, default_type)
+        similarity_score = round(_layer2_match_similarity(enriched), 4)
         enriched["match_type"] = match_type
-        enriched["similarity_score"] = round(_layer2_match_similarity(enriched), 4)
+        enriched["similarity_score"] = similarity_score
         enriched["explanation"] = _match_explanation(enriched, match_type)
         enriched["domain"] = _match_domain(enriched)
+        enriched["confidence_label"] = _match_confidence_label(enriched, similarity_score, match_type)
+        enriched["confidence"] = str(enriched.get("confidence") or enriched["confidence_label"]).upper()
+        enriched["confidence_level"] = str(enriched.get("confidence_level") or enriched["confidence_label"]).upper()
         annotated.append(enriched)
-    return annotated
+    return _rank_matches(annotated)
 
 
 def _top_domains_from_matches(items: list[dict[str, object]], limit: int = 3) -> list[str]:
