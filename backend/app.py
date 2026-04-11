@@ -482,6 +482,57 @@ def _domain_insights(items: list[dict[str, object]]) -> list[dict[str, object]]:
     return sorted(insights, key=lambda item: (-int(item["count"]), -float(item["max_similarity"]), str(item["domain"])))
 
 
+def _domain_distribution_payload(items: list[dict[str, object]]) -> dict[str, object]:
+    total_matches = len(items)
+    matches_with_urls = 0
+    valid_domains = 0
+    distribution: list[dict[str, object]] = []
+    for insight in _domain_insights(items):
+        domain = str(insight.get("domain") or "").strip().lower()
+        if not domain or domain == "unknown":
+            continue
+        valid_domains += 1
+        distribution.append(
+            {
+                "domain": domain,
+                "count": int(insight.get("count") or 0),
+                "match_types": list(insight.get("match_types") or []),
+            }
+        )
+    for item in items:
+        candidate_url = str(
+            item.get("page_url")
+            or item.get("url")
+            or item.get("source_url")
+            or item.get("media_url")
+            or ""
+        ).strip()
+        if candidate_url:
+            matches_with_urls += 1
+    if total_matches <= 0:
+        status = "no_data"
+        message = "No public sources found"
+    elif valid_domains <= 0:
+        status = "partial" if matches_with_urls > 0 else "no_data"
+        message = "Matches found, but no valid source domains could be extracted." if matches_with_urls > 0 else "No public sources found"
+    elif valid_domains <= 2:
+        status = "partial"
+        message = "Limited distribution data available"
+    else:
+        status = "available"
+        message = "Domain distribution available"
+    return {
+        "domain_distribution": distribution,
+        "debug": {
+            "total_matches": total_matches,
+            "matches_with_urls": matches_with_urls,
+            "valid_domains": valid_domains,
+        },
+        "domain_status": status,
+        "domain_message": message,
+    }
+
+
 def _important_domains(items: list[dict[str, object]]) -> list[dict[str, object]]:
     grouped: dict[str, dict[str, object]] = {}
     for insight in _domain_insights(items):
@@ -622,6 +673,7 @@ def build_layer2_response(data: dict[str, object] | None) -> dict[str, object]:
     all_items = [*exact, *visual, *embedding]
     domain_clusters = _domain_clusters(all_items)
     domain_insights = _domain_insights(all_items)
+    domain_distribution_payload = _domain_distribution_payload(all_items)
     important_domains = _important_domains(all_items)
     response = {
         "exact_matches": exact,
@@ -642,6 +694,10 @@ def build_layer2_response(data: dict[str, object] | None) -> dict[str, object]:
         "first_seen_estimate": origin_payload["first_seen_estimate"],
         "domain_clusters": domain_clusters,
         "domain_insights": domain_insights,
+        "domain_distribution": domain_distribution_payload["domain_distribution"],
+        "debug": domain_distribution_payload["debug"],
+        "domain_status": domain_distribution_payload["domain_status"],
+        "domain_message": domain_distribution_payload["domain_message"],
         "important_domains": important_domains,
     }
     for key in (
