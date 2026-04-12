@@ -36,7 +36,18 @@ class Content(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     hash: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
+    perceptual_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    media_type: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    detection_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    embedding_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     media_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    session_scope_id: Mapped[str | None] = mapped_column(String(96), nullable=True, index=True)
+    cluster_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("content_clusters.id", ondelete="SET NULL"), nullable=True, index=True)
+    similar_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    tracking_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    alert_email_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    alert_frequency: Mapped[str | None] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_checked: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     risk_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
@@ -48,6 +59,22 @@ class Content(Base):
 
     sources: Mapped[list["Source"]] = relationship(back_populates="content", cascade="all, delete-orphan")
     tracking_logs: Mapped[list["TrackingLog"]] = relationship(back_populates="content", cascade="all, delete-orphan")
+    cluster: Mapped["ContentCluster | None"] = relationship(back_populates="contents")
+
+
+class ContentCluster(Base):
+    __tablename__ = "content_clusters"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    centroid_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    centroid_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    content_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    risk_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    tracking_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_seen: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    contents: Mapped[list["Content"]] = relationship(back_populates="cluster")
 
 
 class Source(Base):

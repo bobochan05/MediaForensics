@@ -22,6 +22,22 @@ class ClipModel(nn.Module):
         self.model.eval()
 
     @staticmethod
+    def _project_if_needed(tensor: torch.Tensor, projection: nn.Module) -> torch.Tensor:
+        if tensor.dim() > 2:
+            tensor = tensor.mean(dim=1)
+        tensor = tensor.float()
+        in_features = int(getattr(projection, "in_features", tensor.shape[-1]))
+        out_features = int(getattr(projection, "out_features", tensor.shape[-1]))
+        feature_width = int(tensor.shape[-1])
+        if feature_width == out_features:
+            return tensor
+        if feature_width == in_features:
+            return projection(tensor)
+        raise ValueError(
+            f"Unexpected CLIP feature width {feature_width}; expected {in_features} or {out_features}."
+        )
+
+    @staticmethod
     def _load_processor(model_name: str) -> CLIPProcessor:
         try:
             return CLIPProcessor.from_pretrained(model_name, local_files_only=True)
@@ -39,11 +55,36 @@ class ClipModel(nn.Module):
                 return HFCLIPModel.from_pretrained(model_name, use_safetensors=False)
             raise
 
+    def _coerce_image_features(self, output) -> torch.Tensor:
+        if isinstance(output, torch.Tensor):
+            return self._project_if_needed(output, self.model.visual_projection)
+        if hasattr(output, "image_embeds") and isinstance(output.image_embeds, torch.Tensor):
+            return self._project_if_needed(output.image_embeds, self.model.visual_projection)
+        if hasattr(output, "pooler_output") and isinstance(output.pooler_output, torch.Tensor):
+            return self._project_if_needed(output.pooler_output, self.model.visual_projection)
+        if hasattr(output, "last_hidden_state") and isinstance(output.last_hidden_state, torch.Tensor):
+            return self._project_if_needed(output.last_hidden_state, self.model.visual_projection)
+        if isinstance(output, (tuple, list)) and output and isinstance(output[0], torch.Tensor):
+            return self._project_if_needed(output[0], self.model.visual_projection)
+        raise TypeError(f"Unsupported CLIP image feature output type: {type(output)!r}")
+
+    def _coerce_text_features(self, output) -> torch.Tensor:
+        if isinstance(output, torch.Tensor):
+            return self._project_if_needed(output, self.model.text_projection)
+        if hasattr(output, "text_embeds") and isinstance(output.text_embeds, torch.Tensor):
+            return self._project_if_needed(output.text_embeds, self.model.text_projection)
+        if hasattr(output, "pooler_output") and isinstance(output.pooler_output, torch.Tensor):
+            return self._project_if_needed(output.pooler_output, self.model.text_projection)
+        if hasattr(output, "last_hidden_state") and isinstance(output.last_hidden_state, torch.Tensor):
+            return self._project_if_needed(output.last_hidden_state, self.model.text_projection)
+        if isinstance(output, (tuple, list)) and output and isinstance(output[0], torch.Tensor):
+            return self._project_if_needed(output[0], self.model.text_projection)
+        raise TypeError(f"Unsupported CLIP text feature output type: {type(output)!r}")
+
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
-        vision_outputs = self.model.vision_model(pixel_values=pixel_values)
-        pooled_output = vision_outputs.pooler_output
-        projected_features = self.model.visual_projection(pooled_output)
-        return F.normalize(projected_features, p=2, dim=1)
+        raw_output = self.model.get_image_features(pixel_values=pixel_values)
+        image_features = self._coerce_image_features(raw_output).float()
+        return F.normalize(image_features, p=2, dim=1)
 
     @torch.inference_mode()
     def extract_features(self, images: Sequence[Image.Image]) -> np.ndarray:
@@ -58,6 +99,6 @@ class ClipModel(nn.Module):
         prompts = [str(text or "").strip() for text in texts]
         inputs = self.processor(text=prompts, return_tensors="pt", padding=True, truncation=True)
         inputs = {key: value.to(self.device) for key, value in inputs.items()}
-        text_features = self.model.get_text_features(**inputs)
+        text_features = self._coerce_text_features(self.model.get_text_features(**inputs)).float()
         text_features = F.normalize(text_features, p=2, dim=1)
         return text_features.cpu().numpy().astype(np.float32)

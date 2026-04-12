@@ -21,6 +21,7 @@ class AnalyzeRequest:
     enable_layer1: bool
     enable_layer2: bool
     enable_layer3: bool
+    tracking_enabled: bool
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> "AnalyzeRequest":
@@ -30,6 +31,7 @@ class AnalyzeRequest:
             enable_layer1=_as_bool(payload.get("enable_layer1"), True),
             enable_layer2=_as_bool(payload.get("enable_layer2"), True),
             enable_layer3=_as_bool(payload.get("enable_layer3"), True),
+            tracking_enabled=_as_bool(payload.get("tracking_enabled"), False),
         )
 
 

@@ -10,19 +10,149 @@ from sqlalchemy.orm import Session, selectinload
 
 from ai.layer3_tracking.services.url_utils import extract_domain
 
-from .models import ApiUsage, Content, ContentStatus, Source, TrackingLog
+from .models import ApiUsage, Content, ContentCluster, ContentStatus, Source, TrackingLog
 
 
 def create_content(
     session: Session,
     *,
     content_hash: str,
+    perceptual_hash: str | None = None,
+    media_type: str | None = None,
+    detection_score: float = 0.0,
+    embedding_path: str | None = None,
     media_url: str | None = None,
+    owner_user_id: int | None = None,
+    session_scope_id: str | None = None,
     risk_score: float = 0.0,
+    cluster_id: UUID | None = None,
+    similar_count: int = 0,
+    tracking_enabled: bool = False,
+    alert_email_enabled: bool = False,
+    alert_frequency: str | None = None,
     status: ContentStatus = ContentStatus.stable,
 ) -> Content:
-    content = Content(hash=content_hash, media_url=media_url, risk_score=risk_score, status=status)
+    content = Content(
+        hash=content_hash,
+        perceptual_hash=perceptual_hash,
+        media_type=media_type,
+        detection_score=detection_score,
+        embedding_path=embedding_path,
+        media_url=media_url,
+        owner_user_id=owner_user_id,
+        session_scope_id=session_scope_id,
+        cluster_id=cluster_id,
+        similar_count=similar_count,
+        tracking_enabled=tracking_enabled,
+        alert_email_enabled=alert_email_enabled,
+        alert_frequency=alert_frequency,
+        risk_score=risk_score,
+        status=status,
+    )
     session.add(content)
+    session.flush()
+    return content
+
+
+def get_content_by_hash(session: Session, content_hash: str, *, for_update: bool = False) -> Content | None:
+    statement = (
+        select(Content)
+        .where(Content.hash == content_hash)
+        .options(selectinload(Content.sources), selectinload(Content.tracking_logs), selectinload(Content.cluster))
+    )
+    if for_update:
+        statement = statement.with_for_update()
+    return session.scalars(statement).first()
+
+
+def create_cluster(
+    session: Session,
+    *,
+    centroid_path: str | None = None,
+    centroid_hash: str | None = None,
+    content_count: int = 0,
+    risk_score: float = 0.0,
+    tracking_enabled: bool = False,
+) -> ContentCluster:
+    cluster = ContentCluster(
+        centroid_path=centroid_path,
+        centroid_hash=centroid_hash,
+        content_count=content_count,
+        risk_score=risk_score,
+        tracking_enabled=tracking_enabled,
+    )
+    session.add(cluster)
+    session.flush()
+    return cluster
+
+
+def get_cluster(session: Session, cluster_id: UUID, *, for_update: bool = False) -> ContentCluster | None:
+    statement = select(ContentCluster).where(ContentCluster.id == cluster_id).options(selectinload(ContentCluster.contents))
+    if for_update:
+        statement = statement.with_for_update()
+    return session.scalars(statement).first()
+
+
+def list_clusters(session: Session) -> list[ContentCluster]:
+    return list(session.scalars(select(ContentCluster).options(selectinload(ContentCluster.contents))).all())
+
+
+def update_cluster(
+    session: Session,
+    *,
+    cluster: ContentCluster,
+    centroid_path: str | None,
+    centroid_hash: str | None,
+    content_count: int,
+    risk_score: float,
+    tracking_enabled: bool,
+    last_seen: datetime,
+) -> ContentCluster:
+    cluster.centroid_path = centroid_path
+    cluster.centroid_hash = centroid_hash
+    cluster.content_count = content_count
+    cluster.risk_score = risk_score
+    cluster.tracking_enabled = tracking_enabled
+    cluster.last_seen = last_seen
+    session.flush()
+    return cluster
+
+
+def update_content_intelligence(
+    session: Session,
+    *,
+    content: Content,
+    perceptual_hash: str | None,
+    media_type: str | None,
+    detection_score: float,
+    embedding_path: str | None,
+    media_url: str | None,
+    owner_user_id: int | None,
+    session_scope_id: str | None,
+    cluster_id: UUID | None,
+    similar_count: int,
+    tracking_enabled: bool,
+    alert_email_enabled: bool,
+    alert_frequency: str | None,
+    risk_score: float,
+    status: ContentStatus,
+    last_checked: datetime,
+) -> Content:
+    content.perceptual_hash = perceptual_hash
+    content.media_type = media_type
+    content.detection_score = detection_score
+    content.embedding_path = embedding_path
+    content.media_url = media_url
+    content.owner_user_id = owner_user_id
+    content.session_scope_id = session_scope_id
+    content.cluster_id = cluster_id
+    content.similar_count = similar_count
+    content.tracking_enabled = tracking_enabled
+    content.alert_email_enabled = alert_email_enabled
+    content.alert_frequency = alert_frequency
+    content.risk_score = risk_score
+    content.status = status
+    content.last_checked = last_checked
     session.flush()
     return content
 

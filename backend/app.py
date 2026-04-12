@@ -33,6 +33,7 @@ from PIL import Image
 from werkzeug.exceptions import HTTPException
 from ai.layer2_matching.insights import build_layer2_insights
 from ai.layer1_detection.content_classifier import classify_media_content
+from ai.layer3_tracking.services import AlertEvent, Layer3IntelligenceStore, get_alert_service
 
 from backend.config import load_backend_config
 from backend.auth_system import init_auth_system
@@ -133,6 +134,9 @@ _ANALYSIS_RESULT_CACHE_TTL_SECONDS = 24 * 3600
 _CHAT_RESPONSE_CACHE: dict[str, dict[str, object]] = {}
 _CHAT_RESPONSE_CACHE_META: dict[str, float] = {}
 _CHAT_RESPONSE_CACHE_TTL_SECONDS = 12 * 3600
+_TEMP_LAYER3_STATE: dict[str, list[dict[str, object]]] = {}
+_TEMP_LAYER3_STATE_META: dict[str, float] = {}
+_TEMP_LAYER3_TTL_SECONDS = 45 * 60
 REQUEST_TIMEOUT_SECONDS = 15.0
 REVERSE_SEARCH_ALLOWED_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 REVERSE_SEARCH_ALLOWED_MIME_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
@@ -144,11 +148,32 @@ AGENT_MATCH_LIMIT = 5
 AGENT_ALERT_LIMIT = 4
 AGENT_DOMAIN_LIMIT = 8
 AGENT_TIMELINE_LIMIT = 6
+LAYER3_LATENCY_ALERT_MS = float(os.getenv("LAYER3_LATENCY_ALERT_MS", "8000"))
 AI_HTTP = requests.Session()
+_LAYER3_INTELLIGENCE_STORE: Layer3IntelligenceStore | None = None
 
 
 def _new_uuid() -> str:
     return str(uuid.uuid4())
+
+
+def _layer3_store() -> Layer3IntelligenceStore | None:
+    global _LAYER3_INTELLIGENCE_STORE
+    if _LAYER3_INTELLIGENCE_STORE is None:
+        try:
+            _LAYER3_INTELLIGENCE_STORE = Layer3IntelligenceStore()
+        except Exception:  # pragma: no cover - initialization guard
+            LOGGER.exception("Failed to initialize Layer 3 intelligence store.")
+            get_alert_service().trigger_alert(
+                AlertEvent(
+                    event_type="layer3_store_initialization_failure",
+                    severity="CRITICAL",
+                    message="Layer 3 intelligence store failed to initialize.",
+                    error_type="Layer3InitializationError",
+                )
+            )
+            return None
+    return _LAYER3_INTELLIGENCE_STORE
 
 
 def _current_request_id() -> str:
@@ -844,6 +869,10 @@ def _cleanup_analysis_jobs() -> None:
             if now - float(created_at) > _CHAT_RESPONSE_CACHE_TTL_SECONDS:
                 _CHAT_RESPONSE_CACHE.pop(key, None)
                 _CHAT_RESPONSE_CACHE_META.pop(key, None)
+        for key, created_at in list(_TEMP_LAYER3_STATE_META.items()):
+            if now - float(created_at) > _TEMP_LAYER3_TTL_SECONDS:
+                _TEMP_LAYER3_STATE.pop(key, None)
+                _TEMP_LAYER3_STATE_META.pop(key, None)
 
 
 def _file_sha1(path: Path) -> str:
@@ -857,8 +886,39 @@ def _file_sha1(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _temporary_tracking_scope(principal: dict[str, object]) -> str:
+    auth_mode = str(principal.get("auth_mode") or "anonymous").strip().lower()
+    if auth_mode == "user":
+        return f"user:{int(principal.get('user_id') or 0)}"
+    if auth_mode == "guest":
+        guest_id = str(principal.get("guest_id") or "").strip()
+        if guest_id:
+            return f"guest:{guest_id}"
+    session_id = str(session.get("layer3_session_id") or "").strip()
+    if not session_id:
+        session_id = _new_uuid()
+        session["layer3_session_id"] = session_id
+        session.modified = True
+    return f"anon:{session_id}"
+
+
 def _empty_layer3_payload() -> dict[str, object]:
     return {
+        "content_id": None,
+        "cluster_id": None,
+        "similar_count": 0,
+        "tracking_enabled": False,
+        "tracking_requested": False,
+        "tracking_available": False,
+        "alerts_available": False,
+        "persistence_mode": "none",
+        "expires_at": None,
+        "login_prompt": "",
+        "risk_level": "Low",
+        "timeline_summary": {},
+        "spread_indicators": {},
+        "propagation_graph": {"nodes": 0, "edges": 0, "variation_detected": False},
+        "visualizations": {},
         "timeline": [],
         "growth": {"rate_percent": 0.0, "spike_detected": False, "window": "1h"},
         "growth_rate": 0.0,
@@ -873,6 +933,185 @@ def _empty_layer3_payload() -> dict[str, object]:
         },
         "risk_insight": "No spread data yet. Monitoring will continue after discovery finishes.",
     }
+
+
+def _guest_login_prompt(track_requested: bool) -> str:
+    if not track_requested:
+        return ""
+    return "Login to enable persistent tracking and alerts."
+
+
+def _store_temporary_layer3_entry(
+    *,
+    scope_id: str,
+    content_hash: str,
+    detection_score: float,
+    media_type: str,
+    tracked_sources: int,
+    top_domain: str,
+    now_ts: float,
+) -> dict[str, object]:
+    _cleanup_analysis_jobs()
+    entries = list(_TEMP_LAYER3_STATE.get(scope_id) or [])
+    stale_cutoff = now_ts - _TEMP_LAYER3_TTL_SECONDS
+    entries = [entry for entry in entries if float(entry.get("timestamp") or 0.0) >= stale_cutoff]
+    existing = next((entry for entry in entries if str(entry.get("content_hash") or "") == content_hash), None)
+    if existing is None:
+        existing = {
+            "content_hash": content_hash,
+            "content_id": f"temp-{content_hash[:12]}",
+            "cluster_id": f"temp-cluster-{content_hash[:10]}",
+            "timestamps": [],
+            "detections": [],
+            "sources": [],
+            "top_domains": [],
+            "media_type": media_type,
+        }
+        entries.append(existing)
+    timestamps = list(existing.get("timestamps") or [])
+    detections = list(existing.get("detections") or [])
+    sources = list(existing.get("sources") or [])
+    domains = list(existing.get("top_domains") or [])
+    timestamps.append(now_ts)
+    detections.append(float(detection_score))
+    sources.append(int(tracked_sources))
+    if top_domain:
+        domains.append(top_domain)
+    existing.update(
+        {
+            "timestamp": now_ts,
+            "timestamps": timestamps[-12:],
+            "detections": detections[-12:],
+            "sources": sources[-12:],
+            "top_domains": domains[-12:],
+            "media_type": media_type,
+        }
+    )
+    _TEMP_LAYER3_STATE[scope_id] = entries[-50:]
+    _TEMP_LAYER3_STATE_META[scope_id] = now_ts
+    return existing
+
+
+def _build_temporary_layer3_payload(
+    *,
+    stored_path: Path,
+    confidence: float,
+    is_fake: bool,
+    layer2_payload: dict[str, object],
+    upload_id: str,
+    session_scope_id: str,
+    track_requested: bool,
+) -> dict[str, object]:
+    payload = _empty_layer3_payload()
+    payload["tracking_requested"] = bool(track_requested)
+    payload["tracking_available"] = False
+    payload["alerts_available"] = False
+    payload["persistence_mode"] = "temporary"
+    payload["login_prompt"] = _guest_login_prompt(track_requested)
+
+    source_credibility = 0.42 if is_fake else 0.78
+    timeline = _build_tracking_timeline(confidence=confidence, is_fake=is_fake)
+    risk_metrics = _build_dashboard_risk(
+        confidence=confidence,
+        timeline=timeline,
+        source_credibility=source_credibility,
+    )
+    growth_rate = 0.0
+    if len(timeline) >= 2:
+        first_mentions = float(timeline[0]["mentions"])
+        last_mentions = float(timeline[-1]["mentions"])
+        growth_rate = round(((last_mentions - first_mentions) / max(1.0, first_mentions)) * 100.0, 2)
+    counts = dict(layer2_payload.get("counts") or {})
+    tracked_sources = int(counts.get("exact") or 0) + int(counts.get("visual") or 0) + int(counts.get("embedding") or 0)
+    content_hash = _file_sha1(stored_path)
+    top_domains = list(layer2_payload.get("top_domains") or [])
+    now_dt = datetime.now(timezone.utc)
+    temp_entry = _store_temporary_layer3_entry(
+        scope_id=session_scope_id,
+        content_hash=content_hash,
+        detection_score=confidence,
+        media_type="video" if stored_path.suffix.lower() in VIDEO_SUFFIXES else "image",
+        tracked_sources=tracked_sources,
+        top_domain=str(top_domains[0] if top_domains else ""),
+        now_ts=now_dt.timestamp(),
+    )
+    observations = len(list(temp_entry.get("timestamps") or []))
+    similar_count = max(tracked_sources, observations - 1)
+    spread_velocity = round(min(1.0, max(0.0, growth_rate / 120.0)), 4)
+    risk_score = min(
+        1.0,
+        max(
+            float(risk_metrics.get("risk_score") or 0.0),
+            float(confidence) * 0.45 + min(1.0, tracked_sources / 10.0) * 0.25 + min(1.0, observations / 6.0) * 0.2,
+        ),
+    )
+    risk_metrics["risk_score"] = risk_score
+    risk_metrics["spread_velocity"] = spread_velocity
+    expires_at = (now_dt + timedelta(seconds=_TEMP_LAYER3_TTL_SECONDS)).isoformat()
+    payload.update(
+        {
+            "content_id": temp_entry.get("content_id"),
+            "cluster_id": temp_entry.get("cluster_id"),
+            "similar_count": similar_count,
+            "tracking_enabled": False,
+            "risk_level": "Critical" if risk_score >= 0.85 else "High" if risk_score >= 0.65 else "Medium" if risk_score >= 0.35 else "Low",
+            "expires_at": expires_at,
+            "timeline": timeline,
+            "growth": {"rate_percent": growth_rate, "spike_detected": growth_rate >= 120, "window": "session"},
+            "growth_rate": growth_rate,
+            "growth_indicator": build_growth_indicator(growth_rate),
+            "risk_score": risk_score,
+            "risk": risk_metrics,
+            "risk_insight": "Temporary session intelligence is available. Login to enable persistent tracking, alerts, and long-term cluster history.",
+            "timeline_summary": {
+                "first_seen": datetime.fromtimestamp(float((temp_entry.get("timestamps") or [now_dt.timestamp()])[0]), tz=timezone.utc).isoformat(),
+                "last_seen": now_dt.isoformat(),
+                "observations": observations,
+                "temporary": True,
+                "expires_at": expires_at,
+            },
+            "spread_indicators": {
+                "spread_velocity": spread_velocity,
+                "platform_diversity": len(set(str(item).strip().lower() for item in top_domains if str(item).strip())),
+                "domains": top_domains[:6],
+                "temporary_session": True,
+            },
+            "propagation_graph": {
+                "nodes": max(observations, 1),
+                "edges": max(observations - 1, 0),
+                "variation_detected": tracked_sources > 0,
+            },
+            "alerts": (
+                [
+                    {
+                        "id": f"alert-{upload_id}-tracking-login",
+                        "title": "Tracking available after login",
+                        "message": "Login to enable persistent tracking and email alerts for this content.",
+                        "severity": "medium",
+                    }
+                ]
+                if track_requested
+                else []
+            ),
+            "visualizations": {
+                "spread_timeline": list(timeline),
+                "cluster_growth": [
+                    {"timestamp": item["timestamp"], "cluster_size": min(max(observations, 1), int(item["mentions"]))}
+                    for item in timeline
+                ],
+                "risk_metrics": {
+                    "detection": round(float(confidence), 4),
+                    "spread": spread_velocity,
+                    "cluster": round(min(1.0, max(0.0, observations / 6.0)), 4),
+                    "velocity": spread_velocity,
+                    "risk_score": round(float(risk_score), 4),
+                },
+                "match_strength_distribution": [],
+                "source_distribution": [dict(item) for item in list(layer2_payload.get("domain_distribution") or [])[:6] if isinstance(item, dict)],
+            },
+        }
+    )
+    return payload
 
 
 def _assemble_analysis_response(
@@ -894,6 +1133,12 @@ def _assemble_analysis_response(
     )
     normalized_layer2["consistency_warning"] = consistency_warning
     normalized_layer3 = deepcopy(layer3_payload) if isinstance(layer3_payload, dict) else _empty_layer3_payload()
+    for key in ("content_id", "cluster_id", "similar_count", "risk_score", "tracking_enabled"):
+        if key in normalized_layer3:
+            normalized_layer2[key] = normalized_layer3.get(key)
+    if normalized_layer3.get("tracking_enabled"):
+        normalized_layer2["timeline_summary"] = normalized_layer3.get("timeline_summary") or {}
+        normalized_layer2["spread_indicators"] = normalized_layer3.get("spread_indicators") or {}
     return {
         "analysis_id": upload_id,
         "upload_id": upload_id,
@@ -1533,6 +1778,7 @@ def _store_upload_metadata(
     label: str | None,
     confidence: float | None,
     source_url: str | None = None,
+    tracking_enabled: bool = False,
 ) -> None:
     payload = {
         "upload_id": upload_id,
@@ -1541,6 +1787,7 @@ def _store_upload_metadata(
         "label": label,
         "confidence": confidence,
         "source_url": source_url,
+        "tracking_enabled": bool(tracking_enabled),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     _upload_meta_path(upload_id).write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -2839,11 +3086,18 @@ def _run_layer2_discovery(
 
 def _build_layer3_payload(
     *,
+    stored_path: Path,
     confidence: float,
     is_fake: bool,
     layer2_payload: dict[str, object],
     enable_layer3: bool,
     upload_id: str,
+    auth_state: str,
+    user_id: int | None = None,
+    user_email: str | None = None,
+    session_scope_id: str = "",
+    media_url: str | None = None,
+    track_requested: bool = False,
 ) -> dict[str, object]:
     if not enable_layer3:
         return _empty_layer3_payload()
@@ -2895,7 +3149,7 @@ def _build_layer3_payload(
             start=1,
         )
     ]
-    return {
+    payload = {
         "timeline": timeline,
         "growth": growth_payload,
         "growth_rate": growth_rate,
@@ -2905,6 +3159,160 @@ def _build_layer3_payload(
         "risk": risk_metrics,
         "risk_insight": risk_insight,
     }
+    if auth_state != "user":
+        return _build_temporary_layer3_payload(
+            stored_path=stored_path,
+            confidence=confidence,
+            is_fake=is_fake,
+            layer2_payload=layer2_payload,
+            upload_id=upload_id,
+            session_scope_id=session_scope_id or "anonymous",
+            track_requested=track_requested,
+        )
+
+    intelligence_store = _layer3_store()
+    if intelligence_store is None:
+        payload["alerts"] = list(payload["alerts"]) + [
+            {
+                "id": f"alert-{upload_id}-layer3-store",
+                "title": "Layer 3 persistence unavailable",
+                "message": "Persistent indexing could not be initialized, so long-term tracking is unavailable for this run.",
+                "severity": "high",
+            }
+        ]
+        return payload
+
+    try:
+        intelligence = intelligence_store.persist_analysis(
+            media_path=stored_path,
+            detection_score=float(confidence),
+            layer2_payload=layer2_payload,
+            media_url=media_url,
+            track_requested=track_requested,
+            allow_alerting=bool(track_requested and user_id and user_email),
+            owner_user_id=user_id,
+            session_scope_id=session_scope_id or None,
+            alert_frequency="immediate",
+        )
+    except Exception as exc:  # pragma: no cover - background resilience
+        LOGGER.exception("Layer 3 persistence failed for %s", upload_id)
+        get_alert_service().trigger_alert(
+            AlertEvent(
+                event_type="layer3_persistence_failure",
+                severity="CRITICAL",
+                message="Layer 3 persistence failed during analysis.",
+                error_type=type(exc).__name__,
+                explanation=str(exc),
+            )
+        )
+        payload["alerts"] = list(payload["alerts"]) + [
+            {
+                "id": f"alert-{upload_id}-layer3-failure",
+                "title": "Layer 3 persistence error",
+                "message": f"Tracking intelligence could not be updated for this run: {exc}",
+                "severity": "high",
+            }
+        ]
+        return payload
+
+    timeline_summary = dict(intelligence.get("timeline_summary") or {})
+    spread_indicators = dict(intelligence.get("spread_indicators") or {})
+    cluster_risk = float(intelligence.get("risk_score") or 0.0)
+    if cluster_risk > risk_score:
+        risk_score = cluster_risk
+        risk_metrics["risk_score"] = cluster_risk
+    payload.update(
+        {
+            "content_id": intelligence.get("content_id"),
+            "cluster_id": intelligence.get("cluster_id"),
+            "similar_count": int(intelligence.get("similar_count") or 0),
+            "tracking_enabled": bool(intelligence.get("tracking_enabled")),
+            "tracking_requested": bool(track_requested),
+            "tracking_available": True,
+            "alerts_available": bool(track_requested and user_id and user_email),
+            "persistence_mode": "persistent",
+            "login_prompt": "",
+            "risk_level": intelligence.get("risk_level") or "Low",
+            "timeline_summary": timeline_summary,
+            "timeline": list(intelligence.get("timeline_points") or timeline),
+            "spread_indicators": spread_indicators,
+            "propagation_graph": dict(intelligence.get("propagation_graph") or {}),
+            "risk_score": risk_score,
+            "risk": risk_metrics,
+        }
+    )
+    strength_items = []
+    for key in ("exact_matches", "visual_matches_top10", "related_web_sources"):
+        bucket = layer2_payload.get(key)
+        if isinstance(bucket, list):
+            strength_items.extend(bucket)
+    distribution: list[dict[str, object]] = []
+    raw_distribution = layer2_payload.get("domain_distribution")
+    if isinstance(raw_distribution, list):
+        distribution = [dict(item) for item in raw_distribution[:6] if isinstance(item, dict)]
+    payload["visualizations"] = {
+        "spread_timeline": list(payload.get("timeline") or []),
+        "cluster_growth": [
+            {
+                "timestamp": point.get("timestamp"),
+                "cluster_size": min(
+                    int(payload.get("similar_count") or 0),
+                    max(1, int(point.get("mentions") or 0)),
+                ),
+            }
+            for point in list(payload.get("timeline") or [])
+        ],
+        "risk_metrics": {
+            "detection": round(float(confidence), 4),
+            "spread": round(min(1.0, max(0.0, growth_rate / 120.0)), 4),
+            "cluster": round(min(1.0, max(0.0, int(payload.get("similar_count") or 0) / 20.0)), 4),
+            "velocity": round(min(1.0, max(0.0, float(spread_indicators.get("spread_velocity") or 0.0) / 1.0)), 4),
+            "risk_score": round(float(risk_score), 4),
+        },
+        "match_strength_distribution": [
+            {
+                "label": "0.0-0.2",
+                "count": sum(1 for item in strength_items if 0.0 <= _layer2_match_similarity(item) < 0.2),
+            },
+            {
+                "label": "0.2-0.4",
+                "count": sum(1 for item in strength_items if 0.2 <= _layer2_match_similarity(item) < 0.4),
+            },
+            {
+                "label": "0.4-0.6",
+                "count": sum(1 for item in strength_items if 0.4 <= _layer2_match_similarity(item) < 0.6),
+            },
+            {
+                "label": "0.6-0.8",
+                "count": sum(1 for item in strength_items if 0.6 <= _layer2_match_similarity(item) < 0.8),
+            },
+            {
+                "label": "0.8-1.0",
+                "count": sum(1 for item in strength_items if 0.8 <= _layer2_match_similarity(item) <= 1.0),
+            },
+        ],
+        "source_distribution": distribution,
+    }
+    if payload["tracking_enabled"]:
+        summary_observations = int(timeline_summary.get("observations") or 0)
+        payload["alerts"] = list(payload["alerts"]) + [
+            {
+                "id": f"alert-{upload_id}-tracking",
+                "title": "Tracking active",
+                "message": f"Cluster monitoring is enabled with {summary_observations} observed appearance(s) and {int(payload['similar_count'])} similar instance(s).",
+                "severity": "medium" if risk_score < 0.65 else "high",
+            }
+        ]
+    elif track_requested:
+        payload["alerts"] = list(payload["alerts"]) + [
+            {
+                "id": f"alert-{upload_id}-tracking-waiting",
+                "title": "Tracking request received",
+                "message": "Persistent indexing is active. Alerts will trigger after the cluster meets tracking conditions.",
+                "severity": "medium",
+            }
+        ]
+    return payload
 
 
 def _run_analysis_job(
@@ -2915,6 +3323,9 @@ def _run_analysis_job(
     original_filename: str,
     created_at: str,
     auth_state: str,
+    user_id: int | None,
+    user_email: str,
+    session_scope_id: str,
     guest_usage: dict[str, object],
     enable_layer1: bool,
     enable_layer2: bool,
@@ -2957,6 +3368,16 @@ def _run_analysis_job(
             round((time.perf_counter() - layer1_started_at) * 1000, 1),
             upload_id,
         )
+        layer1_duration_ms = (time.perf_counter() - layer1_started_at) * 1000
+        if layer1_duration_ms > LAYER3_LATENCY_ALERT_MS:
+            get_alert_service().trigger_alert(
+                AlertEvent(
+                    event_type="layer1_latency_spike",
+                    severity="MEDIUM",
+                    message="Layer 1 exceeded the configured latency threshold.",
+                    explanation=f"duration_ms={layer1_duration_ms:.1f}",
+                )
+            )
 
         partial_analysis = _assemble_analysis_response(
             upload_id=upload_id,
@@ -2980,12 +3401,23 @@ def _run_analysis_job(
 
         layer2_payload = build_layer2_response(None)
         if enable_layer2:
+            layer2_started_at = time.perf_counter()
             layer2_payload = _run_layer2_discovery(
                 upload_id=upload_id,
                 stored_path=stored_path,
                 upload_metadata=upload_metadata,
             )
             _store_layer2_channels(upload_id, layer2_payload)
+            layer2_duration_ms = (time.perf_counter() - layer2_started_at) * 1000
+            if layer2_duration_ms > LAYER3_LATENCY_ALERT_MS:
+                get_alert_service().trigger_alert(
+                    AlertEvent(
+                        event_type="layer2_latency_spike",
+                        severity="HIGH",
+                        message="Layer 2 discovery exceeded the configured latency threshold.",
+                        explanation=f"duration_ms={layer2_duration_ms:.1f}",
+                    )
+                )
 
         partial_analysis = _assemble_analysis_response(
             upload_id=upload_id,
@@ -3021,13 +3453,31 @@ def _run_analysis_job(
                 "analysis": partial_analysis,
             },
         )
+        layer3_started_at = time.perf_counter()
         layer3_payload = _build_layer3_payload(
+            stored_path=stored_path,
             confidence=confidence_fraction,
             is_fake=is_fake,
             layer2_payload=layer2_payload,
             enable_layer3=enable_layer3,
             upload_id=upload_id,
+            auth_state=auth_state,
+            user_id=user_id,
+            user_email=user_email,
+            session_scope_id=session_scope_id,
+            media_url=str(upload_metadata.get("source_url") or ""),
+            track_requested=bool(upload_metadata.get("tracking_enabled")),
         )
+        layer3_duration_ms = (time.perf_counter() - layer3_started_at) * 1000
+        if enable_layer3 and layer3_duration_ms > LAYER3_LATENCY_ALERT_MS:
+            get_alert_service().trigger_alert(
+                AlertEvent(
+                    event_type="layer3_latency_spike",
+                    severity="HIGH",
+                    message="Layer 3 persistence/tracking exceeded the configured latency threshold.",
+                    explanation=f"duration_ms={layer3_duration_ms:.1f}",
+                )
+            )
         final_analysis = _assemble_analysis_response(
             upload_id=upload_id,
             original_filename=original_filename,
@@ -3038,7 +3488,8 @@ def _run_analysis_job(
             layer2_payload=layer2_payload,
             layer3_payload=layer3_payload,
         )
-        _set_cached_analysis(cache_key, final_analysis)
+        if auth_state == "user":
+            _set_cached_analysis(cache_key, final_analysis)
         _set_analysis_job(
             job_id,
             {
@@ -3059,6 +3510,15 @@ def _run_analysis_job(
         )
     except Exception as exc:  # pragma: no cover - background safety
         LOGGER.exception("Background analysis job failed for %s", upload_id)
+        get_alert_service().trigger_alert(
+            AlertEvent(
+                event_type="analysis_job_failure",
+                severity="CRITICAL",
+                message="Background analysis job failed.",
+                error_type=type(exc).__name__,
+                explanation=str(exc),
+            )
+        )
         _set_analysis_job(
             job_id,
             {
@@ -3358,6 +3818,9 @@ def api_analyze():
     enable_layer1 = analyze_request.enable_layer1
     enable_layer2 = analyze_request.enable_layer2
     enable_layer3 = analyze_request.enable_layer3
+    tracking_requested = bool(analyze_request.tracking_enabled)
+    auth_state = principal.get("auth_mode", "anonymous")
+    session_scope_id = _temporary_tracking_scope(principal)
     guest_usage = AUTH_SERVICE.mark_guest_try_used(principal)
     request_started_at = time.perf_counter()
 
@@ -3374,6 +3837,7 @@ def api_analyze():
             label=None,
             confidence=None,
             source_url=source_url,
+            tracking_enabled=bool(tracking_requested and auth_state == "user"),
         )
     except (FileNotFoundError, ValueError) as exc:
         return jsonify({"error": str(exc), "auth_state": principal.get("auth_mode"), "guest_usage": guest_usage}), 400
@@ -3384,9 +3848,9 @@ def api_analyze():
             return jsonify({"error": "Invalid or unsupported media file.", "auth_state": principal.get("auth_mode"), "guest_usage": guest_usage}), 400
         return jsonify({"error": f"Analysis failed: {message}", "auth_state": principal.get("auth_mode"), "guest_usage": guest_usage}), 500
 
-    cache_key = _file_sha1(stored_path)
+    cache_key = f"{_file_sha1(stored_path)}:{'user-' + str(principal.get('user_id')) if auth_state == 'user' else session_scope_id}"
     now_iso = datetime.now(timezone.utc).isoformat()
-    cached_analysis = _get_cached_analysis(cache_key)
+    cached_analysis = _get_cached_analysis(cache_key) if auth_state == "user" else None
     if cached_analysis is not None:
         cached_analysis["analysis_id"] = upload_id
         cached_analysis["upload_id"] = upload_id
@@ -3411,7 +3875,6 @@ def api_analyze():
             }
         )
 
-    auth_state = principal.get("auth_mode", "anonymous")
     layer1_payload = _pending_layer1_payload()
     partial_analysis = _assemble_analysis_response(
         upload_id=upload_id,
@@ -3441,6 +3904,9 @@ def api_analyze():
         original_filename=original_filename,
         created_at=now_iso,
         auth_state=auth_state,
+        user_id=int(principal.get("user_id") or 0) if principal.get("user_id") is not None else None,
+        user_email=str(principal.get("email") or ""),
+        session_scope_id=session_scope_id,
         guest_usage=guest_usage,
         enable_layer1=enable_layer1,
         enable_layer2=enable_layer2,
@@ -3533,6 +3999,16 @@ def api_status(job_id: str):
     if payload is None:
         return jsonify({"status": "error", "message": "invalid job_id"}), 404
     return jsonify(payload)
+
+
+@app.get("/api/notifications")
+@jwt_required(AUTH_SERVICE, allow_guest=True)
+def api_notifications():
+    try:
+        limit = max(1, min(int(request.args.get("limit", "8")), 20))
+    except ValueError:
+        limit = 8
+    return jsonify({"notifications": get_alert_service().recent_notifications(limit=limit)})
 
 
 @app.post("/api/predict")

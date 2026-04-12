@@ -70,6 +70,11 @@
     .pill.active{color:var(--strong);border-color:rgba(56,189,248,.6);background:rgba(56,189,248,.18)} .pill.done{color:var(--ok);border-color:rgba(52,211,153,.5)}
 
     .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.muted{color:var(--muted);font-size:12px}
+    .tracking-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .tracking-check{display:inline-flex;align-items:center;gap:10px;color:var(--text);font-size:12px;font-weight:700}
+    .tracking-check input{accent-color:var(--a);width:16px;height:16px}
+    .tracking-prompt{display:none;color:var(--warn);font-size:12px}
+    .tracking-prompt.on{display:block}
     .btn{border:none;border-radius:14px;padding:10px 16px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;box-shadow:0 12px 28px rgba(37,99,235,.22);transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease}
     .btn:hover{transform:translateY(-1px);box-shadow:0 16px 32px rgba(56,189,248,.18)}
     .btn.secondary{background:rgba(255,255,255,.04);color:var(--text);box-shadow:none}
@@ -203,7 +208,52 @@
     .domain-name{font-size:13px;font-weight:700;color:var(--strong)}
 
     .tags{display:flex;gap:10px;flex-wrap:wrap}.tag{border:1px solid rgba(148,163,184,.12);border-radius:999px;padding:8px 12px;font-size:12px;background:rgba(255,255,255,.03)}.low{border-color:rgba(52,211,153,.24);color:var(--ok)}.med{border-color:rgba(251,191,36,.24);color:var(--warn)}.viral{border-color:rgba(251,113,133,.24);color:var(--bad)}
-    .alerts{display:grid;gap:12px}.alert{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:14px;font-size:12px;background:rgba(9,17,31,.3)}
+    .alerts{display:grid;gap:8px;max-height:220px;overflow:auto;padding-right:2px}.alert{border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:10px 12px;font-size:12px;background:rgba(9,17,31,.3);line-height:1.5}
+    .layer3-dense{display:grid;gap:14px}
+    .layer3-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .layer3-toggle{padding:8px 12px;border-radius:999px;border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.03);color:var(--text);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+    .layer3-toggle.on{border-color:rgba(56,189,248,.28);color:var(--strong);background:rgba(56,189,248,.1)}
+    .layer3-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .summary-card{border:1px solid rgba(148,163,184,.08);border-radius:14px;padding:12px;background:rgba(9,17,31,.28);display:grid;gap:6px;min-width:0}
+    .summary-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .summary-value{font-size:22px;font-weight:800;color:var(--strong);line-height:1}
+    .summary-meta{font-size:11px;color:var(--muted);line-height:1.45}
+    .summary-card.risk-high{border-color:rgba(251,113,133,.26)}
+    .summary-card.risk-medium{border-color:rgba(251,191,36,.24)}
+    .summary-card.risk-low{border-color:rgba(52,211,153,.22)}
+    .summary-bar{height:8px;border-radius:999px;background:rgba(148,163,184,.15);overflow:hidden}
+    .summary-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#34d399,#fbbf24,#fb7185)}
+    .layer3-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:12px}
+    .intel-stack{display:grid;gap:12px}
+    .intel-panel{border:1px solid rgba(148,163,184,.08);border-radius:14px;padding:12px;background:rgba(9,17,31,.28);display:grid;gap:10px;min-width:0}
+    .intel-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .intel-panel-title{margin:0;font-size:13px;font-weight:800;color:var(--strong)}
+    .intel-panel-meta{font-size:11px;color:var(--muted)}
+    .chart-canvas{width:100%;height:100%;display:block}
+    .timeline-panel{min-height:240px}
+    .histogram-panel{min-height:170px}
+    .side-split{display:grid;gap:12px}
+    .breakdown-list{display:grid;gap:8px}
+    .breakdown-row{display:grid;grid-template-columns:120px minmax(0,1fr) 48px;gap:10px;align-items:center;font-size:11px;color:var(--muted)}
+    .breakdown-track{height:8px;border-radius:999px;background:rgba(148,163,184,.14);overflow:hidden}
+    .breakdown-fill{height:100%;border-radius:999px;background:var(--a)}
+    .breakdown-fill.spread{background:#fbbf24}
+    .breakdown-fill.cluster{background:#a78bfa}
+    .breakdown-fill.detect{background:#34d399}
+    .distribution-wrap{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center}
+    .distribution-legend{display:grid;gap:7px}
+    .legend-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:var(--muted)}
+    .legend-dot{width:10px;height:10px;border-radius:999px}
+    .propagation-panel{display:grid;gap:10px}
+    .propagation-wrap{height:180px}
+    .event-feed{display:grid;gap:8px;max-height:220px;overflow:auto;padding-right:2px}
+    .event-item{border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:10px 12px;background:rgba(9,17,31,.28);display:grid;gap:4px}
+    .event-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .event-type{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--strong)}
+    .event-time{font-size:10px;color:var(--muted)}
+    .event-copy{font-size:12px;line-height:1.5;color:var(--text)}
+    .sev-low{color:#93c5fd}.sev-medium{color:#fbbf24}.sev-high{color:#fb923c}.sev-critical{color:#fb7185}
+    .layer3-basic .advanced-only{display:none}
     .timeline{height:170px;border:1px solid rgba(148,163,184,.08);border-radius:18px;padding:12px;background:rgba(9,17,31,.34)} .timeline canvas{width:100%;height:100%}
 
     .docs{display:grid;gap:16px}.doc{border:1px solid rgba(148,163,184,.08);border-radius:20px;padding:18px;background:rgba(9,17,31,.32)} .doc summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--strong)} .doc p{margin:10px 0 0;color:var(--muted);font-size:13px;line-height:1.7}
@@ -272,11 +322,22 @@
     .progress-percent{font-size:34px;font-weight:800;color:var(--strong);letter-spacing:-.04em}
     .progress-track{height:14px;border-radius:999px;background:rgba(148,163,184,.18);overflow:hidden}
     .progress-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--a),var(--a2));box-shadow:0 8px 24px rgba(56,189,248,.2);transition:width .28s ease}
+    .toast-stack{position:fixed;right:16px;bottom:16px;display:grid;gap:10px;z-index:140;max-width:min(360px,calc(100vw - 32px))}
+    .toast{border-radius:16px;padding:12px 14px;border:1px solid rgba(148,163,184,.12);background:rgba(8,14,25,.92);box-shadow:0 16px 44px rgba(2,8,23,.34);display:grid;gap:6px}
+    .toast-severity{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .toast-title{font-size:13px;font-weight:800;color:var(--strong)}
+    .toast-copy{font-size:12px;line-height:1.55;color:var(--muted)}
+    .toast-low .toast-severity{color:#93c5fd}
+    .toast-medium .toast-severity{color:#fbbf24}
+    .toast-high .toast-severity{color:#fb923c}
+    .toast-critical .toast-severity{color:#fb7185}
     html[data-theme="light"] .progress-modal,
     html[data-theme="blue"] .progress-modal{background:rgba(255,255,255,.94)}
+    html[data-theme="light"] .toast,
+    html[data-theme="blue"] .toast{background:rgba(255,255,255,.96)}
 
-    @media (max-width:1220px){.app-container{padding:12px 14px 16px 64px}.content-area{grid-template-columns:minmax(0,1fr)}.match-grid,.chart-grid,.strength-grid,.snapshot-grid,.content-class,.score-list{grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:68px;flex-wrap:wrap;padding:10px 14px;gap:10px}.top-left,.top-right{min-width:unset}.main{gap:18px}.card,.header,.side-card,.snapshot{padding:16px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:16px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.upload-shell{grid-template-columns:260px minmax(0,1fr)}.drop{width:min(100%,260px)}.preview-stage{min-height:220px}}
-    @media (max-width:900px){.app-container{padding:14px}.sidebar{width:100%;height:auto;position:relative;left:auto;top:auto;padding:10px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:100%;padding:10px}.sidebar a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.sidebar a::after{display:none}.content-area{width:100%;grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.upload-shell{grid-template-columns:1fr}.upload-stage{padding-top:4px;justify-items:center}.upload-note{text-align:center}.drop{width:min(100%,260px);border-radius:22px;padding:18px}.drop::before{width:52px;height:52px;border-radius:18px;font-size:28px}.drop-main{font-size:15px}.preview-stage{min-height:220px}}
+    @media (max-width:1220px){.app-container{padding:12px 14px 16px 64px}.content-area{grid-template-columns:minmax(0,1fr)}.match-grid,.chart-grid,.strength-grid,.snapshot-grid,.content-class,.score-list,.layer3-summary,.layer3-grid,.distribution-wrap{grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:68px;flex-wrap:wrap;padding:10px 14px;gap:10px}.top-left,.top-right{min-width:unset}.main{gap:18px}.card,.header,.side-card,.snapshot{padding:16px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:16px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.upload-shell{grid-template-columns:260px minmax(0,1fr)}.drop{width:min(100%,260px)}.preview-stage{min-height:220px}}
+    @media (max-width:900px){.app-container{padding:14px}.sidebar{width:100%;height:auto;position:relative;left:auto;top:auto;padding:10px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:100%;padding:10px}.sidebar a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.sidebar a::after{display:none}.content-area{width:100%;grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.upload-shell{grid-template-columns:1fr}.upload-stage{padding-top:4px;justify-items:center}.upload-note{text-align:center}.drop{width:min(100%,260px);border-radius:22px;padding:18px}.drop::before{width:52px;height:52px;border-radius:18px;font-size:28px}.drop-main{font-size:15px}.preview-stage{min-height:220px}.breakdown-row{grid-template-columns:90px minmax(0,1fr) 42px}}
   </style>
 </head>
 <body>
@@ -309,6 +370,7 @@
       </div>
     </div>
   </div>
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
   <div class="app-container">
     <aside class="panel sidebar">
@@ -356,6 +418,14 @@
           <div class="url-row">
             <label for="sourceUrlInput">Source URL (optional, can run analysis without upload)</label>
             <input id="sourceUrlInput" class="url" type="url" placeholder="https://example.com/media.jpg or https://example.com/video.mp4" />
+          </div>
+
+          <div class="tracking-row">
+            <label class="tracking-check" for="trackingToggle">
+              <input id="trackingToggle" type="checkbox" />
+              <span>Enable persistent tracking and alerts</span>
+            </label>
+            <div class="tracking-prompt" id="trackingPrompt">Login to enable tracking and alerts. Detection will still run for this session.</div>
           </div>
 
           <div class="processing" id="processingBox" style="display:none">
@@ -511,20 +581,107 @@
         </section>
 
         <section class="layer" id="layer3Card">
-          <div class="layer-head">
-            <h3 class="layer-ttl">Layer 3: Tracking Intelligence</h3>
-            <span class="badge" id="layer3Badge">Tracking not started</span>
+          <div class="layer3-dense layer3-basic" id="layer3Dense">
+            <div class="layer3-head">
+              <div class="layer-head" style="margin:0">
+                <h3 class="layer-ttl">Layer 3: Tracking Intelligence</h3>
+                <span class="badge" id="layer3Badge">Tracking not started</span>
+              </div>
+              <button class="layer3-toggle" id="layer3Toggle" type="button">Advanced View</button>
+            </div>
+            <div class="layer3-summary">
+              <article class="summary-card risk-low" id="riskSummaryCard">
+                <div class="summary-label">Risk Score</div>
+                <div class="summary-value" id="riskSummaryValue">0%</div>
+                <div class="summary-bar"><div class="summary-bar-fill" id="riskSummaryFill" style="width:0%"></div></div>
+                <div class="summary-meta" id="riskSummaryMeta">No active risk signal.</div>
+              </article>
+              <article class="summary-card">
+                <div class="summary-label">Spread Velocity</div>
+                <div class="summary-value" id="velocitySummaryValue">0.00</div>
+                <div class="summary-meta" id="velocitySummaryMeta">Matches per observation window.</div>
+              </article>
+              <article class="summary-card">
+                <div class="summary-label">Cluster Size</div>
+                <div class="summary-value" id="clusterSummaryValue">0</div>
+                <div class="summary-meta" id="clusterSummaryMeta">Tracked related instances.</div>
+              </article>
+              <article class="summary-card">
+                <div class="summary-label">Status</div>
+                <div class="summary-value" id="statusSummaryValue">Normal</div>
+                <div class="summary-meta" id="statusSummaryMeta">Passive indexing.</div>
+              </article>
+            </div>
+            <div class="layer3-grid">
+              <div class="intel-stack">
+                <section class="intel-panel timeline-panel">
+                  <div class="intel-panel-head">
+                    <h4 class="intel-panel-title">Spread Timeline</h4>
+                    <div class="intel-panel-meta" id="timelineMeta">Waiting for observations</div>
+                  </div>
+                  <canvas class="chart-canvas" id="timelineCanvas" width="920" height="280"></canvas>
+                </section>
+                <section class="intel-panel histogram-panel">
+                  <div class="intel-panel-head">
+                    <h4 class="intel-panel-title">Cluster Growth</h4>
+                    <div class="intel-panel-meta" id="histogramMeta">How the cluster is expanding over time</div>
+                  </div>
+                  <canvas class="chart-canvas" id="frequencyCanvas" width="920" height="180"></canvas>
+                </section>
+                <section class="intel-panel histogram-panel">
+                  <div class="intel-panel-head">
+                    <h4 class="intel-panel-title">Match Strength Distribution</h4>
+                    <div class="intel-panel-meta" id="strengthMeta">Similarity score distribution across current evidence</div>
+                  </div>
+                  <canvas class="chart-canvas" id="strengthCanvas" width="920" height="180"></canvas>
+                </section>
+                <section class="intel-panel propagation-panel advanced-only">
+                  <div class="intel-panel-head">
+                    <h4 class="intel-panel-title">Propagation View</h4>
+                    <div class="intel-panel-meta" id="propagationMeta">Variant connectivity</div>
+                  </div>
+                  <div class="propagation-wrap">
+                    <canvas class="chart-canvas" id="propagationCanvas" width="920" height="220"></canvas>
+                  </div>
+                </section>
+              </div>
+              <div class="side-split">
+                <section class="intel-panel">
+                  <div class="intel-panel-head">
+                    <h4 class="intel-panel-title">Risk Breakdown</h4>
+                    <div class="intel-panel-meta" id="riskBreakdownMeta">How Layer 3 is scoring this case</div>
+                  </div>
+                  <div class="breakdown-list" id="riskBreakdownList"></div>
+                </section>
+                <section class="intel-panel">
+                  <div class="intel-panel-head">
+                    <h4 class="intel-panel-title">Source Distribution</h4>
+                    <div class="intel-panel-meta" id="distributionMeta">Active public domains</div>
+                  </div>
+                  <div class="distribution-wrap">
+                    <canvas class="chart-canvas" id="sourceDistributionCanvas" width="180" height="180"></canvas>
+                    <div class="distribution-legend" id="sourceDistributionLegend"></div>
+                  </div>
+                </section>
+                <section class="intel-panel advanced-only">
+                  <div class="intel-panel-head">
+                    <h4 class="intel-panel-title">Event Feed</h4>
+                    <div class="intel-panel-meta" id="eventFeedMeta">Real-time investigation signals</div>
+                  </div>
+                  <div class="event-feed" id="eventFeed">
+                    <div class="event-item">
+                      <div class="event-top"><span class="event-type sev-low">Waiting</span><span class="event-time">now</span></div>
+                      <div class="event-copy">No Layer 3 events yet. Run analysis to start monitoring.</div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+            <div class="muted" id="layer3Insight">No spread detected yet. Monitoring will continue over time.</div>
+            <div class="alerts" id="alertList">
+              <div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>
+            </div>
           </div>
-          <div class="tags" id="growthTags">
-            <span class="tag low" id="growthLevelTag">Growth: Low</span>
-            <span class="tag" id="riskTag">Risk: 0%</span>
-            <span class="tag" id="sourceTag">Sources: 0</span>
-          </div>
-          <div class="muted" id="layer3Insight">No spread detected yet. Monitoring will continue over time.</div>
-          <div class="alerts" id="alertList">
-            <div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>
-          </div>
-          <div class="timeline"><canvas id="timelineCanvas" width="1000" height="260"></canvas></div>
         </section>
       </section>
 
@@ -605,11 +762,15 @@
       progressTimer: null,
       activeDomainFilter: "",
       layer2ChartsVisible: false,
+      layer3Visible: false,
+      layer3VizCache: {},
       analysisCount: Number(localStorage.getItem("dg_analysis_count") || 0),
       lastScanAt: localStorage.getItem("dg_last_scan_at") || "",
       guestUsed: 0,
       guestLimit: 5,
-      authState: "anonymous"
+      authState: "anonymous",
+      notificationTimer: null,
+      seenNotificationIds: new Set()
     };
 
     const el = {
@@ -625,6 +786,8 @@
       previewImage: document.getElementById("previewImage"),
       previewVideo: document.getElementById("previewVideo"),
       sourceUrlInput: document.getElementById("sourceUrlInput"),
+      trackingToggle: document.getElementById("trackingToggle"),
+      trackingPrompt: document.getElementById("trackingPrompt"),
       processingBox: document.getElementById("processingBox"),
       progressOverlay: document.getElementById("progressOverlay"),
       progressCopy: document.getElementById("progressCopy"),
@@ -667,13 +830,37 @@
       embeddingGrid: document.getElementById("embeddingGrid"),
       domainClusterCount: document.getElementById("domainClusterCount"),
       domainClusterGrid: document.getElementById("domainClusterGrid"),
+      layer3Card: document.getElementById("layer3Card"),
+      layer3Dense: document.getElementById("layer3Dense"),
       layer3Badge: document.getElementById("layer3Badge"),
-      growthLevelTag: document.getElementById("growthLevelTag"),
-      riskTag: document.getElementById("riskTag"),
-      sourceTag: document.getElementById("sourceTag"),
+      layer3Toggle: document.getElementById("layer3Toggle"),
       layer3Insight: document.getElementById("layer3Insight"),
       alertList: document.getElementById("alertList"),
       timelineCanvas: document.getElementById("timelineCanvas"),
+      frequencyCanvas: document.getElementById("frequencyCanvas"),
+      strengthCanvas: document.getElementById("strengthCanvas"),
+      propagationCanvas: document.getElementById("propagationCanvas"),
+      sourceDistributionCanvas: document.getElementById("sourceDistributionCanvas"),
+      timelineMeta: document.getElementById("timelineMeta"),
+      histogramMeta: document.getElementById("histogramMeta"),
+      strengthMeta: document.getElementById("strengthMeta"),
+      propagationMeta: document.getElementById("propagationMeta"),
+      riskSummaryCard: document.getElementById("riskSummaryCard"),
+      riskSummaryValue: document.getElementById("riskSummaryValue"),
+      riskSummaryFill: document.getElementById("riskSummaryFill"),
+      riskSummaryMeta: document.getElementById("riskSummaryMeta"),
+      velocitySummaryValue: document.getElementById("velocitySummaryValue"),
+      velocitySummaryMeta: document.getElementById("velocitySummaryMeta"),
+      clusterSummaryValue: document.getElementById("clusterSummaryValue"),
+      clusterSummaryMeta: document.getElementById("clusterSummaryMeta"),
+      statusSummaryValue: document.getElementById("statusSummaryValue"),
+      statusSummaryMeta: document.getElementById("statusSummaryMeta"),
+      riskBreakdownMeta: document.getElementById("riskBreakdownMeta"),
+      riskBreakdownList: document.getElementById("riskBreakdownList"),
+      distributionMeta: document.getElementById("distributionMeta"),
+      sourceDistributionLegend: document.getElementById("sourceDistributionLegend"),
+      eventFeedMeta: document.getElementById("eventFeedMeta"),
+      eventFeed: document.getElementById("eventFeed"),
       sessionUser: document.getElementById("sessionUser"),
       sessionType: document.getElementById("sessionType"),
       analysisCount: document.getElementById("analysisCount"),
@@ -684,6 +871,7 @@
       usageText: document.getElementById("usageText"),
       quotaNote: document.getElementById("quotaNote"),
       loginToContinueBtn: document.getElementById("loginToContinueBtn"),
+      toastStack: document.getElementById("toastStack"),
       snapshotCopy: document.getElementById("snapshotCopy"),
       snapshotVerdict: document.getElementById("snapshotVerdict"),
       snapshotRisk: document.getElementById("snapshotRisk"),
@@ -700,8 +888,48 @@
       localStorage.setItem("dg_theme", next);
     }
 
+    if(el.layer3Toggle && el.layer3Dense){
+      el.layer3Toggle.addEventListener("click", ()=>{
+        const advanced = el.layer3Dense.classList.toggle("layer3-basic");
+        el.layer3Toggle.classList.toggle("on", !advanced);
+        el.layer3Toggle.textContent = advanced ? "Advanced View" : "Basic View";
+      });
+    }
+
     function showError(message){ el.errorBox.style.display = "block"; el.errorBox.textContent = message; }
     function clearError(){ el.errorBox.style.display = "none"; el.errorBox.textContent = ""; }
+    function toastNotification(item){
+      if(!el.toastStack || !item){ return; }
+      const severity = String(item.severity || "LOW").toLowerCase();
+      const toast = document.createElement("div");
+      toast.className = `toast toast-${severity}`;
+      toast.innerHTML = `
+        <div class="toast-severity">${String(item.severity || "LOW")}</div>
+        <div class="toast-title">${String(item.event_type || "notification").replaceAll("_", " ")}</div>
+        <div class="toast-copy">${String(item.message || "")}</div>
+      `;
+      el.toastStack.prepend(toast);
+      window.setTimeout(()=>{ toast.remove(); }, 7000);
+    }
+
+    async function pollNotifications(){
+      try{
+        const res = await fetch("/api/notifications?limit=8", { method:"GET", credentials:"same-origin", cache:"no-store" });
+        const data = await parseApi(res);
+        if(!res.ok){ throw new Error("notification fetch failed"); }
+        const items = Array.isArray(data.notifications) ? data.notifications : [];
+        const fresh = items.slice().reverse();
+        for(const item of fresh){
+          const id = String(item.event_id || item.timestamp || "");
+          if(!id || state.seenNotificationIds.has(id)){ continue; }
+          state.seenNotificationIds.add(id);
+          toastNotification(item);
+        }
+      }catch(_){
+      }finally{
+        state.notificationTimer = window.setTimeout(pollNotifications, 12000);
+      }
+    }
 
     function setRunEnabled(){
       const hasUrl = String(el.sourceUrlInput.value || "").trim().length > 0;
@@ -712,6 +940,13 @@
       }else{
         el.runBtn.textContent = "Run Intelligence Analysis";
       }
+      syncTrackingPrompt();
+    }
+
+    function syncTrackingPrompt(){
+      if(!el.trackingPrompt || !el.trackingToggle){ return; }
+      const needsLogin = !!el.trackingToggle.checked && state.authState !== "user";
+      el.trackingPrompt.classList.toggle("on", needsLogin);
     }
 
     function revokePreview(){
@@ -826,19 +1061,218 @@
       const ctx = el.timelineCanvas.getContext("2d"); if(!ctx){ return; }
       const w = el.timelineCanvas.width, h = el.timelineCanvas.height;
       ctx.clearRect(0,0,w,h);
-      ctx.fillStyle = "rgba(10,14,26,.35)"; ctx.fillRect(0,0,w,h);
-      const p = Array.isArray(points) && points.length ? points : [
-        {timestamp:new Date(Date.now()-5*3600000).toISOString(),mentions:0},
-        {timestamp:new Date(Date.now()-4*3600000).toISOString(),mentions:0},
-        {timestamp:new Date(Date.now()-3*3600000).toISOString(),mentions:1},
-        {timestamp:new Date(Date.now()-2*3600000).toISOString(),mentions:1},
-        {timestamp:new Date(Date.now()-1*3600000).toISOString(),mentions:1},
-        {timestamp:new Date().toISOString(),mentions:1}
-      ];
-      const pad = 24, maxY = Math.max(...p.map((x)=>Number(x.mentions||0)),1);
-      ctx.strokeStyle = "rgba(56,189,248,.95)"; ctx.lineWidth = 2.6; ctx.beginPath();
-      p.forEach((x,i)=>{ const px = pad + ((w-pad*2)*i/Math.max(1,p.length-1)); const py = (h-pad)-((h-pad*2)*Number(x.mentions||0)/maxY); if(i===0){ctx.moveTo(px,py);}else{ctx.lineTo(px,py);} });
+      const p = Array.isArray(points) && points.length ? points : [{timestamp:new Date().toISOString(),mentions:0}];
+      const padX = 42, padY = 24, chartW = w - padX * 2, chartH = h - padY * 2;
+      const maxY = Math.max(...p.map((x)=>Number(x.mentions||0)),1);
+      ctx.strokeStyle = "rgba(148,163,184,.12)";
+      ctx.lineWidth = 1;
+      for(let i=0;i<4;i+=1){
+        const y = padY + (chartH * i / 3);
+        ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w - padX, y); ctx.stroke();
+      }
+      const coords = p.map((x,i)=>({
+        x: padX + (chartW * i / Math.max(1, p.length - 1)),
+        y: h - padY - (chartH * Number(x.mentions || 0) / maxY),
+        mentions: Number(x.mentions || 0),
+        timestamp: x.timestamp
+      }));
+      const gradient = ctx.createLinearGradient(0, padY, 0, h - padY);
+      gradient.addColorStop(0, "rgba(251,113,133,.18)");
+      gradient.addColorStop(1, "rgba(56,189,248,.02)");
+      ctx.beginPath();
+      coords.forEach((point, index)=>{ if(index===0){ ctx.moveTo(point.x, point.y); } else { ctx.lineTo(point.x, point.y); } });
+      ctx.lineTo(coords[coords.length - 1].x, h - padY);
+      ctx.lineTo(coords[0].x, h - padY);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(96,165,250,.95)";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      coords.forEach((point, index)=>{ if(index===0){ ctx.moveTo(point.x, point.y); } else { ctx.lineTo(point.x, point.y); } });
       ctx.stroke();
+      const maxPoint = coords.reduce((best, point)=>point.mentions > best.mentions ? point : best, coords[0]);
+      coords.forEach((point)=>{
+        ctx.fillStyle = point === maxPoint ? "#fb7185" : "#93c5fd";
+        ctx.beginPath(); ctx.arc(point.x, point.y, point === maxPoint ? 4.5 : 3, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.fillStyle = "rgba(226,232,240,.74)";
+      ctx.font = "11px sans-serif";
+      ctx.fillText("first seen", coords[0].x - 18, h - 6);
+      ctx.fillText("latest spike", Math.max(8, maxPoint.x - 26), Math.max(12, maxPoint.y - 10));
+    }
+
+    function drawHistogram(points){
+      const ctx = el.frequencyCanvas.getContext("2d"); if(!ctx){ return; }
+      const w = el.frequencyCanvas.width, h = el.frequencyCanvas.height;
+      ctx.clearRect(0,0,w,h);
+      const p = Array.isArray(points) && points.length ? points : [{mentions:0}];
+      const bars = p.slice(-8);
+      const maxY = Math.max(...bars.map((item)=>Number(item.mentions||0)),1);
+      const padX = 26, padY = 16, gap = 12;
+      const barW = Math.max(16, (w - padX * 2 - gap * (bars.length - 1)) / Math.max(1, bars.length));
+      bars.forEach((item, index)=>{
+        const val = Number(item.mentions || 0);
+        const height = ((h - padY * 2) * val / maxY);
+        const x = padX + index * (barW + gap);
+        const y = h - padY - height;
+        ctx.fillStyle = index === bars.length - 1 ? "rgba(56,189,248,.92)" : "rgba(148,163,184,.38)";
+        ctx.fillRect(x, y, barW, height);
+      });
+    }
+
+    function drawClusterGrowth(series){
+      const ctx = el.frequencyCanvas.getContext("2d"); if(!ctx){ return; }
+      const w = el.frequencyCanvas.width, h = el.frequencyCanvas.height;
+      ctx.clearRect(0,0,w,h);
+      const p = Array.isArray(series) && series.length ? series : [{cluster_size:0}];
+      const maxY = Math.max(...p.map((x)=>Number(x.cluster_size||0)), 1);
+      const padX = 30, padY = 18, step = (w - padX * 2) / Math.max(1, p.length - 1);
+      ctx.strokeStyle = "rgba(148,163,184,.12)";
+      ctx.lineWidth = 1;
+      for(let i=0;i<4;i+=1){
+        const y = padY + ((h - padY * 2) * i / 3);
+        ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w - padX, y); ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(34,197,94,.9)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      p.forEach((item, index)=>{
+        const x = padX + step * index;
+        const y = h - padY - ((h - padY * 2) * Number(item.cluster_size || 0) / maxY);
+        if(index===0){ ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+      });
+      ctx.stroke();
+      p.forEach((item, index)=>{
+        const x = padX + step * index;
+        const y = h - padY - ((h - padY * 2) * Number(item.cluster_size || 0) / maxY);
+        ctx.fillStyle = index === p.length - 1 ? "#34d399" : "rgba(74,222,128,.7)";
+        ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
+    function drawStrengthDistribution(bins){
+      const ctx = el.strengthCanvas.getContext("2d"); if(!ctx){ return; }
+      const w = el.strengthCanvas.width, h = el.strengthCanvas.height;
+      ctx.clearRect(0,0,w,h);
+      const data = Array.isArray(bins) && bins.length ? bins : [
+        {label:"0.0-0.2", count:0},
+        {label:"0.2-0.4", count:0},
+        {label:"0.4-0.6", count:0},
+        {label:"0.6-0.8", count:0},
+        {label:"0.8-1.0", count:0}
+      ];
+      const maxY = Math.max(...data.map((item)=>Number(item.count||0)), 1);
+      const padX = 26, padY = 18, gap = 14;
+      const barW = Math.max(24, (w - padX * 2 - gap * (data.length - 1)) / Math.max(1, data.length));
+      data.forEach((item, index)=>{
+        const height = ((h - padY * 2 - 18) * Number(item.count || 0) / maxY);
+        const x = padX + index * (barW + gap);
+        const y = h - padY - height - 18;
+        ctx.fillStyle = index >= data.length - 2 ? "rgba(248,113,113,.9)" : "rgba(96,165,250,.72)";
+        ctx.fillRect(x, y, barW, height);
+        ctx.fillStyle = "rgba(226,232,240,.7)";
+        ctx.font = "11px sans-serif";
+        ctx.fillText(String(item.label || ""), x, h - 6);
+      });
+    }
+
+    function drawRiskBreakdown(metrics){
+      const rows = [
+        { label:"Detection", value: Number(metrics.detection || 0), cls:"detect" },
+        { label:"Spread", value: Number(metrics.spread || 0), cls:"spread" },
+        { label:"Cluster", value: Number(metrics.cluster || 0), cls:"cluster" },
+        { label:"Velocity", value: Number(metrics.velocity || 0), cls:"spread" }
+      ];
+      el.riskBreakdownList.innerHTML = rows.map((row)=>`
+        <div class="breakdown-row">
+          <div>${escapeHtml(row.label)}</div>
+          <div class="breakdown-track"><div class="breakdown-fill ${row.cls}" style="width:${Math.max(0, Math.min(100, row.value * 100))}%"></div></div>
+          <div>${row.value.toFixed(2)}</div>
+        </div>
+      `).join("");
+    }
+
+    function drawSourceDistribution(distribution){
+      const ctx = el.sourceDistributionCanvas.getContext("2d"); if(!ctx){ return; }
+      const w = el.sourceDistributionCanvas.width, h = el.sourceDistributionCanvas.height;
+      ctx.clearRect(0,0,w,h);
+      const items = Array.isArray(distribution) && distribution.length ? distribution.slice(0,5) : [];
+      if(!items.length){
+        el.sourceDistributionLegend.innerHTML = `<div class="legend-row"><span class="legend-dot" style="background:#475569"></span><span>No domain data yet</span><span>0</span></div>`;
+        return;
+      }
+      const total = items.reduce((sum, item)=>sum + Number(item.count || 0), 0) || 1;
+      const colors = ["#60a5fa","#34d399","#fbbf24","#f97316","#a78bfa"];
+      let start = -Math.PI / 2;
+      items.forEach((item, index)=>{
+        const slice = (Number(item.count || 0) / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(w/2, h/2);
+        ctx.arc(w/2, h/2, Math.min(w,h)/2 - 8, start, start + slice);
+        ctx.closePath();
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fill();
+        start += slice;
+      });
+      ctx.beginPath();
+      ctx.arc(w/2, h/2, Math.min(w,h)/2 - 40, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(15,23,42,.96)";
+      ctx.fill();
+      el.sourceDistributionLegend.innerHTML = items.map((item, index)=>`
+        <div class="legend-row">
+          <span class="legend-dot" style="background:${colors[index % colors.length]}"></span>
+          <span>${escapeHtml(String(item.domain || "unknown"))}</span>
+          <span>${Number(item.count || 0)}</span>
+        </div>
+      `).join("");
+    }
+
+    function drawPropagationGraph(graph){
+      const ctx = el.propagationCanvas.getContext("2d"); if(!ctx){ return; }
+      const w = el.propagationCanvas.width, h = el.propagationCanvas.height;
+      ctx.clearRect(0,0,w,h);
+      const nodes = Math.max(1, Math.min(12, Number(graph.nodes || 0) || 1));
+      const centerX = w / 2, centerY = h / 2, radius = Math.min(w, h) * 0.34;
+      const positions = [];
+      for(let i=0;i<nodes;i+=1){
+        const angle = (Math.PI * 2 * i / nodes) - Math.PI / 2;
+        positions.push({ x:centerX + Math.cos(angle) * radius, y:centerY + Math.sin(angle) * radius });
+      }
+      ctx.strokeStyle = "rgba(96,165,250,.24)";
+      ctx.lineWidth = 1.2;
+      for(let i=1;i<positions.length;i+=1){
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(positions[i].x, positions[i].y);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#60a5fa";
+      ctx.beginPath(); ctx.arc(centerX, centerY, 8, 0, Math.PI * 2); ctx.fill();
+      positions.forEach((point, index)=>{
+        if(index===0){ return; }
+        ctx.fillStyle = graph.variation_detected ? "#fbbf24" : "#93c5fd";
+        ctx.beginPath(); ctx.arc(point.x, point.y, 5, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
+    function buildLayer3Events(l3, alerts){
+      const events = [];
+      const summary = l3.timeline_summary || {};
+      const spread = l3.spread_indicators || {};
+      if(Number(summary.new_sources || 0) > 0){
+        events.push({ severity:"medium", type:"New matches", time:"latest", copy:`+${Number(summary.new_sources || 0)} new matches detected in the latest observation window.` });
+      }
+      if(Number(spread.spread_velocity || 0) > 0.5){
+        events.push({ severity:"high", type:"Velocity spike", time:"latest", copy:`Spread velocity increased to ${Number(spread.spread_velocity || 0).toFixed(2)}.` });
+      }
+      if(Number(spread.mutation_rate || 0) > 0.2){
+        events.push({ severity:"medium", type:"New variant", time:"latest", copy:`Mutation rate is ${Math.round(Number(spread.mutation_rate || 0) * 100)}%, indicating edited or transformed variants.` });
+      }
+      (Array.isArray(alerts) ? alerts : []).forEach((alert)=>{
+        events.push({ severity:String(alert.severity || "low").toLowerCase(), type:String(alert.title || "Alert"), time:"now", copy:String(alert.message || "") });
+      });
+      return events.slice(0, 8);
     }
     function classifyGrowth(growthRate, riskScore, sourceCount){
       if(growthRate >= 120 || riskScore >= 0.75 || sourceCount >= 8){ return "viral"; }
@@ -1307,28 +1741,94 @@
 
     function renderLayer3(payload){
       const l2 = payload.layer2 || {}, l3 = payload.layer3 || {};
-      const srcCount = layer2TotalCount(l2);
+      const analysisKey = String(payload.analysis_id || payload.upload_id || "current");
+      const visuals = l3.visualizations && typeof l3.visualizations === "object" ? l3.visualizations : {};
+      state.layer3VizCache[analysisKey] = visuals;
+      const srcCount = Number(l3.similar_count || 0) || layer2TotalCount(l2);
       const growth = Number((l3.growth && l3.growth.rate_percent) || l3.growth_rate || 0);
       const risk = Number(l3.risk_score || (l3.risk && l3.risk.risk_score) || 0);
+      const spread = l3.spread_indicators || {};
+      const timeline = Array.isArray(visuals.spread_timeline) && visuals.spread_timeline.length ? visuals.spread_timeline : (Array.isArray(l3.timeline) ? l3.timeline : []);
+      const clusterGrowth = Array.isArray(visuals.cluster_growth) ? visuals.cluster_growth : [];
+      const strengthDistribution = Array.isArray(visuals.match_strength_distribution) ? visuals.match_strength_distribution : [];
+      const sourceDistribution = Array.isArray(visuals.source_distribution) ? visuals.source_distribution : [];
+      const riskBreakdown = visuals.risk_metrics && typeof visuals.risk_metrics === "object" ? visuals.risk_metrics : {};
+      const clusterSize = Number(spread.cluster_size || srcCount || 0);
+      const velocity = Number(spread.spread_velocity || 0);
       const lvl = classifyGrowth(growth, risk, srcCount);
-      const lvlText = lvl === "viral" ? "Viral" : lvl === "medium" ? "Medium" : "Low";
-      el.layer3Badge.textContent = lvl === "viral" ? "High-priority monitoring" : "Active monitoring";
-      el.growthLevelTag.className = `tag ${lvl === "viral" ? "viral" : lvl === "medium" ? "med" : "low"}`;
-      el.growthLevelTag.textContent = `Growth: ${lvlText}`;
-      el.riskTag.textContent = `Risk: ${(risk*100).toFixed(1)}%`;
-      el.sourceTag.textContent = `Sources: ${srcCount}`;
+      const lvlText = String(l3.risk_level || (lvl === "viral" ? "Critical" : lvl === "medium" ? "Medium" : "Low"));
 
       const fakeProb = Number(payload.layer1 && payload.layer1.confidence ? payload.layer1.confidence/100 : 0);
-      el.layer3Insight.textContent = `Risk insight combines fake probability (${(fakeProb*100).toFixed(1)}%), spread speed (${growth.toFixed(2)}%), and source count (${srcCount}).`;
+      const clusterId = String(l3.cluster_id || "").trim();
+      const platformDiversity = Number(spread.platform_diversity || 0);
+      const summary = l3.timeline_summary || {};
+      const firstSeen = summary.first_seen ? safeDate(summary.first_seen) : "unknown";
+      const temporaryMode = String(l3.persistence_mode || "") === "temporary";
+      const expiresAt = l3.expires_at ? safeDate(l3.expires_at) : "";
+      el.layer3Insight.textContent = temporaryMode
+        ? `Session-only Layer 3 insight tracks ${srcCount} related item(s) until ${expiresAt || "the temporary TTL expires"}. Login to enable persistent tracking, saved history, and alerts.`
+        : `Cluster ${clusterId ? clusterId.slice(0, 8) : "pending"} tracks ${srcCount} similar item(s), spread velocity ${velocity.toFixed(2)}, and platform diversity ${platformDiversity}. First seen: ${firstSeen}.`;
+
+      el.layer3Badge.textContent = temporaryMode ? "Session-only insights" : (l3.tracking_enabled ? (lvl === "viral" ? "High-priority monitoring" : "Active monitoring") : "Passive indexing");
+      el.riskSummaryValue.textContent = `${(risk * 100).toFixed(1)}%`;
+      el.riskSummaryFill.style.width = `${Math.max(0, Math.min(100, risk * 100))}%`;
+      el.riskSummaryMeta.textContent = temporaryMode ? "Temporary session posture" : `${lvlText} monitoring posture`;
+      el.riskSummaryCard.className = `summary-card ${risk >= 0.75 ? "risk-high" : risk >= 0.45 ? "risk-medium" : "risk-low"}`;
+      el.velocitySummaryValue.textContent = velocity.toFixed(2);
+      el.velocitySummaryMeta.textContent = `${platformDiversity} active domains`;
+      el.clusterSummaryValue.textContent = String(clusterSize);
+      el.clusterSummaryMeta.textContent = temporaryMode ? `${srcCount} related instances in this session` : `${srcCount} related instances indexed`;
+      el.statusSummaryValue.textContent = lvlText;
+      el.statusSummaryMeta.textContent = temporaryMode ? "Temporary only. Login for long-term tracking." : (l3.tracking_enabled ? "Active tracking enabled" : "Passive persistence only");
+      el.timelineMeta.textContent = temporaryMode ? `Expires ${expiresAt || "soon"}` : `First seen ${firstSeen}`;
+      const latestSpike = timeline.length ? Math.max(...timeline.map((point)=>Number(point.mentions || 0))) : 0;
+      const latestCluster = clusterGrowth.length ? Number(clusterGrowth[clusterGrowth.length - 1].cluster_size || 0) : clusterSize;
+      const strongestBand = strengthDistribution.reduce((best, item)=>Number(item.count || 0) > Number(best.count || 0) ? item : best, strengthDistribution[0] || { label:"0.0-0.2", count:0 });
+      el.histogramMeta.textContent = `Latest cluster size ${latestCluster}`;
+      el.strengthMeta.textContent = `Most evidence falls in ${String(strongestBand.label || "0.0-0.2")}`;
+      el.propagationMeta.textContent = `${Number((l3.propagation_graph || {}).nodes || 0)} nodes · ${Number((l3.propagation_graph || {}).edges || 0)} edges`;
+      el.riskBreakdownMeta.textContent = `Risk level ${lvlText}`;
+      el.distributionMeta.textContent = `${platformDiversity} domain${platformDiversity !== 1 ? "s" : ""} observed`;
 
       const alerts = Array.isArray(l3.alerts) ? l3.alerts : [];
       if(alerts.length){
-        el.alertList.innerHTML = alerts.map((a)=>`<div class="alert">${a.title}: ${a.message}</div>`).join("");
+        el.alertList.innerHTML = alerts.map((a)=>{
+          const sev = String(a.severity || "low").toUpperCase();
+          return `<div class="alert"><strong>${sev}</strong> · ${a.title}: ${a.message}</div>`;
+        }).join("");
       }else{
         const fallback = lvl === "viral" ? "Spike detected in the latest observation window. Review response priority." : srcCount > 0 ? "New source detected. Continue monitoring for propagation changes." : "No spread detected yet. Monitoring will continue over time.";
         el.alertList.innerHTML = `<div class="alert">${fallback}</div>`;
       }
-      drawTimeline(Array.isArray(l3.timeline) ? l3.timeline : []);
+      if(state.layer3Visible){
+        drawTimeline(timeline);
+        drawClusterGrowth(clusterGrowth);
+        drawStrengthDistribution(strengthDistribution);
+        drawRiskBreakdown({
+          detection: Number(riskBreakdown.detection || fakeProb),
+          spread: Number(riskBreakdown.spread || Math.max(0, Math.min(1, growth / 120))),
+          cluster: Number(riskBreakdown.cluster || Math.max(0, Math.min(1, clusterSize / 20))),
+          velocity: Number(riskBreakdown.velocity || Math.max(0, Math.min(1, velocity / 1.0)))
+        });
+        const distribution = sourceDistribution.length
+          ? sourceDistribution
+          : (Array.isArray(l2.domain_distribution) && l2.domain_distribution.length
+            ? l2.domain_distribution
+            : Object.entries(l2.domain_clusters || {}).map(([domain, items])=>({ domain, count: Array.isArray(items) ? items.length : 0 })));
+        drawSourceDistribution(distribution);
+        drawPropagationGraph(l3.propagation_graph || {});
+      }
+      const events = buildLayer3Events(l3, alerts);
+      el.eventFeedMeta.textContent = `${events.length} recent signal${events.length !== 1 ? "s" : ""}`;
+      el.eventFeed.innerHTML = events.length ? events.map((event)=>`
+        <div class="event-item">
+          <div class="event-top">
+            <span class="event-type sev-${escapeHtml(event.severity)}">${escapeHtml(event.type)}</span>
+            <span class="event-time">${escapeHtml(event.time)}</span>
+          </div>
+          <div class="event-copy">${escapeHtml(event.copy)}</div>
+        </div>
+      `).join("") : `<div class="event-item"><div class="event-top"><span class="event-type sev-low">Waiting</span><span class="event-time">now</span></div><div class="event-copy">No Layer 3 events yet. Run analysis to start monitoring.</div></div>`;
     }
 
     function generateInsight(payload){
@@ -1363,6 +1863,21 @@
       renderLayer3(payload);
     }
 
+    async function safeProgressiveRender(payload){
+      if(!payload || typeof payload !== "object"){ return; }
+      try{
+        await progressiveRender(payload);
+        clearSkeleton();
+        el.insightText.textContent = generateInsight(payload);
+      }catch(error){
+        console.error("Dashboard render failed after analysis completed.", error);
+        clearSkeleton();
+        const fallbackInsight = "Analysis finished, but one dashboard section failed to render completely. Refresh once if some panels look incomplete.";
+        el.insightText.textContent = fallbackInsight;
+        showError(error instanceof Error ? `Analysis completed, but the dashboard could not finish rendering: ${error.message}` : "Analysis completed, but the dashboard could not finish rendering.");
+      }
+    }
+
     function updateSession(payload){
       const auth = String(payload.auth_state || state.authState || "anonymous");
       const user = payload.user_username || payload.user_email || "Guest";
@@ -1380,6 +1895,7 @@
       const guestBlocked = auth !== "user" && used >= limit;
       if(el.quotaNote){ el.quotaNote.classList.toggle("on", guestBlocked); }
       if(el.loginToContinueBtn){ el.loginToContinueBtn.style.display = guestBlocked ? "inline-flex" : "none"; }
+      syncTrackingPrompt();
       setRunEnabled();
     }
 
@@ -1414,16 +1930,19 @@
       const verdict = verdictMeta(layer1.result, Number(layer1.confidence || 0)).label;
       const risk = Number(layer3.risk_score || (layer3.risk && layer3.risk.risk_score) || 0);
       const growth = Number((layer3.growth && layer3.growth.rate_percent) || layer3.growth_rate || 0);
-      const totalSources = layer2TotalCount(layer2);
+      const totalSources = Number(layer3.similar_count || 0) || layer2TotalCount(layer2);
       const topDomain = Array.isArray(layer2.top_domains) && layer2.top_domains.length ? String(layer2.top_domains[0]) : "";
       const bestLead = [...rankMatches([...(layer2Buckets(layer2).exact || []), ...(layer2Buckets(layer2).visual || []), ...(layer2Buckets(layer2).embedding || [])])][0];
       const bestLeadScore = bestLead ? `${(layer2Similarity(bestLead) * 100).toFixed(1)}%` : "No strong lead";
-      el.snapshotCopy.textContent = `Current investigation shows a ${verdict.toLowerCase()} leaning verdict with ${totalSources} tracked source lead${totalSources !== 1 ? "s" : ""}.`;
+      const temporaryMode = String(layer3.persistence_mode || "") === "temporary";
+      el.snapshotCopy.textContent = `Current investigation shows a ${verdict.toLowerCase()} leaning verdict with ${totalSources} related instance${totalSources !== 1 ? "s" : ""}${temporaryMode ? " in a temporary session view" : layer3.tracking_enabled ? " under active tracking" : " under passive indexing"}.`;
       el.snapshotVerdict.textContent = verdict;
       el.snapshotRisk.textContent = `${(risk * 100).toFixed(1)}%`;
       el.snapshotSources.textContent = String(totalSources);
       el.snapshotTopDomain.textContent = topDomain || "Not established";
-      el.snapshotNote.textContent = `Strongest match: ${bestLeadScore}. Growth signal: ${growth.toFixed(1)}%. Monitoring remains ${classifyGrowth(growth, risk, totalSources)}.`;
+      el.snapshotNote.textContent = temporaryMode
+        ? `Strongest match: ${bestLeadScore}. Growth signal: ${growth.toFixed(1)}%. Login to save this content, enable alerts, and keep monitoring beyond the session TTL.`
+        : `Strongest match: ${bestLeadScore}. Growth signal: ${growth.toFixed(1)}%. Monitoring remains ${classifyGrowth(growth, risk, totalSources)}.${layer3.cluster_id ? ` Cluster ${String(layer3.cluster_id).slice(0, 8)}.` : ""}`;
     }
 
     function setupLayer2ChartObserver(){
@@ -1441,6 +1960,21 @@
       observer.observe(el.layer2Charts);
     }
 
+    function setupLayer3ChartObserver(){
+      if(!("IntersectionObserver" in window) || !el.layer3Card){
+        state.layer3Visible = true;
+        return;
+      }
+      const observer = new IntersectionObserver((entries)=>{
+        const visible = entries.some((entry)=>entry.isIntersecting);
+        if(!visible){ return; }
+        state.layer3Visible = true;
+        if(state.analysis){ renderLayer3(state.analysis); }
+        observer.disconnect();
+      }, { rootMargin: "140px 0px" });
+      observer.observe(document.getElementById("layer3Card"));
+    }
+
     async function loadSession(){
       try{
         const res = await fetch("/api/auth/session", { method:"GET", credentials:"same-origin", cache:"no-store" });
@@ -1456,32 +1990,50 @@
     async function pollAnalysis(jobId){
       state.activeJobId = String(jobId || "");
       const pollOnce = async () => {
-        const res = await fetch(`/api/status/${encodeURIComponent(state.activeJobId)}`, { method:"GET", credentials:"same-origin", cache:"no-store" });
-        const data = await parseApi(res);
-        if(!res.ok){ throw new Error(String(data.message || data.error || "Could not retrieve analysis status.")); }
-        const payload = data.analysis && typeof data.analysis === "object" ? data.analysis : null;
-        if(payload){
-          state.analysis = payload;
-          await progressiveRender(payload);
-          clearSkeleton();
-          el.insightText.textContent = generateInsight(payload);
+        try{
+          const res = await fetch(`/api/status/${encodeURIComponent(state.activeJobId)}`, { method:"GET", credentials:"same-origin", cache:"no-store" });
+          const data = await parseApi(res);
+          if(!res.ok){ throw new Error(String(data.message || data.error || "Could not retrieve analysis status.")); }
+          const payload = data.analysis && typeof data.analysis === "object" ? data.analysis : null;
+          const status = String(data.status || "").toLowerCase();
+          const progress = Number(data.progress || 0);
+          renderProgress(progress, String(data.stage || ""), String(data.message || ""), status === "completed" || progress >= 100);
+          if(payload){
+            state.analysis = payload;
+          }
+          if(status === "completed" || progress >= 100){
+            stopProcessing(status !== "error", String(data.message || (status === "error" ? "Analysis failed." : "Analysis complete.")));
+            if(payload){ await safeProgressiveRender(payload); }
+            if(status === "error"){
+              throw new Error(String(data.message || data.error || "Analysis failed."));
+            }
+            state.analysisCount += 1;
+            localStorage.setItem("dg_analysis_count", String(state.analysisCount));
+            state.lastScanAt = new Date().toISOString();
+            localStorage.setItem("dg_last_scan_at", state.lastScanAt);
+            await loadSession();
+            renderSidebarIntel();
+            return;
+          }
+          if(payload){ await safeProgressiveRender(payload); }
+          if(status === "error"){
+            throw new Error(String(data.message || data.error || "Analysis failed."));
+          }
+          state.pollTimer = window.setTimeout(()=>{
+            pollOnce().catch((error)=>{
+              stopProcessing(false, error instanceof Error ? error.message : "Analysis polling failed.");
+              showError(error instanceof Error ? error.message : "Analysis polling failed.");
+              document.body.classList.remove("processing-active");
+              el.progressOverlay.classList.remove("on");
+            });
+          }, 900);
+        }catch(error){
+          stopProcessing(false, error instanceof Error ? error.message : "Analysis polling failed.");
+          showError(error instanceof Error ? error.message : "Analysis polling failed.");
+          document.body.classList.remove("processing-active");
+          el.progressOverlay.classList.remove("on");
+          throw error;
         }
-        renderProgress(Number(data.progress || 0), String(data.stage || ""), String(data.message || ""), String(data.status || "").toLowerCase() === "completed");
-        const status = String(data.status || "").toLowerCase();
-        if(status === "completed"){
-          stopProcessing(true, String(data.message || "Analysis complete."));
-          state.analysisCount += 1;
-          localStorage.setItem("dg_analysis_count", String(state.analysisCount));
-          state.lastScanAt = new Date().toISOString();
-          localStorage.setItem("dg_last_scan_at", state.lastScanAt);
-          await loadSession();
-          renderSidebarIntel();
-          return;
-        }
-        if(status === "error"){
-          throw new Error(String(data.message || data.error || "Analysis failed."));
-        }
-        state.pollTimer = window.setTimeout(pollOnce, 900);
       };
       await pollOnce();
     }
@@ -1503,6 +2055,10 @@
       fd.append("enable_layer1", "true");
       fd.append("enable_layer2", "true");
       fd.append("enable_layer3", "true");
+      fd.append("tracking_enabled", (el.trackingToggle && el.trackingToggle.checked && state.authState === "user") ? "true" : "false");
+      if(el.trackingToggle && el.trackingToggle.checked && state.authState !== "user"){
+        syncTrackingPrompt();
+      }
 
       try{
         const res = await fetch("/api/analyze", { method:"POST", body:fd, credentials:"same-origin" });
@@ -1519,9 +2075,7 @@
         state.activeDomainFilter = "";
         if(data.analysis && typeof data.analysis === "object"){
           state.analysis = data.analysis;
-          await progressiveRender(data.analysis);
-          clearSkeleton();
-          el.insightText.textContent = generateInsight(data.analysis);
+          await safeProgressiveRender(data.analysis);
         }
         if(String(data.status || "").toLowerCase() === "completed"){
           stopProcessing(true, String(data.message || "Cached analysis loaded instantly."));
@@ -1552,6 +2106,8 @@
       el.fileName.textContent = "Drag and drop image/video here, or click to upload.";
       el.previewName.textContent = "Nothing uploaded yet";
       el.sourceUrlInput.value = "";
+      if(el.trackingToggle){ el.trackingToggle.checked = false; }
+      syncTrackingPrompt();
       revokePreview(); showPreview(null);
       clearError();
       el.insightText.textContent = "Run an analysis to generate a combined forensic and propagation insight.";
@@ -1585,11 +2141,34 @@
       el.embeddingGrid.innerHTML = "";
       el.domainClusterGrid.innerHTML = "";
       el.layer3Badge.textContent = "Tracking not started";
-      el.growthLevelTag.className = "tag low"; el.growthLevelTag.textContent = "Growth: Low";
-      el.riskTag.textContent = "Risk: 0%"; el.sourceTag.textContent = "Sources: 0";
       el.layer3Insight.textContent = "No spread detected yet. Monitoring will continue over time.";
       el.alertList.innerHTML = '<div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>';
+      el.riskSummaryValue.textContent = "0%";
+      el.riskSummaryFill.style.width = "0%";
+      el.riskSummaryMeta.textContent = "No active risk signal.";
+      el.riskSummaryCard.className = "summary-card risk-low";
+      el.velocitySummaryValue.textContent = "0.00";
+      el.velocitySummaryMeta.textContent = "Matches per observation window.";
+      el.clusterSummaryValue.textContent = "0";
+      el.clusterSummaryMeta.textContent = "Tracked related instances.";
+      el.statusSummaryValue.textContent = "Normal";
+      el.statusSummaryMeta.textContent = "Passive indexing.";
+      el.timelineMeta.textContent = "Waiting for observations";
+      el.histogramMeta.textContent = "How the cluster is expanding over time";
+      el.strengthMeta.textContent = "Similarity score distribution across current evidence";
+      el.propagationMeta.textContent = "Variant connectivity";
+      el.riskBreakdownMeta.textContent = "How Layer 3 is scoring this case";
+      el.distributionMeta.textContent = "Active public domains";
+      el.riskBreakdownList.innerHTML = "";
+      el.sourceDistributionLegend.innerHTML = `<div class="legend-row"><span class="legend-dot" style="background:#475569"></span><span>No domain data yet</span><span>0</span></div>`;
+      el.eventFeedMeta.textContent = "Real-time investigation signals";
+      el.eventFeed.innerHTML = `<div class="event-item"><div class="event-top"><span class="event-type sev-low">Waiting</span><span class="event-time">now</span></div><div class="event-copy">No Layer 3 events yet. Run analysis to start monitoring.</div></div>`;
       drawTimeline([]);
+      drawClusterGrowth([]);
+      drawStrengthDistribution([]);
+      drawRiskBreakdown({ detection:0, spread:0, cluster:0, velocity:0 });
+      drawSourceDistribution([]);
+      drawPropagationGraph({ nodes:0, edges:0, variation_detected:false });
       renderProgress(0, "queued", "Preparing the upload and starting the investigation pipeline.", false);
       stopProgressTimer();
       document.body.classList.remove("processing-active");
@@ -1601,6 +2180,7 @@
     el.themeSelect.addEventListener("change", (e)=>setTheme(e.target.value));
     el.fileInput.addEventListener("change", (e)=>setFile(e.target.files && e.target.files[0]));
     el.sourceUrlInput.addEventListener("input", setRunEnabled);
+    el.trackingToggle.addEventListener("change", syncTrackingPrompt);
     el.clearDomainFilterBtn.addEventListener("click", ()=>{
       state.activeDomainFilter = "";
       if(state.analysis){ renderLayer2(state.analysis); }
@@ -1615,7 +2195,9 @@
     setTheme(localStorage.getItem("dg_theme") || "dark");
     renderProgress(0, "queued", "Preparing the upload and starting the investigation pipeline.", false);
     setupLayer2ChartObserver();
+    setupLayer3ChartObserver();
     loadSession();
+    pollNotifications();
     resetAll();
   </script>
 </body>
