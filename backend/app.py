@@ -94,13 +94,14 @@ GENERIC_KEYWORDS = [
     "history of",
 ]
 GENERIC_DOMAINS = ["wikipedia", "britannica", "dictionary"]
-EXACT_VISUAL_THRESHOLD = 0.85
+EXACT_VISUAL_THRESHOLD = 0.75
+NEAR_EXACT_PHASH_THRESHOLD = 10
+EXACT_PHASH_THRESHOLD = 5
 RELATED_VISUAL_THRESHOLD = 0.5
-VISUAL_LOOKALIKE_THRESHOLD = 0.55
-EMBEDDING_MATCH_THRESHOLD = 0.6
+VISUAL_LOOKALIKE_THRESHOLD = 0.75
+EMBEDDING_MATCH_THRESHOLD = 0.5
 INTERNAL_EMBEDDING_MIN_SCORE = 0.55
 INTERNAL_EMBEDDING_MAX_VISUAL_SIMILARITY = 0.82
-EXACT_PHASH_THRESHOLD = 10
 DISCOVERY_SECTION_LIMIT = 10
 INTERNAL_EMBEDDING_SEARCH_LIMIT = 100
 
@@ -135,9 +136,11 @@ def _current_request_id() -> str:
 def _layer2_match_similarity(item: dict[str, object]) -> float:
     metadata = dict(item.get("metadata") or {})
     score_breakdown = dict(item.get("score_breakdown") or {})
-    similarity = _safe_float(
+    raw_similarity = _safe_float(
+        item.get("similarity_score"),
         score_breakdown.get("final_score"),
         _safe_float(
+            item.get("embedding_score"),
             metadata.get("embedding_similarity"),
             _safe_float(
                 item.get("visual_similarity"),
@@ -148,7 +151,19 @@ def _layer2_match_similarity(item: dict[str, object]) -> float:
             ),
         ),
     )
-    return max(0.0, min(1.0, similarity))
+    normalized = raw_similarity
+    if -1.0 <= raw_similarity <= 1.0:
+        raw_embedding = _safe_float(
+            item.get("embedding_similarity"),
+            _safe_float(metadata.get("embedding_similarity"), _safe_float(metadata.get("embedding_rank_score"))),
+        )
+        if -1.0 <= raw_embedding <= 1.0 and (
+            "embedding_similarity" in item
+            or "embedding_similarity" in metadata
+            or "embedding_rank_score" in metadata
+        ):
+            normalized = (raw_similarity + 1.0) / 2.0 if raw_similarity < 0.0 else raw_similarity
+    return max(0.0, min(1.0, normalized))
 
 
 def _layer2_match_preview_url(item: dict[str, object]) -> str:
@@ -230,46 +245,62 @@ def _match_domain(item: dict[str, object]) -> str:
 
 
 def _match_type_label(item: dict[str, object], default_type: str) -> str:
+    metadata = dict(item.get("metadata") or {})
+    resolved_type = str(item.get("match_type") or metadata.get("match_type") or "").strip().lower()
+    if resolved_type in {"exact", "near_exact", "visual", "related"}:
+        return resolved_type
     raw_type = str(item.get("type") or "").strip().lower()
     if raw_type == "exact_match":
         return "exact"
+    if raw_type == "near_exact_match":
+        return "near_exact"
     if raw_type == "visually_similar":
         return "visual"
     if raw_type in {"embedding_similar", "related_content"}:
-        return "semantic"
+        return "related"
     return default_type
 
 
 def _match_explanation(item: dict[str, object], match_type: str) -> str:
+    explicit = str(item.get("explanation") or "").strip()
+    if explicit:
+        return explicit
     note = str(item.get("note") or item.get("match_reason") or "").strip()
     if note:
         return note
+    metadata = dict(item.get("metadata") or {})
+    phash_diff = metadata.get("phash_diff")
+    if match_type == "exact" and isinstance(phash_diff, (int, float)) and int(phash_diff) == 0:
+        return "Exact image match (hash match)."
     if match_type == "exact":
-        return "High pixel similarity and corroborated reverse-search evidence."
+        return "Exact or near-identical image detected using perceptual hashing."
+    if match_type == "near_exact":
+        return "Near-identical image with minor changes such as resize, compression, or watermark."
     if match_type == "visual":
-        return "Similar composition, framing, or subject appearance."
-    return "Contextually related result surfaced by reverse-image search."
+        if bool(metadata.get("partial_match")):
+            return "Detected despite crop, compression, or resizing differences."
+        return "Strong visual match detected through normalized embedding similarity."
+    return "Related image or page surfaced through normalized embedding similarity."
 
 
 def _match_confidence_label(item: dict[str, object], similarity_score: float, match_type: str) -> str:
+    metadata = dict(item.get("metadata") or {})
+    phash_diff = metadata.get("phash_diff")
+    explicit = str(item.get("confidence_label") or metadata.get("confidence_label") or "").strip().upper()
+    if explicit in {"HIGH", "MEDIUM", "LOW"}:
+        return explicit
+    if match_type in {"exact", "near_exact"}:
+        return "HIGH"
     raw = str(item.get("confidence") or item.get("confidence_level") or "").strip().upper()
     if raw in {"HIGH", "MEDIUM", "LOW"}:
+        if raw == "HIGH" and similarity_score < 0.75:
+            return "MEDIUM" if similarity_score >= 0.5 else "LOW"
+        if raw == "MEDIUM" and similarity_score < 0.5:
+            return "LOW"
         return raw
-    if match_type == "exact":
-        if similarity_score >= 0.9:
-            return "HIGH"
-        if similarity_score >= 0.75:
-            return "MEDIUM"
-        return "LOW"
-    if match_type == "visual":
-        if similarity_score >= 0.8:
-            return "HIGH"
-        if similarity_score >= 0.62:
-            return "MEDIUM"
-        return "LOW"
-    if similarity_score >= 0.72:
+    if similarity_score >= 0.75:
         return "HIGH"
-    if similarity_score >= 0.55:
+    if similarity_score >= 0.5:
         return "MEDIUM"
     return "LOW"
 
@@ -328,6 +359,8 @@ def _confidence_weight(label: str) -> int:
 def _match_type_weight(match_type: str) -> int:
     normalized = str(match_type or "").strip().lower()
     if normalized == "exact":
+        return 4
+    if normalized == "near_exact":
         return 3
     if normalized == "visual":
         return 2
@@ -367,15 +400,46 @@ def _annotate_matches(items: list[dict[str, object]], *, default_type: str) -> l
     annotated: list[dict[str, object]] = []
     for item in items:
         enriched = deepcopy(item)
+        metadata = dict(enriched.get("metadata") or {})
         match_type = _match_type_label(enriched, default_type)
         similarity_score = round(_layer2_match_similarity(enriched), 4)
         enriched["match_type"] = match_type
         enriched["similarity_score"] = similarity_score
+        enriched["hash_distance"] = (
+            int(metadata.get("hash_distance"))
+            if isinstance(metadata.get("hash_distance"), (int, float))
+            else (int(metadata.get("phash_diff")) if isinstance(metadata.get("phash_diff"), (int, float)) else None)
+        )
+        enriched["embedding_score"] = round(
+            _safe_float(enriched.get("embedding_score"), _safe_float(metadata.get("embedding_score"), _safe_float(metadata.get("embedding_similarity")))),
+            4,
+        )
         enriched["explanation"] = _match_explanation(enriched, match_type)
         enriched["domain"] = _match_domain(enriched)
         enriched["confidence_label"] = _match_confidence_label(enriched, similarity_score, match_type)
         enriched["confidence"] = str(enriched.get("confidence") or enriched["confidence_label"]).upper()
         enriched["confidence_level"] = str(enriched.get("confidence_level") or enriched["confidence_label"]).upper()
+        phash_diff = metadata.get("phash_diff")
+        if match_type == "exact" and isinstance(phash_diff, (int, float)) and int(phash_diff) == 0:
+            enriched["similarity_score"] = 1.0
+            enriched["confidence_label"] = "HIGH"
+            enriched["confidence"] = "HIGH"
+            enriched["confidence_level"] = "HIGH"
+            enriched["explanation"] = "Exact image match (hash match)."
+        elif match_type == "near_exact":
+            enriched["confidence_label"] = "HIGH"
+            enriched["confidence"] = "HIGH"
+            enriched["confidence_level"] = "HIGH"
+        LOGGER.debug(
+            "layer2_match_scored match_type=%s similarity=%.4f hash_distance=%s embedding=%.4f threshold=%s confidence=%s domain=%s",
+            match_type,
+            float(enriched.get("similarity_score") or 0.0),
+            enriched.get("hash_distance"),
+            float(enriched.get("embedding_score") or 0.0),
+            "high>=0.75 medium>=0.50 low<0.50",
+            str(enriched.get("confidence_label") or ""),
+            str(enriched.get("domain") or ""),
+        )
         annotated.append(enriched)
     return _rank_matches(annotated)
 
@@ -453,13 +517,13 @@ def _domain_insights(items: list[dict[str, object]]) -> list[dict[str, object]]:
                 "count": 0,
                 "max_similarity": 0.0,
                 "avg_similarity_total": 0.0,
-                "match_type_counts": {"exact": 0, "visual": 0, "related": 0},
+                "match_type_counts": {"exact": 0, "near_exact": 0, "visual": 0, "related": 0},
             },
         )
         entry["count"] = int(entry["count"]) + 1
         entry["max_similarity"] = max(float(entry["max_similarity"]), similarity)
         entry["avg_similarity_total"] = float(entry["avg_similarity_total"]) + similarity
-        bucket = "related" if match_type not in {"exact", "visual", "related", "semantic"} else match_type
+        bucket = "related" if match_type not in {"exact", "near_exact", "visual", "related", "semantic"} else match_type
         if bucket == "semantic":
             bucket = "related"
         type_counts = entry["match_type_counts"]
@@ -543,7 +607,7 @@ def _important_domains(items: list[dict[str, object]]) -> list[dict[str, object]
         count = int(insight.get("count") or 0)
         max_similarity = float(insight.get("max_similarity") or 0.0)
         match_type_counts = dict(insight.get("match_type_counts") or {})
-        exact_count = int(match_type_counts.get("exact") or 0)
+        exact_count = int(match_type_counts.get("exact") or 0) + int(match_type_counts.get("near_exact") or 0)
         entry = grouped.setdefault(
             key,
             {
@@ -1175,31 +1239,35 @@ def _is_generic_page(item: dict[str, object]) -> bool:
 
 
 def _result_confidence(item_type: str, similarity: float, num_sources: int, num_frames: int, phash_diff: int | None) -> str:
-    if item_type == "exact_match":
-        if similarity >= 0.92 and num_sources >= 2 and num_frames >= 2 and (phash_diff is not None and phash_diff <= 8):
-            return "HIGH"
-        return "MEDIUM"
+    if item_type in {"exact_match", "near_exact_match"}:
+        return "HIGH"
     if item_type == "embedding_similar":
-        if similarity >= 0.7:
+        if similarity >= 0.75:
+            return "HIGH"
+        if similarity >= 0.5:
             return "MEDIUM"
         return "LOW"
     if item_type == "visually_similar":
-        if similarity >= 0.9 and (num_sources >= 2 or num_frames >= 2):
+        if similarity >= 0.75:
+            return "HIGH"
+        if similarity >= 0.5:
             return "MEDIUM"
         return "LOW"
-    if similarity >= 0.7 and (num_sources >= 2 or num_frames >= 2):
+    if similarity >= 0.75 and (num_sources >= 2 or num_frames >= 2):
         return "MEDIUM"
     return "LOW"
 
 
 def _result_note(item_type: str, confidence: str) -> str:
     if item_type == "exact_match":
-        return "Near-duplicate image found" if confidence == "HIGH" else "Strong visual match found"
+        return "Exact or near-identical image detected using perceptual hashing."
+    if item_type == "near_exact_match":
+        return "Near-identical image with minor changes such as resize, compression, or watermark."
     if item_type == "embedding_similar":
-        return "External semantic or context-based lead from reverse-image discovery. Useful for investigation when there is no strong direct visual lookalike."
+        return "Related image or page surfaced through normalized embedding similarity."
     if item_type == "visually_similar":
-        return "A downloaded image or frame from this result is visually similar to your upload. This is useful for lookalike discovery, not proof of the original source."
-    return "Embedding-based lead from page context or broader semantic similarity, not a direct visual lookalike."
+        return "Strong visual match detected through normalized embedding similarity."
+    return "Related image surfaced through broader similarity evidence."
 
 
 def _normalized_url_key(url: str | None) -> str:
@@ -1489,8 +1557,10 @@ def _embedding_similarity_value(item) -> float:
     payload = _item_payload(item)
     metadata = dict(payload.get("metadata") or {})
     return _safe_float(
+        payload.get("embedding_score"),
         payload.get("embedding_similarity"),
         _safe_float(
+            metadata.get("embedding_score"),
             metadata.get("embedding_similarity"),
             _safe_float(
                 metadata.get("embedding_rank_score"),
@@ -1503,21 +1573,48 @@ def _embedding_similarity_value(item) -> float:
 def _serialize_discovery_item(item, item_type: str) -> dict[str, object]:
     payload = _item_payload(item)
     metadata = dict(payload.get("metadata") or {})
-    raw_similarity = _safe_float(metadata.get("raw_visual_similarity"), _safe_float(payload.get("visual_similarity")))
+    raw_similarity = _safe_float(
+        payload.get("similarity_score"),
+        _safe_float(
+            metadata.get("final_score"),
+            _safe_float(
+                metadata.get("embedding_score"),
+                _safe_float(metadata.get("raw_visual_similarity"), _safe_float(payload.get("visual_similarity"))),
+            ),
+        ),
+    )
     phash_diff_raw = metadata.get("phash_diff")
     phash_diff = int(phash_diff_raw) if isinstance(phash_diff_raw, (int, float)) else None
+    embedding_score = _safe_float(
+        payload.get("embedding_score"),
+        _safe_float(metadata.get("embedding_score"), _safe_float(metadata.get("embedding_similarity"))),
+    )
     num_sources = int(_safe_float(metadata.get("evidence_sources"), 1))
     num_frames = int(_safe_float(metadata.get("evidence_frames"), 1))
-    confidence = _result_confidence(item_type, raw_similarity, num_sources, num_frames, phash_diff)
+    explicit_match_type = str(payload.get("match_type") or metadata.get("match_type") or "").strip().lower()
+    if explicit_match_type == "exact":
+        item_type = "exact_match"
+    elif explicit_match_type == "near_exact":
+        item_type = "near_exact_match"
+    elif explicit_match_type == "visual":
+        item_type = "visually_similar"
+    elif explicit_match_type == "related":
+        item_type = "embedding_similar"
+    confidence = str(payload.get("confidence_label") or metadata.get("confidence_label") or "").strip().upper() or _result_confidence(item_type, raw_similarity, num_sources, num_frames, phash_diff)
     if item_type in {"exact_match", "visually_similar"} and raw_similarity > 0:
         payload["visual_similarity"] = raw_similarity
     elif item_type in {"related_content", "embedding_similar"}:
         payload["visual_similarity"] = None
     payload["type"] = item_type
+    payload["match_type"] = explicit_match_type or _match_type_label({"type": item_type, "metadata": metadata}, "related")
+    payload["similarity_score"] = raw_similarity
+    payload["embedding_score"] = embedding_score
+    payload["hash_distance"] = phash_diff
     payload["confidence"] = confidence
     payload["note"] = _result_note(item_type, confidence)
     payload["confidence_level"] = confidence
     payload["match_reason"] = str(metadata.get("match_reason") or payload["note"])
+    payload["explanation"] = str(payload.get("explanation") or metadata.get("explanation") or payload["match_reason"])
     resolver_status = _resolver_status(item)
     payload["resolver_status"] = resolver_status
     metadata["resolver_status"] = resolver_status
@@ -1526,9 +1623,14 @@ def _serialize_discovery_item(item, item_type: str) -> dict[str, object]:
         "similarity": _safe_float(score_components.get("similarity"), _safe_float(payload.get("visual_similarity"), _safe_float(payload.get("fused_similarity")))),
         "trust": _safe_float(score_components.get("source_trust"), _safe_float(payload.get("credibility_score"), 0.5)),
         "evidence": _safe_float(score_components.get("evidence"), 0.0),
-        "final_score": _safe_float(score_components.get("final_score"), _safe_float(metadata.get("final_score"), _safe_float(payload.get("fused_similarity")))),
+        "final_score": _safe_float(score_components.get("final_score"), _safe_float(metadata.get("final_score"), raw_similarity)),
     }
     metadata["phash_diff"] = phash_diff
+    metadata["embedding_score"] = embedding_score
+    metadata["embedding_similarity"] = embedding_score
+    metadata["confidence_label"] = confidence
+    metadata["match_type"] = payload["match_type"]
+    metadata["explanation"] = payload["explanation"]
     payload["metadata"] = metadata
     return payload
 
@@ -1566,25 +1668,48 @@ def _classify_discovery_results(items: list) -> tuple[list[dict[str, object]], l
     for item in items:
         payload = _item_payload(item)
         metadata = dict(payload.get("metadata") or {})
-        raw_similarity = _safe_float(metadata.get("raw_visual_similarity"), _safe_float(payload.get("visual_similarity")))
+        raw_similarity = _safe_float(
+            payload.get("similarity_score"),
+            _safe_float(
+                metadata.get("final_score"),
+                _safe_float(
+                    metadata.get("embedding_score"),
+                    _safe_float(metadata.get("raw_visual_similarity"), _safe_float(payload.get("visual_similarity"))),
+                ),
+            ),
+        )
         phash_diff_raw = metadata.get("phash_diff")
         phash_diff = int(phash_diff_raw) if isinstance(phash_diff_raw, (int, float)) else None
         num_sources = int(_safe_float(metadata.get("evidence_sources"), 1))
         is_generic = _is_generic_page(payload)
+        match_type = str(payload.get("match_type") or metadata.get("match_type") or "").strip().lower()
 
         if (
-            raw_similarity >= EXACT_VISUAL_THRESHOLD
-            and phash_diff is not None
-            and phash_diff <= EXACT_PHASH_THRESHOLD
-            and not is_generic
+            match_type in {"exact", "near_exact"}
+            or (
+                raw_similarity >= EXACT_VISUAL_THRESHOLD
+                and phash_diff is not None
+                and phash_diff <= NEAR_EXACT_PHASH_THRESHOLD
+            )
+        ) and (
+            not is_generic
             and num_sources >= 1
             and _resolver_status(item) == "ok"
             and _is_media_backed_visual_candidate(item)
         ):
-            serialized = _serialize_discovery_item(item, "exact_match")
+            serialized = _serialize_discovery_item(
+                item,
+                "exact_match" if (match_type == "exact" or (phash_diff is not None and phash_diff <= EXACT_PHASH_THRESHOLD)) else "near_exact_match",
+            )
             exact_matches.append(serialized)
 
-    exact_matches.sort(key=lambda entry: _safe_float((entry.get("metadata") or {}).get("final_score"), _safe_float(entry.get("visual_similarity"))), reverse=True)
+    exact_matches.sort(
+        key=lambda entry: (
+            0 if str(entry.get("match_type") or "").strip().lower() == "exact" else 1,
+            -_safe_float(entry.get("similarity_score"), _safe_float((entry.get("metadata") or {}).get("final_score"), _safe_float(entry.get("visual_similarity")))),
+            int((entry.get("hash_distance") if entry.get("hash_distance") is not None else 9999)),
+        )
+    )
     return exact_matches, []
 
 
@@ -1611,8 +1736,10 @@ def _embedding_similarity_list(
             continue
 
         serialized = _serialize_discovery_item(item, "embedding_similar")
+        if str(serialized.get("match_type") or "").strip().lower() != "related":
+            continue
         metadata = dict(serialized.get("metadata") or {})
-        metadata["embedding_rank_score"] = _safe_float(metadata.get("final_score"), _safe_float(serialized.get("fused_similarity")))
+        metadata["embedding_rank_score"] = _safe_float(metadata.get("embedding_score"), _safe_float(metadata.get("final_score"), _safe_float(serialized.get("fused_similarity"))))
         serialized["metadata"] = metadata
         embedding_similar.append(serialized)
         if key:
@@ -1650,9 +1777,11 @@ def _internal_embedding_similarity_list(
             continue
 
         serialized = _serialize_discovery_item(item, "embedding_similar")
+        serialized["match_type"] = "related"
+        serialized["explanation"] = "Related image surfaced from the internal similarity index for broader investigation."
         serialized["note"] = "Semantic neighbor from the internal FAISS index. Useful for broader similarity and investigation."
         metadata = dict(serialized.get("metadata") or {})
-        metadata["embedding_rank_score"] = _safe_float(serialized.get("fused_similarity"))
+        metadata["embedding_rank_score"] = _safe_float(serialized.get("embedding_score"), _safe_float(serialized.get("fused_similarity")))
         metadata["semantic_source"] = "internal_faiss"
         serialized["metadata"] = metadata
         embedding_similar.append(serialized)
@@ -1713,17 +1842,19 @@ def _visual_similarity_list(items: list, excluded_keys: set[str] | None = None, 
             continue
         payload = _item_payload(item)
         metadata = dict(payload.get("metadata") or {})
-        raw_similarity = _safe_float(metadata.get("raw_visual_similarity"), _safe_float(payload.get("visual_similarity")))
-        if raw_similarity < RELATED_VISUAL_THRESHOLD:
-            continue
         if _resolver_status(item) != "ok":
             continue
         if not _is_media_backed_visual_candidate(item):
             continue
         payload = _serialize_discovery_item(item, "visually_similar")
+        if str(payload.get("match_type") or "").strip().lower() not in {"visual"}:
+            continue
+        raw_similarity = _safe_float(payload.get("similarity_score"), _safe_float(payload.get("visual_similarity")))
+        if raw_similarity < RELATED_VISUAL_THRESHOLD:
+            continue
         payload["metadata"] = {
             **dict(payload.get("metadata") or {}),
-            "visual_rank_score": _safe_float(payload.get("visual_similarity")),
+            "visual_rank_score": _safe_float(payload.get("similarity_score"), _safe_float(payload.get("visual_similarity"))),
         }
         visually_similar.append(payload)
 
@@ -1760,11 +1891,12 @@ def _embedding_matches_top10(items: list, excluded_keys: set[str] | None = None,
         if key and key in seen_keys:
             continue
 
-        embedding_similarity = _embedding_similarity_value(item)
+        serialized = _serialize_discovery_item(item, "embedding_similar")
+        if str(serialized.get("match_type") or "").strip().lower() != "related":
+            continue
+        embedding_similarity = _safe_float(serialized.get("embedding_score"), _embedding_similarity_value(item))
         if embedding_similarity < EMBEDDING_MATCH_THRESHOLD:
             continue
-
-        serialized = _serialize_discovery_item(item, "embedding_similar")
         metadata = dict(serialized.get("metadata") or {})
         metadata["embedding_similarity"] = embedding_similarity
         metadata["embedding_rank_score"] = embedding_similarity
@@ -1947,6 +2079,16 @@ def _build_external_exploratory_items(
             "evidence_frames": frame_hits,
             **({"source_url": source_url} if source_url else {}),
         }
+        if verification is not None:
+            metadata.update(
+                {
+                    "match_type": verification.match_type,
+                    "confidence_label": verification.confidence_label,
+                    "hash_distance": verification.hash_distance,
+                    "embedding_score": verification.embedding_score,
+                    **dict(verification.metadata or {}),
+                }
+            )
         record = OccurrenceRecord(
             entry_id=str(candidate.get("candidate_key") or key or f"candidate-{best_rank}"),
             source_type="external",
@@ -1988,6 +2130,12 @@ def _build_external_exploratory_items(
             "label": adjusted.label,
             "metadata": adjusted.metadata,
         }
+        if verification is not None:
+            item["match_type"] = verification.match_type
+            item["confidence_label"] = verification.confidence_label
+            item["embedding_score"] = verification.embedding_score
+            item["hash_distance"] = verification.hash_distance
+            item["similarity_score"] = float(verification.combined_score)
         exploratory_records.append(item)
         if key:
             seen_keys.add(key)

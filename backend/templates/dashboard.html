@@ -151,6 +151,11 @@
     .confidence-high{color:#dcfce7;background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.35)}
     .confidence-medium{color:#fef3c7;background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.35)}
     .confidence-low{color:#fee2e2;background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.35)}
+    .match-type-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid transparent;font-size:12px;font-weight:700;letter-spacing:.01em;text-transform:capitalize}
+    .match-type-exact{color:#dcfce7;background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.3)}
+    .match-type-near{color:#dbeafe;background:rgba(59,130,246,.16);border-color:rgba(59,130,246,.3)}
+    .match-type-visual{color:#bfdbfe;background:rgba(37,99,235,.16);border-color:rgba(37,99,235,.3)}
+    .match-type-related{color:#e9d5ff;background:rgba(147,51,234,.18);border-color:rgba(147,51,234,.28)}
     .group-desc{font-size:12px;color:var(--muted)}
     .empty-note{border:1px dashed rgba(148,163,184,.14);border-radius:16px;padding:14px;color:var(--muted);font-size:12px;background:rgba(255,255,255,.02)}
     .match-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
@@ -787,7 +792,8 @@
 
     function matchTypeWeight(matchType){
       const label = String(matchType || "").toLowerCase();
-      if(label === "exact"){ return 3; }
+      if(label === "exact"){ return 4; }
+      if(label === "near_exact"){ return 3; }
       if(label === "visual"){ return 2; }
       return 1;
     }
@@ -866,6 +872,21 @@
       return "confidence-low";
     }
 
+    function matchTypeLabel(matchType){
+      const label = String(matchType || "").toLowerCase();
+      if(label === "exact"){ return "Exact Match"; }
+      if(label === "near_exact"){ return "Near-Exact Match"; }
+      if(label === "visual"){ return "Visual Match"; }
+      return "Related Match"; }
+
+    function matchTypeClass(matchType){
+      const label = String(matchType || "").toLowerCase();
+      if(label === "exact"){ return "match-type-exact"; }
+      if(label === "near_exact"){ return "match-type-near"; }
+      if(label === "visual"){ return "match-type-visual"; }
+      return "match-type-related";
+    }
+
     function layer2SourceUrl(item){
       const candidates = [item.page_url, item.url, item.source_url, item.media_url];
       for(const candidate of candidates){
@@ -922,17 +943,25 @@
       const note = String(item.note || item.match_reason || "").trim();
       const platform = String(item.platform || "").trim();
       const explanation = String(item.explanation || note || "").trim();
+      const matchType = String(item.match_type || m.match_type || "related").trim().toLowerCase();
+      const embeddingScore = Number(item.embedding_score || m.embedding_score || m.embedding_similarity || 0);
+      const hashDistance = Number.isFinite(Number(item.hash_distance)) ? Number(item.hash_distance) : (Number.isFinite(Number(m.hash_distance)) ? Number(m.hash_distance) : (Number.isFinite(Number(m.phash_diff)) ? Number(m.phash_diff) : null));
       const rank = Number(m.rank || 0);
-      const hasSimilarity = Number(item.visual_similarity || m.embedding_similarity || 0) > 0;
+      const hasSimilarity = Number(item.visual_similarity || item.similarity_score || item.embedding_score || m.embedding_similarity || 0) > 0;
       const domain = escapeHtml(String(item.domain || platform || "unknown"));
-      const scoreText = hasSimilarity ? `${(sim*100).toFixed(1)}% match` : (rank > 0 ? `Result #${rank}` : "Match found");
+      const scoreText = hasSimilarity ? `Similarity: ${sim.toFixed(2)} (${escapeHtml(confidence || "Low")})` : (rank > 0 ? `Result #${rank}` : "Match found");
+      const detailBits = [];
+      if(hashDistance !== null){ detailBits.push(`Hash distance: ${hashDistance}`); }
+      if(embeddingScore > 0){ detailBits.push(`Embedding: ${embeddingScore.toFixed(2)}`); }
+      const detailText = detailBits.length ? ` • ${escapeHtml(detailBits.join(" • "))}` : "";
       const confidenceMarkup = `<span class="confidence-badge ${confidenceClass(confidence)}">${escapeHtml(confidence || "LOW")}</span>`;
+      const matchTypeMarkup = `<span class="match-type-badge ${matchTypeClass(matchType)}">${escapeHtml(matchTypeLabel(matchType))}</span>`;
       const topMatchMarkup = index === 0 ? `<div class="match-kicker"><span class="top-chip">Top Match</span></div>` : "";
       const linkMarkup = src
         ? `<a class="ml" href="${src}" target="_blank" rel="noreferrer">Open page</a>`
         : `<span class="ml disabled">No public page available</span>`;
       const shortExplanation = explanation || "Match found through reverse search.";
-      return `<article class="match${index === 0 ? " top-match" : ""}"><div class="thumb">${preview ? `<img src="${escapeHtml(preview)}" alt="${title}" />` : "No preview available"}</div><div class="mb">${topMatchMarkup}<div class="mt">${title}</div><div class="match-meta"><span class="meta-domain">${domain}</span><span class="meta-score">${scoreText}</span>${confidenceMarkup}</div><div class="mm match-desc">${escapeHtml(shortExplanation)}</div><div class="match-footer"><span class="mm">Seen: ${escapeHtml(seen)}</span>${linkMarkup}</div></div></article>`;
+      return `<article class="match${index === 0 ? " top-match" : ""}"><div class="thumb">${preview ? `<img src="${escapeHtml(preview)}" alt="${title}" />` : "No preview available"}</div><div class="mb">${topMatchMarkup}<div class="mt">${title}</div><div class="match-meta"><span class="meta-domain">${domain}</span><span class="meta-score">${scoreText}${detailText}</span>${matchTypeMarkup}${confidenceMarkup}</div><div class="mm match-desc">${escapeHtml(shortExplanation)}</div><div class="match-footer"><span class="mm">Seen: ${escapeHtml(seen)}</span>${linkMarkup}</div></div></article>`;
     }
 
     function renderDiscoverySection(gridEl, countEl, items, emptyText, fallbackTitle){
