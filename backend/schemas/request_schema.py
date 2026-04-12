@@ -39,16 +39,29 @@ class ChatRequest:
     layer1: dict[str, Any]
     layer2: dict[str, Any]
     layer3: dict[str, Any]
+    history: list[dict[str, str]]
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> "ChatRequest":
         message = str(payload.get("message") or "").strip()
         if not message:
             raise ValueError("message is required.")
+        context = payload.get("context") if isinstance(payload.get("context"), dict) else {}
+        history_payload = payload.get("history") if isinstance(payload.get("history"), list) else []
+        history: list[dict[str, str]] = []
+        for item in history_payload[-10:]:
+            if not isinstance(item, dict):
+                continue
+            role = str(item.get("role") or "").strip().lower()
+            content = str(item.get("content") or item.get("text") or "").strip()
+            if role not in {"user", "assistant"} or not content:
+                continue
+            history.append({"role": role, "content": content[:1200]})
         return cls(
             message=message,
-            layer1=payload.get("layer1") if isinstance(payload.get("layer1"), dict) else {},
-            layer2=payload.get("layer2") if isinstance(payload.get("layer2"), dict) else {},
-            layer3=payload.get("layer3") if isinstance(payload.get("layer3"), dict) else {},
+            layer1=context.get("layer1") if isinstance(context.get("layer1"), dict) else (payload.get("layer1") if isinstance(payload.get("layer1"), dict) else {}),
+            layer2=context.get("layer2") if isinstance(context.get("layer2"), dict) else (payload.get("layer2") if isinstance(payload.get("layer2"), dict) else {}),
+            layer3=context.get("layer3") if isinstance(context.get("layer3"), dict) else (payload.get("layer3") if isinstance(payload.get("layer3"), dict) else {}),
+            history=history,
         )
 

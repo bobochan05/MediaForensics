@@ -28,10 +28,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, make_response, redirect, render_template, request, url_for
+from flask import Flask, Response, g, jsonify, make_response, redirect, render_template, request, session, stream_with_context, url_for
 from PIL import Image
 from werkzeug.exceptions import HTTPException
 from ai.layer2_matching.insights import build_layer2_insights
+from ai.layer1_detection.content_classifier import classify_media_content
 
 from backend.config import load_backend_config
 from backend.auth_system import init_auth_system
@@ -135,6 +136,15 @@ _CHAT_RESPONSE_CACHE_TTL_SECONDS = 12 * 3600
 REQUEST_TIMEOUT_SECONDS = 15.0
 REVERSE_SEARCH_ALLOWED_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 REVERSE_SEARCH_ALLOWED_MIME_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+GEMINI_API_KEY = str(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
+GEMINI_MODEL = str(os.getenv("GEMINI_MODEL") or "gemini-2.0-flash").strip()
+GEMINI_TIMEOUT_SECONDS = 20.0
+AGENT_HISTORY_LIMIT = 10
+AGENT_MATCH_LIMIT = 5
+AGENT_ALERT_LIMIT = 4
+AGENT_DOMAIN_LIMIT = 8
+AGENT_TIMELINE_LIMIT = 6
+AI_HTTP = requests.Session()
 
 
 def _new_uuid() -> str:
@@ -906,6 +916,14 @@ def _assemble_analysis_response(
     }
 
 
+def _pending_layer1_payload() -> dict[str, object]:
+    return {
+        "result": "PENDING",
+        "confidence": 0.0,
+        "heatmap": None,
+    }
+
+
 def _set_analysis_job(job_id: str, payload: dict[str, object]) -> None:
     _cleanup_analysis_jobs()
     with _ANALYSIS_JOB_LOCK:
@@ -944,6 +962,296 @@ def _get_cached_chat(cache_key: str) -> dict[str, object] | None:
     with _ANALYSIS_JOB_LOCK:
         payload = _CHAT_RESPONSE_CACHE.get(cache_key)
         return deepcopy(payload) if payload is not None else None
+
+
+def _agent_history_key() -> str:
+    return "agent_history"
+
+
+def _load_agent_history() -> list[dict[str, str]]:
+    raw_history = session.get(_agent_history_key(), [])
+    if not isinstance(raw_history, list):
+        return []
+    history: list[dict[str, str]] = []
+    for item in raw_history[-AGENT_HISTORY_LIMIT:]:
+        if not isinstance(item, dict):
+            continue
+        role = str(item.get("role") or "").strip().lower()
+        content = str(item.get("content") or "").strip()
+        if role not in {"user", "assistant"} or not content:
+            continue
+        history.append({"role": role, "content": content[:2000]})
+    return history
+
+
+def _store_agent_history(history: list[dict[str, str]]) -> None:
+    session[_agent_history_key()] = history[-AGENT_HISTORY_LIMIT:]
+    session.modified = True
+
+
+def _append_agent_history(role: str, content: str) -> None:
+    cleaned_role = str(role or "").strip().lower()
+    cleaned_content = str(content or "").strip()
+    if cleaned_role not in {"user", "assistant"} or not cleaned_content:
+        return
+    history = _load_agent_history()
+    history.append({"role": cleaned_role, "content": cleaned_content[:2000]})
+    _store_agent_history(history)
+
+
+def _truncate_text(value: object, limit: int = 220) -> str:
+    text = re.sub(r"\s+", " ", str(value or "").strip())
+    if len(text) <= limit:
+        return text
+    return f"{text[: max(0, limit - 1)].rstrip()}…"
+
+
+def _summarize_match_for_agent(item: dict[str, object]) -> dict[str, object]:
+    return {
+        "title": _truncate_text(item.get("title") or item.get("name") or item.get("id") or "Untitled", 100),
+        "domain": str(item.get("domain") or _match_domain(item) or "unknown"),
+        "match_type": str(item.get("match_type") or "related"),
+        "similarity_score": round(_safe_float(item.get("similarity_score")), 4),
+        "confidence_label": str(item.get("confidence_label") or item.get("confidence") or "LOW"),
+        "explanation": _truncate_text(item.get("explanation") or item.get("note") or "", 180),
+        "url": str(item.get("url") or item.get("page_url") or item.get("source_url") or "")[:240],
+    }
+
+
+def _build_agent_context(layer1: dict[str, object], layer2: dict[str, object], layer3: dict[str, object]) -> dict[str, object]:
+    normalized_layer2 = build_layer2_response(layer2 if isinstance(layer2, dict) else None)
+    exact_matches = [_summarize_match_for_agent(item) for item in list(normalized_layer2.get("exact_matches") or [])[:AGENT_MATCH_LIMIT]]
+    visual_matches = [_summarize_match_for_agent(item) for item in list(normalized_layer2.get("visual_matches_top10") or [])[:AGENT_MATCH_LIMIT]]
+    related_matches = [_summarize_match_for_agent(item) for item in list(normalized_layer2.get("related_web_sources") or normalized_layer2.get("embedding_matches_top10") or [])[:AGENT_MATCH_LIMIT]]
+    alerts = [
+        {
+            "severity": str(item.get("severity") or "info"),
+            "title": _truncate_text(item.get("title") or item.get("message") or "Alert", 120),
+            "message": _truncate_text(item.get("message") or item.get("title") or "", 180),
+        }
+        for item in list(layer3.get("alerts") or [])[:AGENT_ALERT_LIMIT]
+        if isinstance(item, dict)
+    ]
+    timeline = [
+        {
+            "timestamp": str(item.get("timestamp") or item.get("date") or ""),
+            "mentions": int(float(item.get("mentions") or item.get("count") or 0)),
+        }
+        for item in list(layer3.get("timeline") or [])[-AGENT_TIMELINE_LIMIT:]
+        if isinstance(item, dict)
+    ]
+    return {
+        "layer1": {
+            "result": str(layer1.get("result") or "UNKNOWN"),
+            "confidence": round(_safe_float(layer1.get("confidence")), 2),
+            "heatmap_available": bool(layer1.get("heatmap")),
+        },
+        "layer2": {
+            "origin_summary": _truncate_text(normalized_layer2.get("origin_summary") or "", 260),
+            "top_domains": list(normalized_layer2.get("top_domains") or [])[:AGENT_DOMAIN_LIMIT],
+            "first_seen_estimate": str(normalized_layer2.get("first_seen_estimate") or ""),
+            "counts": dict(normalized_layer2.get("counts") or {}),
+            "consistency_warning": dict(normalized_layer2.get("consistency_warning") or {}),
+            "important_domains": list(normalized_layer2.get("important_domains") or [])[:AGENT_DOMAIN_LIMIT],
+            "domain_distribution": list(normalized_layer2.get("domain_distribution") or [])[:AGENT_DOMAIN_LIMIT],
+            "matches": {
+                "exact": exact_matches,
+                "visual": visual_matches,
+                "related": related_matches,
+            },
+        },
+        "layer3": {
+            "risk_score": round(_safe_float(layer3.get("risk_score")), 4),
+            "growth": dict(layer3.get("growth") or {}),
+            "growth_rate_percent": round(_safe_float((layer3.get("growth") or {}).get("rate_percent"), _safe_float(layer3.get("growth_rate"))), 2),
+            "spread_level": str(layer3.get("spread_level") or layer3.get("status") or ""),
+            "source_count": int(float(layer3.get("source_count") or (layer3.get("risk") or {}).get("source_count") or 0)),
+            "alerts": alerts,
+            "timeline": timeline,
+        },
+    }
+
+
+def _agent_context_ready(context: dict[str, object]) -> bool:
+    layer1 = dict(context.get("layer1") or {})
+    layer2 = dict(context.get("layer2") or {})
+    layer3 = dict(context.get("layer3") or {})
+    if str(layer1.get("result") or "").strip():
+        return True
+    counts = dict(layer2.get("counts") or {})
+    if any(_safe_float(value) > 0 for value in counts.values()):
+        return True
+    if _safe_float(layer3.get("risk_score")) > 0:
+        return True
+    return False
+
+
+def _agent_system_prompt() -> str:
+    return (
+        "You are a digital media forensics assistant. You analyze AI-generated content, explain detection results, "
+        "and help users understand risks and propagation. Base every answer only on the provided Layer 1, Layer 2, "
+        "and Layer 3 context. Be concise, analytical, and specific. Reference layers clearly when useful. "
+        "Do not hallucinate missing facts. If evidence is missing, say it is unavailable."
+    )
+
+
+def _agent_cache_key(message: str, context: dict[str, object], history: list[dict[str, str]]) -> str:
+    payload = {
+        "message": message,
+        "context": context,
+        "history": history[-6:],
+    }
+    return hashlib.sha1(json.dumps(payload, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+
+
+def _agent_fallback_reply(message: str, context: dict[str, object]) -> str:
+    if not _agent_context_ready(context):
+        return "No analysis data available. Please upload media first."
+    layer1 = dict(context.get("layer1") or {})
+    layer2 = dict(context.get("layer2") or {})
+    layer3 = dict(context.get("layer3") or {})
+    result = str(layer1.get("result") or "UNKNOWN").upper()
+    confidence = round(_safe_float(layer1.get("confidence")), 2)
+    counts = dict(layer2.get("counts") or {})
+    exact_count = int(_safe_float(counts.get("exact")))
+    visual_count = int(_safe_float(counts.get("visual")))
+    related_count = int(_safe_float(counts.get("related")))
+    risk_percent = round(_safe_float(layer3.get("risk_score")) * 100, 1)
+    growth_rate = round(_safe_float(layer3.get("growth_rate_percent")), 1)
+    origin_summary = str(layer2.get("origin_summary") or "").strip()
+    lowered = str(message or "").lower()
+    if "where" in lowered or "come from" in lowered or "source" in lowered:
+        if origin_summary:
+            return origin_summary
+        return f"Layer 2 found {exact_count + visual_count + related_count} relevant discovery results, but the likely origin is still uncertain."
+    if "risk" in lowered or "danger" in lowered or "safe" in lowered or "share" in lowered:
+        return f"Layer 3 currently scores the spread risk at {risk_percent}%. Growth is {growth_rate}%, so sharing should wait until the source trail is reviewed."
+    if "fake" in lowered or "real" in lowered or "why" in lowered or "explain" in lowered:
+        return f"Layer 1 currently labels this as {result} at {confidence}% confidence. Layer 2 adds {exact_count} exact, {visual_count} visual, and {related_count} related source leads, which should be used to validate the verdict."
+    return (
+        f"Layer 1 reports {result} at {confidence}% confidence. Layer 2 found {exact_count} exact, {visual_count} visual, "
+        f"and {related_count} related source leads. Layer 3 risk is {risk_percent}% with {growth_rate}% growth."
+    )
+
+
+def _gemini_endpoint(*, stream: bool) -> str:
+    action = "streamGenerateContent" if stream else "generateContent"
+    suffix = "?alt=sse" if stream else ""
+    return f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:{action}{suffix}&key={GEMINI_API_KEY}" if stream else f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:{action}?key={GEMINI_API_KEY}"
+
+
+def _extract_gemini_text(payload: dict[str, object]) -> str:
+    texts: list[str] = []
+    for candidate in list(payload.get("candidates") or []):
+        if not isinstance(candidate, dict):
+            continue
+        content = candidate.get("content")
+        if not isinstance(content, dict):
+            continue
+        for part in list(content.get("parts") or []):
+            if not isinstance(part, dict):
+                continue
+            text = str(part.get("text") or "")
+            if text:
+                texts.append(text)
+    return "".join(texts).strip()
+
+
+def _build_gemini_payload(message: str, context: dict[str, object], history: list[dict[str, str]]) -> dict[str, object]:
+    content_items: list[dict[str, object]] = []
+    for item in history[-6:]:
+        role = "model" if item.get("role") == "assistant" else "user"
+        content_items.append({"role": role, "parts": [{"text": item.get("content") or ""}]})
+    prompt = (
+        f"User question:\n{message}\n\n"
+        f"Forensic context JSON:\n{json.dumps(context, ensure_ascii=True, separators=(',', ':'))}"
+    )
+    content_items.append({"role": "user", "parts": [{"text": prompt}]})
+    return {
+        "system_instruction": {"parts": [{"text": _agent_system_prompt()}]},
+        "contents": content_items,
+        "generationConfig": {
+            "temperature": 0.3,
+            "topP": 0.9,
+            "maxOutputTokens": 500,
+        },
+    }
+
+
+def _generate_agent_reply(message: str, context: dict[str, object], history: list[dict[str, str]]) -> tuple[str, str]:
+    if not _agent_context_ready(context):
+        return "No analysis data available. Please upload media first.", "fallback"
+    if not GEMINI_API_KEY:
+        return _agent_fallback_reply(message, context), "fallback"
+    try:
+        response = AI_HTTP.post(
+            _gemini_endpoint(stream=False),
+            json=_build_gemini_payload(message, context, history),
+            timeout=(5, GEMINI_TIMEOUT_SECONDS),
+        )
+        response.raise_for_status()
+        payload = response.json()
+        text = _extract_gemini_text(payload)
+        if text:
+            return text, "gemini"
+    except Exception as exc:  # pragma: no cover - network/provider behavior
+        LOGGER.warning("agent_provider_failed provider=gemini error=%s", exc)
+    return _agent_fallback_reply(message, context), "fallback"
+
+
+def _stream_agent_reply(message: str, context: dict[str, object], history: list[dict[str, str]]):
+    if not _agent_context_ready(context):
+        fallback = "No analysis data available. Please upload media first."
+        yield fallback
+        return fallback, "fallback"
+    if not GEMINI_API_KEY:
+        fallback = _agent_fallback_reply(message, context)
+        yield fallback
+        return fallback, "fallback"
+
+    accumulated = ""
+    try:
+        with AI_HTTP.post(
+            _gemini_endpoint(stream=True),
+            json=_build_gemini_payload(message, context, history),
+            stream=True,
+            timeout=(5, GEMINI_TIMEOUT_SECONDS + 10),
+        ) as response:
+            response.raise_for_status()
+            for raw_line in response.iter_lines(decode_unicode=True):
+                if not raw_line:
+                    continue
+                line = str(raw_line).strip()
+                if not line.startswith("data:"):
+                    continue
+                chunk_payload = line[5:].strip()
+                if not chunk_payload or chunk_payload == "[DONE]":
+                    continue
+                try:
+                    parsed = json.loads(chunk_payload)
+                except json.JSONDecodeError:
+                    continue
+                text = _extract_gemini_text(parsed)
+                if not text:
+                    continue
+                if text.startswith(accumulated):
+                    delta = text[len(accumulated):]
+                    accumulated = text
+                elif accumulated.endswith(text):
+                    delta = ""
+                else:
+                    delta = text
+                    accumulated += text
+                if delta:
+                    yield delta
+        if accumulated.strip():
+            return accumulated.strip(), "gemini"
+    except Exception as exc:  # pragma: no cover - network/provider behavior
+        LOGGER.warning("agent_stream_failed provider=gemini error=%s", exc)
+
+    fallback = _agent_fallback_reply(message, context)
+    yield fallback
+    return fallback, "fallback"
 
 
 def _build_layer2_channels(
@@ -1025,6 +1333,73 @@ def _template_context(*, service_entry: bool = False) -> dict[str, object]:
         "guest_used": auth_context["guest_used"],
         "guest_remaining": auth_context["guest_remaining"],
         "google_oauth_client_id": AUTH_SERVICE.settings.google_client_id or "",
+    }
+
+
+def _dashboard_page_context(page_key: str) -> dict[str, object]:
+    definitions: dict[str, dict[str, str | None]] = {
+        "dashboard": {
+            "title": "Deepfake Detection & Intelligence Console",
+            "description": "Upload media, run layered intelligence, and review explainable forensic insights with propagation awareness.",
+            "anchor": None,
+        },
+        "upload": {
+            "title": "Upload & Analyze",
+            "description": "Start a new forensic investigation by uploading a media file or providing a source URL.",
+            "anchor": "uploadBlock",
+        },
+        "results": {
+            "title": "Investigation Results",
+            "description": "Review layered verdicts, source discovery, and explainable forensic evidence in one place.",
+            "anchor": "resultPanel",
+        },
+        "tracking": {
+            "title": "Tracking Intelligence",
+            "description": "Monitor how the detected media is spreading and which signals contribute to the current risk profile.",
+            "anchor": "layer3Card",
+        },
+        "domains": {
+            "title": "Domain Insights",
+            "description": "Inspect where the media appears online, which domains are most active, and how credible those platforms are.",
+            "anchor": "layer2Charts",
+        },
+        "risk": {
+            "title": "Risk Analysis",
+            "description": "Focus on the combined risk score, alert conditions, and spread-related indicators for the current case.",
+            "anchor": "layer3Card",
+        },
+        "history": {
+            "title": "Analysis History",
+            "description": "Review previous investigations, revisit uploaded media, and continue ongoing forensic work.",
+            "anchor": None,
+        },
+        "compare": {
+            "title": "Compare Cases",
+            "description": "Compare evidence patterns across cases and inspect how different uploads relate to each other.",
+            "anchor": None,
+        },
+        "saved": {
+            "title": "Saved Cases",
+            "description": "Keep important investigations organized so they can be resumed, shared, or reviewed later.",
+            "anchor": None,
+        },
+        "settings": {
+            "title": "Settings",
+            "description": "Adjust session preferences, interface options, and workflow defaults for the dashboard.",
+            "anchor": None,
+        },
+        "api": {
+            "title": "API & Integrations",
+            "description": "Review integration entry points and use the dashboard alongside the platform APIs and automation workflows.",
+            "anchor": None,
+        },
+    }
+    selected = definitions.get(page_key, definitions["dashboard"])
+    return {
+        "active_page": page_key if page_key in definitions else "dashboard",
+        "page_title": selected["title"],
+        "page_description": selected["description"],
+        "page_anchor": selected["anchor"],
     }
 
 
@@ -2541,13 +2916,48 @@ def _run_analysis_job(
     created_at: str,
     auth_state: str,
     guest_usage: dict[str, object],
+    enable_layer1: bool,
     enable_layer2: bool,
     enable_layer3: bool,
-    layer1_payload: dict[str, object],
     cache_key: str,
 ) -> None:
+    job_started_at = time.perf_counter()
     try:
         upload_metadata = _load_upload_metadata(upload_id)
+        _set_analysis_job(
+            job_id,
+            {
+                "status": "processing",
+                "job_id": job_id,
+                "progress": 10,
+                "stage": "layer1_processing",
+                "message": "Analysis in progress.",
+            },
+        )
+        layer1_started_at = time.perf_counter()
+        if enable_layer1:
+            label, confidence = _run_inference_subprocess(stored_path)
+            is_fake = label.lower() == "fake"
+            content_classification = classify_media_content(stored_path)
+            layer1_payload: dict[str, object] = build_layer1_payload(
+                is_fake=is_fake,
+                confidence=confidence,
+                content_classification=content_classification,
+            )
+        else:
+            label = "real"
+            confidence = 0.0
+            layer1_payload = build_layer1_payload(is_fake=False, confidence=0.0)
+
+        upload_metadata["label"] = label
+        upload_metadata["confidence"] = confidence
+        _write_upload_metadata(upload_id, upload_metadata)
+        LOGGER.info(
+            "layer1 duration_ms=%s upload_id=%s",
+            round((time.perf_counter() - layer1_started_at) * 1000, 1),
+            upload_id,
+        )
+
         partial_analysis = _assemble_analysis_response(
             upload_id=upload_id,
             original_filename=original_filename,
@@ -2563,7 +2973,7 @@ def _run_analysis_job(
                 "job_id": job_id,
                 "progress": 30,
                 "stage": "layer1_complete",
-                "message": "Authenticity complete. Searching public sources.",
+                "message": "Analysis in progress.",
                 "analysis": partial_analysis,
             },
         )
@@ -2593,7 +3003,7 @@ def _run_analysis_job(
                 "job_id": job_id,
                 "progress": 72,
                 "stage": "layer2_complete",
-                "message": "Source matching complete. Building spread intelligence.",
+                "message": "Analysis in progress.",
                 "analysis": partial_analysis,
             },
         )
@@ -2607,7 +3017,7 @@ def _run_analysis_job(
                 "job_id": job_id,
                 "progress": 88,
                 "stage": "layer3_processing",
-                "message": "Similarity scored. Building final insights and tracking signals.",
+                "message": "Analysis in progress.",
                 "analysis": partial_analysis,
             },
         )
@@ -2639,6 +3049,13 @@ def _run_analysis_job(
                 "message": "Analysis complete.",
                 "analysis": final_analysis,
             },
+        )
+        LOGGER.info(
+            "analysis_total duration_ms=%s upload_id=%s layer2=%s layer3=%s",
+            round((time.perf_counter() - job_started_at) * 1000, 1),
+            upload_id,
+            enable_layer2,
+            enable_layer3,
         )
     except Exception as exc:  # pragma: no cover - background safety
         LOGGER.exception("Background analysis job failed for %s", upload_id)
@@ -2788,8 +3205,80 @@ def dashboard():
     return render_template(
         "dashboard.html",
         **_template_context(service_entry=True),
+        **_dashboard_page_context("dashboard"),
         dashboard_frontend_url=DASHBOARD_FRONTEND_URL,
     )
+
+
+def _render_dashboard_page(page_key: str):
+    if DASHBOARD_FRONTEND_URL:
+        return redirect(f"{DASHBOARD_FRONTEND_URL.rstrip('/')}/dashboard")
+    return render_template(
+        "dashboard.html",
+        **_template_context(service_entry=True),
+        **_dashboard_page_context(page_key),
+        dashboard_frontend_url=DASHBOARD_FRONTEND_URL,
+    )
+
+
+@app.get("/upload")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def upload_page():
+    return _render_dashboard_page("upload")
+
+
+@app.get("/results")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def results_page():
+    return _render_dashboard_page("results")
+
+
+@app.get("/tracking")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def tracking_page():
+    return _render_dashboard_page("tracking")
+
+
+@app.get("/domains")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def domains_page():
+    return _render_dashboard_page("domains")
+
+
+@app.get("/risk")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def risk_page():
+    return _render_dashboard_page("risk")
+
+
+@app.get("/history")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def history_page():
+    return _render_dashboard_page("history")
+
+
+@app.get("/compare")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def compare_page():
+    return _render_dashboard_page("compare")
+
+
+@app.get("/saved")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def saved_page():
+    return _render_dashboard_page("saved")
+
+
+@app.get("/settings")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def settings_page():
+    return _render_dashboard_page("settings")
+
+
+@app.get("/api")
+@jwt_required(AUTH_SERVICE, allow_guest=True, redirect_on_fail=True)
+def api_page():
+    return _render_dashboard_page("api")
 
 
 @app.get("/demo")
@@ -2870,6 +3359,7 @@ def api_analyze():
     enable_layer2 = analyze_request.enable_layer2
     enable_layer3 = analyze_request.enable_layer3
     guest_usage = AUTH_SERVICE.mark_guest_try_used(principal)
+    request_started_at = time.perf_counter()
 
     try:
         if has_uploaded_file:
@@ -2877,13 +3367,12 @@ def api_analyze():
             original_filename = str(uploaded_file.filename or stored_path.name)
         else:
             upload_id, stored_path, original_filename = _download_remote_media(source_url or "")
-        label, confidence = _run_inference_subprocess(stored_path)
         _store_upload_metadata(
             upload_id=upload_id,
             stored_path=stored_path,
             original_filename=original_filename,
-            label=label,
-            confidence=confidence,
+            label=None,
+            confidence=None,
             source_url=source_url,
         )
     except (FileNotFoundError, ValueError) as exc:
@@ -2895,13 +3384,8 @@ def api_analyze():
             return jsonify({"error": "Invalid or unsupported media file.", "auth_state": principal.get("auth_mode"), "guest_usage": guest_usage}), 400
         return jsonify({"error": f"Analysis failed: {message}", "auth_state": principal.get("auth_mode"), "guest_usage": guest_usage}), 500
 
-    now_iso = datetime.now(timezone.utc).isoformat()
-    is_fake = label.lower() == "fake"
-    layer1_payload: dict[str, object] = build_layer1_payload(is_fake=is_fake, confidence=confidence)
-    if not enable_layer1:
-        layer1_payload = {"result": "REAL", "confidence": 0.0, "heatmap": None}
-
     cache_key = _file_sha1(stored_path)
+    now_iso = datetime.now(timezone.utc).isoformat()
     cached_analysis = _get_cached_analysis(cache_key)
     if cached_analysis is not None:
         cached_analysis["analysis_id"] = upload_id
@@ -2928,6 +3412,7 @@ def api_analyze():
         )
 
     auth_state = principal.get("auth_mode", "anonymous")
+    layer1_payload = _pending_layer1_payload()
     partial_analysis = _assemble_analysis_response(
         upload_id=upload_id,
         original_filename=original_filename,
@@ -2942,9 +3427,9 @@ def api_analyze():
         {
             "status": "processing",
             "job_id": job_id,
-            "progress": 15,
+            "progress": 4,
             "stage": "queued",
-            "message": "Media accepted. Starting intelligence pipeline.",
+            "message": "Analysis in progress.",
             "analysis": partial_analysis,
         },
     )
@@ -2957,24 +3442,31 @@ def api_analyze():
         created_at=now_iso,
         auth_state=auth_state,
         guest_usage=guest_usage,
+        enable_layer1=enable_layer1,
         enable_layer2=enable_layer2,
         enable_layer3=enable_layer3,
-        layer1_payload=layer1_payload,
         cache_key=cache_key,
+    )
+    LOGGER.info(
+        "analyze_request duration_ms=%s upload_id=%s cached=%s",
+        round((time.perf_counter() - request_started_at) * 1000, 1),
+        upload_id,
+        False,
     )
     return jsonify(
         {
             "status": "processing",
             "job_id": job_id,
-            "progress": 15,
+            "progress": 4,
             "stage": "queued",
-            "message": "Media accepted. Starting intelligence pipeline.",
+            "message": "Analysis in progress.",
             "analysis": partial_analysis,
         }
     ), 202
 
 
 @app.post("/api/chat")
+@app.post("/api/agent")
 @jwt_required(AUTH_SERVICE, allow_guest=True)
 def api_chat():
     payload = request.get_json(silent=True) or {}
@@ -2987,45 +3479,51 @@ def api_chat():
     layer1 = parsed_request.layer1
     layer2 = parsed_request.layer2
     layer3 = parsed_request.layer3
+    session_history = _load_agent_history()
+    incoming_history = parsed_request.history
+    context = _build_agent_context(layer1, layer2, layer3)
+    context_ready = _agent_context_ready(context)
+    history = (session_history + incoming_history)[-AGENT_HISTORY_LIMIT:]
+    cache_key = _agent_cache_key(message, context, history)
+    cached_chat = _get_cached_chat(cache_key)
+    if cached_chat is not None:
+        return jsonify(cached_chat)
 
-    l1_result = str(layer1.get("result") or "UNKNOWN").upper()
-    l1_conf = float(layer1.get("confidence") or 0.0)
-    matches = layer2.get("matches") if isinstance(layer2.get("matches"), list) else []
-    timeline = layer3.get("timeline") if isinstance(layer3.get("timeline"), list) else []
-    growth_obj = layer3.get("growth") if isinstance(layer3.get("growth"), dict) else {}
-    growth_rate = float(growth_obj.get("rate_percent") or layer3.get("growth_rate") or 0.0)
-    risk_score = float(layer3.get("risk_score") or 0.0)
-    alerts = layer3.get("alerts") if isinstance(layer3.get("alerts"), list) else []
+    wants_stream = str(payload.get("stream") or request.args.get("stream") or "").strip().lower() in {"1", "true", "yes", "on"}
+    if wants_stream:
+        def generate():
+            assembled = ""
+            provider = "fallback"
+            for chunk in _stream_agent_reply(message, context, history):
+                assembled += chunk
+                yield chunk
+            if assembled.strip():
+                provider = "gemini" if GEMINI_API_KEY else "fallback"
+                _append_agent_history("user", message)
+                _append_agent_history("assistant", assembled.strip())
+                _set_cached_chat(
+                    cache_key,
+                    {
+                        "reply": assembled.strip(),
+                        "context_used": context_ready,
+                        "provider": provider,
+                        "analysis_summary": context,
+                    },
+                )
 
-    context_ready = bool(layer1 or layer2 or layer3)
-    if not context_ready:
-        reply = (
-            "I can help explain results once an analysis is run. Upload media first, then ask about authenticity, "
-            "sources, spread, or risk."
-        )
-    else:
-        verdict_line = f"Layer 1 verdict is {l1_result} with {round(l1_conf, 2)}% confidence."
-        source_line = f"Layer 2 found {len(matches)} source match(es)."
-        track_line = f"Layer 3 growth is {round(growth_rate, 2)}% with risk score {round(risk_score * 100, 1)}%."
-        alert_line = f"There are {len(alerts)} active alert(s)."
-        response_focus = "Focus next on manual verification and source triage." if l1_result == "FAKE" else "Focus next on corroboration and monitoring drift."
-        reply = f"{verdict_line} {source_line} {track_line} {alert_line} {response_focus}"
+        return Response(stream_with_context(generate()), mimetype="text/plain; charset=utf-8")
 
-    return jsonify(
-        {
-            "reply": reply,
-            "context_used": context_ready,
-            "analysis_summary": {
-                "layer1_result": l1_result,
-                "layer1_confidence": round(l1_conf, 2),
-                "match_count": len(matches),
-                "timeline_points": len(timeline),
-                "growth_rate_percent": round(growth_rate, 2),
-                "risk_score_percent": round(risk_score * 100, 2),
-                "alert_count": len(alerts),
-            },
-        }
-    )
+    reply, provider = _generate_agent_reply(message, context, history)
+    _append_agent_history("user", message)
+    _append_agent_history("assistant", reply)
+    response_payload = {
+        "reply": reply,
+        "context_used": context_ready,
+        "provider": provider,
+        "analysis_summary": context,
+    }
+    _set_cached_chat(cache_key, response_payload)
+    return jsonify(response_payload)
 
 
 @app.get("/api/status/<job_id>")

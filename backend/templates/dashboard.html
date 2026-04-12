@@ -10,9 +10,9 @@
     html[data-theme="midnight"]{--bg:#2f3f6e;--bg2:#2f3f6e;--text:#e6ecff;--strong:#f8fbff;--muted:#c2cce7;--line:rgba(191,219,254,.24);--a:#93c5fd;--a2:#60a5fa;--ok:#34d399;--warn:#fb923c;--bad:#fb7185;--panel:rgba(36,50,93,.68);--g1:rgba(147,197,253,.14);--g2:rgba(59,130,246,.12)}
     html[data-theme="blue"]{--bg:#d8ecf8;--bg2:#cfe5f4;--text:#1e293b;--strong:#0f172a;--muted:#475569;--line:rgba(96,165,250,.16);--a:#0284c7;--a2:#2563eb;--ok:#15803d;--warn:#c2410c;--bad:#be123c;--panel:rgba(255,255,255,.62);--panel-strong:rgba(255,255,255,.88);--surface:rgba(255,255,255,.58);--surface-soft:rgba(241,249,255,.92);--g1:rgba(125,211,252,.18);--g2:rgba(59,130,246,.08);--shadow-soft:0 18px 48px rgba(56,189,248,.16);--shadow-card:0 12px 32px rgba(14,116,144,.12)}
     *{box-sizing:border-box} html,body{margin:0;padding:0;min-height:100vh;overflow-x:hidden;font-family:Manrope,Inter,Segoe UI,Arial,sans-serif;color:var(--text);background:radial-gradient(circle at 82% 14%,var(--g1),transparent 40%),radial-gradient(circle at 12% 88%,var(--g2),transparent 42%),linear-gradient(160deg,var(--bg),var(--bg2))}
-    .top{position:sticky;top:0;z-index:40;height:90px;background:rgba(8,14,25,.72);border-bottom:1px solid rgba(148,163,184,.08);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:space-between;padding:0 26px;box-shadow:0 10px 30px rgba(2,8,23,.18)}
+    .top{position:sticky;top:0;z-index:40;height:74px;background:rgba(8,14,25,.72);border-bottom:1px solid rgba(148,163,184,.08);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:0 10px 30px rgba(2,8,23,.18)}
     .top-left,.top-right{display:flex;align-items:center;gap:10px;min-width:280px}.top-right{justify-content:flex-end}
-    .top-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}.logo{height:62px;width:auto;display:block}
+    .top-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}.logo{height:48px;width:auto;display:block}
     .chip{border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.04);color:var(--text);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:700;backdrop-filter:blur(12px)}
     .theme{border:1px solid rgba(148,163,184,.14);border-radius:12px;background:rgba(255,255,255,.04);color:var(--strong);padding:9px 12px;font-size:12px;font-weight:700;backdrop-filter:blur(12px)}
     html[data-theme="light"] .top,
@@ -22,14 +22,14 @@
     html[data-theme="blue"] .chip,
     html[data-theme="blue"] .theme{background:rgba(255,255,255,.84);border-color:rgba(148,163,184,.2)}
 
-    .app-container{display:flex;min-height:calc(100vh - 90px);width:100%;padding:24px;gap:20px;align-items:flex-start}
-    .content-area{display:flex;flex:1;min-width:0;gap:20px;align-items:flex-start}
-    .panel{border:1px solid var(--line);border-radius:24px;background:var(--panel);backdrop-filter:blur(18px);box-shadow:var(--shadow-soft)}
-    .sidebar{width:72px;min-width:72px;height:calc(100vh - 138px);position:relative;padding:16px 12px;display:grid;gap:10px;align-content:start;overflow:hidden;transition:width .2s ease,min-width .2s ease,padding .2s ease}
-    .sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:220px;min-width:220px;padding:16px}
-    .sidebar a{position:relative;display:flex;align-items:center;gap:14px;min-height:46px;text-decoration:none;color:var(--text);padding:11px 12px;border-radius:16px;border:1px solid transparent;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;transition:background .2s ease,border-color .2s ease,transform .2s ease,color .2s ease}
+    .app-container{min-height:calc(100vh - 74px);width:100%;max-width:100%;padding:14px 16px 18px 74px;overflow-x:hidden}
+    .content-area{display:grid;grid-template-columns:minmax(0,1fr) 248px;min-width:0;max-width:100%;gap:14px;align-items:start}
+    .panel{border:1px solid var(--line);border-radius:22px;background:var(--panel);backdrop-filter:blur(18px);box-shadow:var(--shadow-soft);min-width:0;max-width:100%}
+    .sidebar{width:42px;height:calc(100vh - 74px);position:fixed;left:16px;top:74px;padding:8px 6px;display:grid;gap:8px;align-content:start;overflow:hidden;transition:width .2s ease,padding .2s ease;z-index:35}
+    .sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:144px;padding:8px}
+    .sidebar a{position:relative;display:flex;align-items:center;gap:10px;min-height:38px;text-decoration:none;color:var(--text);padding:8px 8px;border-radius:14px;border:1px solid transparent;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;transition:background .2s ease,border-color .2s ease,transform .2s ease,color .2s ease}
     .sidebar a:hover,.sidebar a.active{background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.22);transform:translateY(-1px)}
-    .sidebar a::before{content:attr(data-icon);display:inline-grid;place-items:center;width:22px;min-width:22px;height:22px;font-size:18px;line-height:1}
+    .sidebar a::before{content:attr(data-icon);display:inline-grid;place-items:center;width:18px;min-width:18px;height:18px;font-size:15px;line-height:1}
     .left-label{opacity:0;transform:translateX(-6px);transition:opacity .18s ease,transform .18s ease}
     .sidebar:hover .left-label,.sidebar:focus-within .left-label,.sidebar.expanded .left-label{opacity:1;transform:translateX(0)}
     .sidebar a::after{content:attr(data-tip);position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);padding:7px 10px;border-radius:10px;background:rgba(7,12,22,.96);border:1px solid rgba(148,163,184,.14);color:var(--strong);font-size:12px;font-weight:700;white-space:nowrap;opacity:0;pointer-events:none;box-shadow:var(--shadow-card);transition:opacity .18s ease,transform .18s ease}
@@ -37,48 +37,63 @@
     .sidebar:hover a::after,.sidebar:focus-within a::after,.sidebar.expanded a::after{display:none}
     .sidebar a.active::before{color:var(--a)}
 
-    .main{display:grid;flex:1;min-width:0;gap:36px;align-content:start}.header{padding:28px}.ttl{margin:0;color:var(--strong);font-size:38px;letter-spacing:-.035em}.sub{margin-top:10px;color:var(--muted);font-size:15px;line-height:1.65;max-width:760px}
-    .card{padding:24px}.sec-ttl{margin:0;color:var(--strong);font-size:30px;letter-spacing:-.03em}
-    .controls{margin-top:28px;display:grid;gap:22px}
-    .upload-stage{display:grid;justify-items:center;gap:16px;padding:12px 0 4px}
-    .upload-note{max-width:620px;text-align:center;font-size:13px;line-height:1.65;color:var(--muted)}
-    .drop{width:min(100%,380px);aspect-ratio:1/1;border:1px dashed rgba(148,163,184,.26);border-radius:28px;padding:28px;text-align:center;background:
+    .main{display:grid;min-width:0;gap:20px;align-content:start}.header{padding:20px}.ttl{margin:0;color:var(--strong);font-size:24px;letter-spacing:-.03em}.sub{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.55;max-width:680px}
+    .card{padding:18px}.sec-ttl{margin:0;color:var(--strong);font-size:20px;letter-spacing:-.02em}
+    .controls{margin-top:18px;display:grid;gap:18px}
+    .upload-shell{display:grid;grid-template-columns:minmax(240px,288px) minmax(0,1fr);gap:16px;align-items:stretch}
+    .upload-stage{display:grid;justify-items:center;align-content:start;gap:12px;padding:4px 0 0}
+    .upload-note{max-width:520px;text-align:left;font-size:12px;line-height:1.55;color:var(--muted)}
+    .drop{width:min(100%,288px);aspect-ratio:1/1;border:1px dashed rgba(148,163,184,.26);border-radius:22px;padding:18px;text-align:center;background:
       radial-gradient(circle at 50% 32%, rgba(56,189,248,.14), transparent 34%),
       linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
       cursor:pointer;display:grid;place-items:center;gap:14px;transition:background .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease;box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 18px 34px rgba(2,8,23,.16)}
     .drop.drag{border-color:var(--a);background:rgba(56,189,248,.08)} .drop input{display:none}
-    .drop::before{content:"+";display:grid;place-items:center;width:72px;height:72px;border-radius:24px;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.24);color:var(--strong);font-size:36px;font-weight:300;box-shadow:0 10px 24px rgba(56,189,248,.12)}
-    .drop-main{font-weight:800;font-size:18px;color:var(--strong);line-height:1.35;max-width:260px} .drop-sub{color:var(--muted);font-size:13px;line-height:1.6;max-width:270px}
-    .preview{display:none;border:1px solid rgba(148,163,184,.08);border-radius:20px;background:var(--surface-soft);padding:14px;box-shadow:var(--shadow-card)} .preview.on{display:block}
-    .media{width:100%;max-height:220px;border-radius:14px;background:rgba(2,8,23,.28);object-fit:contain}
+    .drop::before{content:"+";display:grid;place-items:center;width:52px;height:52px;border-radius:18px;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.24);color:var(--strong);font-size:28px;font-weight:300;box-shadow:0 10px 24px rgba(56,189,248,.12)}
+    .drop-main{font-weight:800;font-size:15px;color:var(--strong);line-height:1.3;max-width:210px} .drop-sub{color:var(--muted);font-size:11px;line-height:1.5;max-width:220px}
+    .preview{display:none;min-height:100%;border:1px solid rgba(148,163,184,.08);border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:16px;box-shadow:var(--shadow-card);grid-template-rows:auto minmax(0,1fr);gap:12px}
+    .preview.on{display:grid}
+    .preview-head{display:grid;gap:6px}
+    .preview-kicker{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--a)}
+    .preview-name{font-size:16px;font-weight:800;color:var(--strong);line-height:1.3;word-break:break-word}
+    .preview-meta{font-size:11px;color:var(--muted)}
+    .preview-stage{min-height:240px;border-radius:16px;background:rgba(2,8,23,.2);display:grid;place-items:center;padding:10px;overflow:hidden}
+    .media{width:100%;height:100%;max-height:280px;border-radius:14px;background:rgba(2,8,23,.28);object-fit:contain}
     .url-row{display:grid;gap:8px}.url-row label{font-size:13px;color:var(--strong);font-weight:700}
     .url{width:100%;height:52px;border:1px solid rgba(148,163,184,.12);border-radius:16px;background:var(--surface-soft);color:var(--text);padding:0 16px;font-size:14px;outline:none;transition:border-color .2s ease, box-shadow .2s ease}.url:focus{border-color:rgba(56,189,248,.4);box-shadow:0 0 0 4px rgba(56,189,248,.08)}
 
-    .processing{border:1px solid rgba(148,163,184,.08);border-radius:20px;background:var(--surface-soft);padding:18px;display:grid;gap:14px;box-shadow:var(--shadow-card)}
-    .stage-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.stage-txt{font-size:14px;font-weight:700;color:var(--strong)}
+    .processing{border:1px solid rgba(148,163,184,.08);border-radius:18px;background:var(--surface-soft);padding:16px;display:grid;gap:12px;box-shadow:var(--shadow-card)}
+    .stage-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.stage-txt{font-size:13px;font-weight:700;color:var(--strong)}
     .spinner{width:18px;height:18px;border:2px solid rgba(148,163,184,.36);border-top-color:var(--a);border-radius:999px;display:none}
     .processing.on .spinner{display:inline-block;animation:spin .9s linear infinite} @keyframes spin{to{transform:rotate(360deg)}}
     .stage-rail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-    .pill{border:1px solid rgba(148,163,184,.08);border-radius:14px;padding:10px 12px;font-size:12px;text-align:center;color:var(--muted);background:rgba(255,255,255,.02);transition:.25s}
+    .pill{border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:8px 10px;font-size:11px;text-align:center;color:var(--muted);background:rgba(255,255,255,.02);transition:.25s}
     .pill.active{color:var(--strong);border-color:rgba(56,189,248,.6);background:rgba(56,189,248,.18)} .pill.done{color:var(--ok);border-color:rgba(52,211,153,.5)}
 
-    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.muted{color:var(--muted);font-size:13px}
-    .btn{border:none;border-radius:16px;padding:12px 18px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;box-shadow:0 12px 28px rgba(37,99,235,.22);transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.muted{color:var(--muted);font-size:12px}
+    .btn{border:none;border-radius:14px;padding:10px 16px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;box-shadow:0 12px 28px rgba(37,99,235,.22);transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease}
     .btn:hover{transform:translateY(-1px);box-shadow:0 16px 32px rgba(56,189,248,.18)}
     .btn.secondary{background:rgba(255,255,255,.04);color:var(--text);box-shadow:none}
     .btn.secondary:hover{box-shadow:0 10px 24px rgba(2,8,23,.14)}
     .btn:disabled{opacity:.55;cursor:not-allowed}
+    .btn.small{padding:8px 12px;font-size:12px;border-radius:12px}
     .err{display:none;color:#fecaca;font-size:13px;background:rgba(239,68,68,.12);border:1px solid rgba(248,113,113,.2);border-radius:16px;padding:12px 14px}
 
-    .insight{border:1px solid rgba(56,189,248,.18);border-radius:24px;padding:24px;background:linear-gradient(180deg,rgba(56,189,248,.08),rgba(255,255,255,.03));box-shadow:var(--shadow-card)}
+    .insight{border:1px solid rgba(56,189,248,.18);border-radius:22px;padding:20px;background:linear-gradient(180deg,rgba(56,189,248,.08),rgba(255,255,255,.03));box-shadow:var(--shadow-card)}
     .insight h3{margin:0 0 8px;color:var(--strong);font-size:16px}.insight p{margin:0;color:var(--text);font-size:14px;line-height:1.65}
 
-    .result{border:1px solid rgba(148,163,184,.08);border-radius:28px;padding:24px;background:var(--surface);display:grid;gap:24px;box-shadow:var(--shadow-card)}
-    .layer{border:1px solid rgba(148,163,184,.07);border-radius:24px;padding:24px;background:rgba(9,17,31,.36);display:grid;gap:16px}
-    .layer-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.layer-ttl{margin:0;color:var(--strong);font-size:18px}
+    .result{border:1px solid rgba(148,163,184,.08);border-radius:24px;padding:20px;background:var(--surface);display:grid;gap:18px;box-shadow:var(--shadow-card)}
+    .layer{border:1px solid rgba(148,163,184,.07);border-radius:20px;padding:18px;background:rgba(9,17,31,.36);display:grid;gap:14px}
+    .layer-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.layer-ttl{margin:0;color:var(--strong);font-size:16px}
     .badge{border:1px solid rgba(148,163,184,.12);border-radius:999px;padding:6px 12px;font-size:12px;background:rgba(255,255,255,.03)}.b-real{color:var(--ok);border-color:rgba(52,211,153,.28)}.b-fake{color:var(--bad);border-color:rgba(251,113,133,.28)}.b-unc{color:var(--warn);border-color:rgba(251,191,36,.28)}
-    .verdict{font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:1}.v-real{color:var(--ok)}.v-fake{color:var(--bad)}.v-unc{color:var(--warn)}
+    .verdict{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1}.v-real{color:var(--ok)}.v-fake{color:var(--bad)}.v-unc{color:var(--warn)}
     .meter{height:10px;border-radius:999px;background:rgba(148,163,184,.2);overflow:hidden}.meter > div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .55s}
+    .content-class{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .content-card{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:12px;background:rgba(255,255,255,.02);display:grid;gap:4px}
+    .content-label{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+    .content-value{font-size:14px;font-weight:800;color:var(--strong);line-height:1.35;overflow-wrap:anywhere;word-break:break-word}
+    .score-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .score-chip{border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.02);font-size:11px;color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .score-chip strong{font-size:11px;color:var(--strong)}
 
     .layer2-meta{display:grid;gap:16px}
     .investigation-note{font-size:12px;color:var(--muted)}
@@ -188,34 +203,42 @@
 
     .docs{display:grid;gap:16px}.doc{border:1px solid rgba(148,163,184,.08);border-radius:20px;padding:18px;background:rgba(9,17,31,.32)} .doc summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--strong)} .doc p{margin:10px 0 0;color:var(--muted);font-size:13px;line-height:1.7}
 
-    .right{display:grid;width:330px;min-width:330px;align-content:start;gap:24px}.side-card{padding:22px;display:grid;gap:10px}.side-ttl{margin:0;color:var(--strong);font-size:18px}
-    .usage{height:10px;border-radius:999px;background:rgba(148,163,184,.2);overflow:hidden}.usage > div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .4s}
-
-    .chat{padding:22px}.chat-ttl{margin:0 0 10px;color:var(--strong);font-size:24px;letter-spacing:-.02em}
-    .suggest{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.sbtn{padding:9px 12px;font-size:12px}
-    .chat-list{height:280px;overflow:auto;border:1px solid rgba(148,163,184,.08);border-radius:18px;padding:12px;background:rgba(9,17,31,.32);display:grid;gap:10px}
-    .msg{padding:10px 12px;border-radius:14px;font-size:13px;line-height:1.5}.u{background:rgba(37,99,235,.45);color:#fff}.b{background:rgba(148,163,184,.12);color:#dbe4f4}
-    .chat-row{display:flex;gap:10px;margin-top:10px}.chat-row input{flex:1;height:44px;border-radius:14px;border:1px solid rgba(148,163,184,.1);background:var(--surface-soft);color:var(--text);padding:0 14px;font-size:14px;outline:none}
+    .right{display:grid;width:236px;min-width:0;max-width:calc(100vw - 32px);align-content:start;gap:12px;position:fixed;right:16px;top:74px;height:calc(100vh - 74px);z-index:30;overflow:hidden}.side-card{padding:16px;display:grid;gap:8px;min-width:0;max-width:100%}.side-ttl{margin:0;color:var(--strong);font-size:16px}
+    .snapshot{padding:16px;display:grid;gap:12px}
+    .snapshot-copy{font-size:12px;color:var(--muted);line-height:1.55}
+    .snapshot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .snapshot-metric{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:12px;background:rgba(9,17,31,.24);display:grid;gap:4px}
+    .snapshot-label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+    .snapshot-value{font-size:16px;font-weight:800;color:var(--strong);line-height:1.25;overflow-wrap:anywhere;word-break:break-word}
+    .snapshot-note{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:12px;background:rgba(9,17,31,.24);font-size:12px;color:var(--text);line-height:1.55;overflow-wrap:anywhere;word-break:break-word}
+    .usage-wrap{display:grid;gap:8px;margin-top:4px}
+    .usage-track{height:10px;border-radius:999px;background:rgba(148,163,184,.18);overflow:hidden}
+    .usage-fill{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .25s ease}
+    .usage-copy{font-size:12px;color:var(--muted)}
+    .quota-note{display:none;font-size:12px;line-height:1.5;color:#fecaca;border:1px solid rgba(248,113,113,.24);background:rgba(239,68,68,.12);border-radius:14px;padding:10px 12px}
+    .quota-note.on{display:block}
     html[data-theme="light"] .drop,
     html[data-theme="light"] .preview,
     html[data-theme="light"] .processing,
     html[data-theme="light"] .search-assist,
     html[data-theme="light"] .result-group,
     html[data-theme="light"] .doc,
-    html[data-theme="light"] .chat-list,
     html[data-theme="light"] .timeline,
     html[data-theme="light"] .alert,
     html[data-theme="light"] .domain-card,
+    html[data-theme="light"] .snapshot-metric,
+    html[data-theme="light"] .snapshot-note,
     html[data-theme="blue"] .drop,
     html[data-theme="blue"] .preview,
     html[data-theme="blue"] .processing,
     html[data-theme="blue"] .search-assist,
     html[data-theme="blue"] .result-group,
     html[data-theme="blue"] .doc,
-    html[data-theme="blue"] .chat-list,
     html[data-theme="blue"] .timeline,
     html[data-theme="blue"] .alert,
-    html[data-theme="blue"] .domain-card{background:var(--surface-soft)}
+    html[data-theme="blue"] .domain-card,
+    html[data-theme="blue"] .snapshot-metric,
+    html[data-theme="blue"] .snapshot-note{background:var(--surface-soft)}
     html[data-theme="light"] .layer,
     html[data-theme="light"] .result,
     html[data-theme="light"] .origin-card,
@@ -247,8 +270,8 @@
     html[data-theme="light"] .progress-modal,
     html[data-theme="blue"] .progress-modal{background:rgba(255,255,255,.94)}
 
-    @media (max-width:1220px){.app-container{padding:18px;gap:18px}.content-area{flex-direction:column}.match-grid,.chart-grid,.strength-grid{grid-template-columns:1fr}.right{width:100%;min-width:0;order:3}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:84px;flex-wrap:wrap;padding:14px 18px 12px;gap:10px}.top-left,.top-right{min-width:unset}.main{gap:28px}.card,.header,.chat,.side-card{padding:20px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:18px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.drop{width:min(100%,340px)}}
-    @media (max-width:900px){.app-container{flex-direction:column;padding:16px}.sidebar{width:100%;min-width:0;height:auto;padding:12px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:100%;min-width:0;padding:12px}.sidebar a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.sidebar a::after{display:none}.content-area{width:100%;flex-direction:column}.right{width:100%;min-width:0}.upload-stage{padding-top:4px}.drop{width:min(100%,300px);border-radius:24px;padding:22px}.drop::before{width:62px;height:62px;border-radius:20px;font-size:30px}.drop-main{font-size:16px}}
+    @media (max-width:1220px){.app-container{padding:12px 14px 16px 64px}.content-area{grid-template-columns:minmax(0,1fr)}.match-grid,.chart-grid,.strength-grid,.snapshot-grid,.content-class,.score-list{grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:68px;flex-wrap:wrap;padding:10px 14px;gap:10px}.top-left,.top-right{min-width:unset}.main{gap:18px}.card,.header,.side-card,.snapshot{padding:16px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:16px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.upload-shell{grid-template-columns:260px minmax(0,1fr)}.drop{width:min(100%,260px)}.preview-stage{min-height:220px}}
+    @media (max-width:900px){.app-container{padding:14px}.sidebar{width:100%;height:auto;position:relative;left:auto;top:auto;padding:10px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:100%;padding:10px}.sidebar a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.sidebar a::after{display:none}.content-area{width:100%;grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.upload-shell{grid-template-columns:1fr}.upload-stage{padding-top:4px;justify-items:center}.upload-note{text-align:center}.drop{width:min(100%,260px);border-radius:22px;padding:18px}.drop::before{width:52px;height:52px;border-radius:18px;font-size:28px}.drop-main{font-size:15px}.preview-stage{min-height:220px}}
   </style>
 </head>
 <body>
@@ -302,18 +325,27 @@
       <section class="panel card" id="uploadBlock">
         <h2 class="sec-ttl">Upload & Analyze</h2>
         <div class="controls">
-          <div class="upload-stage">
-            <label class="drop" id="dropZone">
-              <input type="file" id="fileInput" accept="image/*,video/*" />
-              <div class="drop-main" id="fileName">Drag and drop image/video here, or click to upload.</div>
-              <div class="drop-sub">Supported formats: JPG, PNG, MP4, AVI, MOV, MKV, WEBM</div>
-            </label>
-            <div class="upload-note">Start with a single image or video to launch the full forensic pipeline. The square intake area keeps the first action clear, focused, and easier to scan.</div>
-          </div>
+          <div class="upload-shell">
+            <div class="upload-stage">
+              <label class="drop" id="dropZone">
+                <input type="file" id="fileInput" accept="image/*,video/*" />
+                <div class="drop-main" id="fileName">Drag and drop image/video here, or click to upload.</div>
+                <div class="drop-sub">Supported formats: JPG, PNG, MP4, AVI, MOV, MKV, WEBM</div>
+              </label>
+              <div class="upload-note">Start with a single image or video to launch the full forensic pipeline. The square intake area keeps the first action clear, focused, and easier to scan.</div>
+            </div>
 
-          <div class="preview" id="previewWrap">
-            <img id="previewImage" class="media" alt="Preview" style="display:none" />
-            <video id="previewVideo" class="media" controls style="display:none"></video>
+            <div class="preview" id="previewWrap">
+              <div class="preview-head">
+                <div class="preview-kicker">Selected Media</div>
+                <div class="preview-name" id="previewName">Nothing uploaded yet</div>
+                <div class="preview-meta">Your uploaded file will appear here for quick review before analysis.</div>
+              </div>
+              <div class="preview-stage">
+                <img id="previewImage" class="media" alt="Preview" style="display:none" />
+                <video id="previewVideo" class="media" controls style="display:none"></video>
+              </div>
+            </div>
           </div>
 
           <div class="url-row">
@@ -359,6 +391,21 @@
           <div class="verdict v-unc" id="verdictVal">Awaiting analysis</div>
           <div class="meter"><div id="confidenceBar"></div></div>
           <div class="muted" id="confidenceVal">Confidence will appear after analysis starts.</div>
+          <div class="content-class">
+            <article class="content-card">
+              <div class="content-label">Content type</div>
+              <div class="content-value" id="contentTypeVal">Unknown</div>
+            </article>
+            <article class="content-card">
+              <div class="content-label">Semantic confidence</div>
+              <div class="content-value" id="contentConfidenceVal">0.00</div>
+            </article>
+            <article class="content-card">
+              <div class="content-label">Matched prompt</div>
+              <div class="content-value" id="contentRawLabelVal">unknown</div>
+            </article>
+          </div>
+          <div class="score-list" id="contentScores"></div>
           <div class="muted">Confidence is based on detected facial inconsistencies, fusion-model agreement, and frame-level evidence.</div>
         </section>
 
@@ -501,26 +548,37 @@
         <h3 class="side-ttl">System Intelligence</h3>
         <div class="muted" id="intelLine1">Model confidence stable.</div>
         <div class="muted" id="intelLine2">Tracking active and ready.</div>
-        <div class="muted" style="margin-top:4px">API usage</div>
-        <div class="usage"><div id="usageFill"></div></div>
-        <div class="muted" id="usageText">0 / 5</div>
+        <div class="usage-wrap">
+          <div class="muted">API usage</div>
+          <div class="usage-track"><div class="usage-fill" id="usageFill"></div></div>
+          <div class="usage-copy" id="usageText">0 / 5</div>
+        </div>
+        <div class="quota-note" id="quotaNote">Guest limit reached. Please log in to continue analysis.</div>
+        <button class="btn small" id="loginToContinueBtn" type="button" style="display:none">Login to continue</button>
       </section>
 
-      <section class="panel chat">
-        <h3 class="chat-ttl">Intelligence Chat</h3>
-        <div class="suggest">
-          <button type="button" class="btn secondary sbtn" data-q="Why is this fake?">Why is this fake?</button>
-          <button type="button" class="btn secondary sbtn" data-q="How fast is it spreading?">How fast is it spreading?</button>
-          <button type="button" class="btn secondary sbtn" data-q="Is this dangerous?">Is this dangerous?</button>
+      <section class="panel snapshot">
+        <h3 class="side-ttl">Investigation Snapshot</h3>
+        <div class="snapshot-copy" id="snapshotCopy">Run an analysis to populate the current verdict, source footprint, and risk indicators.</div>
+        <div class="snapshot-grid">
+          <article class="snapshot-metric">
+            <div class="snapshot-label">Verdict</div>
+            <div class="snapshot-value" id="snapshotVerdict">Awaiting scan</div>
+          </article>
+          <article class="snapshot-metric">
+            <div class="snapshot-label">Risk</div>
+            <div class="snapshot-value" id="snapshotRisk">0%</div>
+          </article>
+          <article class="snapshot-metric">
+            <div class="snapshot-label">Source Leads</div>
+            <div class="snapshot-value" id="snapshotSources">0</div>
+          </article>
+          <article class="snapshot-metric">
+            <div class="snapshot-label">Top Domain</div>
+            <div class="snapshot-value" id="snapshotTopDomain">Not established</div>
+          </article>
         </div>
-        <div id="chatList" class="chat-list">
-          <div class="msg b">I am ready. Run analysis first and I will explain Layer 1, Layer 2, and Layer 3 decisions with context.</div>
-        </div>
-        <div class="chat-row">
-          <input type="text" id="chatInput" placeholder="Ask about this analysis..." />
-          <button class="btn" id="chatBtn" type="button">Send</button>
-        </div>
-        <div class="muted" style="margin-top:8px">Chat responses are contextual when analysis data is available.</div>
+        <div class="snapshot-note" id="snapshotNote">Once analysis runs, this panel will summarize the strongest match signal, spread footprint, and current monitoring posture.</div>
       </section>
     </aside>
     </div>
@@ -553,6 +611,7 @@
       dropZone: document.getElementById("dropZone"),
       fileInput: document.getElementById("fileInput"),
       fileName: document.getElementById("fileName"),
+      previewName: document.getElementById("previewName"),
       previewWrap: document.getElementById("previewWrap"),
       previewImage: document.getElementById("previewImage"),
       previewVideo: document.getElementById("previewVideo"),
@@ -571,6 +630,10 @@
       verdictVal: document.getElementById("verdictVal"),
       confidenceBar: document.getElementById("confidenceBar"),
       confidenceVal: document.getElementById("confidenceVal"),
+      contentTypeVal: document.getElementById("contentTypeVal"),
+      contentConfidenceVal: document.getElementById("contentConfidenceVal"),
+      contentRawLabelVal: document.getElementById("contentRawLabelVal"),
+      contentScores: document.getElementById("contentScores"),
       layer2Badge: document.getElementById("layer2Badge"),
       layer2Summary: document.getElementById("layer2Summary"),
       matchExtra: document.getElementById("matchExtra"),
@@ -609,10 +672,14 @@
       intelLine2: document.getElementById("intelLine2"),
       usageFill: document.getElementById("usageFill"),
       usageText: document.getElementById("usageText"),
-      chatList: document.getElementById("chatList"),
-      chatInput: document.getElementById("chatInput"),
-      chatBtn: document.getElementById("chatBtn"),
-      suggest: Array.from(document.querySelectorAll("[data-q]"))
+      quotaNote: document.getElementById("quotaNote"),
+      loginToContinueBtn: document.getElementById("loginToContinueBtn"),
+      snapshotCopy: document.getElementById("snapshotCopy"),
+      snapshotVerdict: document.getElementById("snapshotVerdict"),
+      snapshotRisk: document.getElementById("snapshotRisk"),
+      snapshotSources: document.getElementById("snapshotSources"),
+      snapshotTopDomain: document.getElementById("snapshotTopDomain"),
+      snapshotNote: document.getElementById("snapshotNote")
     };
 
     function setTheme(theme){
@@ -628,7 +695,13 @@
 
     function setRunEnabled(){
       const hasUrl = String(el.sourceUrlInput.value || "").trim().length > 0;
-      el.runBtn.disabled = state.processing || !(state.file || hasUrl);
+      const guestBlocked = state.authState !== "user" && state.guestUsed >= state.guestLimit;
+      el.runBtn.disabled = state.processing || guestBlocked || !(state.file || hasUrl);
+      if(guestBlocked){
+        el.runBtn.textContent = "Login Required";
+      }else{
+        el.runBtn.textContent = "Run Intelligence Analysis";
+      }
     }
 
     function revokePreview(){
@@ -639,6 +712,7 @@
       revokePreview();
       if(!file){
         el.previewWrap.classList.remove("on");
+        el.previewName.textContent = "Nothing uploaded yet";
         el.previewImage.style.display = "none";
         el.previewVideo.style.display = "none";
         return;
@@ -646,6 +720,7 @@
       const u = URL.createObjectURL(file);
       state.previewObjectUrl = u;
       el.previewWrap.classList.add("on");
+      el.previewName.textContent = file.name;
       if(file.type.startsWith("image/")){
         el.previewImage.src = u; el.previewImage.style.display = "block";
         el.previewVideo.style.display = "none"; el.previewVideo.removeAttribute("src");
@@ -737,14 +812,6 @@
         .replace(/'/g, "&#39;");
     }
 
-    function addChat(role, text){
-      const row = document.createElement("div");
-      row.className = `msg ${role === "user" ? "u" : "b"}`;
-      row.textContent = text;
-      el.chatList.appendChild(row);
-      el.chatList.scrollTop = el.chatList.scrollHeight;
-    }
-
     function drawTimeline(points){
       const ctx = el.timelineCanvas.getContext("2d"); if(!ctx){ return; }
       const w = el.timelineCanvas.width, h = el.timelineCanvas.height;
@@ -777,6 +844,30 @@
       return {label:"UNCERTAIN", cls:"unc"};
     }
 
+    function formatContentType(value){
+      const raw = String(value || "unknown").trim().toLowerCase();
+      if(!raw){ return "Unknown"; }
+      return raw.split("_").map((part)=>part ? part[0].toUpperCase() + part.slice(1) : "").join(" ");
+    }
+
+    function renderContentClassification(layer1){
+      const classification = layer1 && typeof layer1.content_classification === "object" ? layer1.content_classification : {};
+      const contentType = String(classification.content_type || "unknown");
+      const confidence = Number(classification.confidence || 0);
+      const rawLabel = String(classification.raw_label || "unknown");
+      const allScores = classification.all_scores && typeof classification.all_scores === "object" ? classification.all_scores : {};
+      el.contentTypeVal.textContent = formatContentType(contentType);
+      el.contentConfidenceVal.textContent = confidence.toFixed(2);
+      el.contentRawLabelVal.textContent = rawLabel;
+      const ranked = Object.entries(allScores)
+        .map(([key, value])=>({ key, value: Number(value || 0) }))
+        .sort((left, right)=>right.value - left.value)
+        .slice(0, 4);
+      el.contentScores.innerHTML = ranked.length
+        ? ranked.map((item)=>`<div class="score-chip"><span>${escapeHtml(formatContentType(item.key))}</span><strong>${item.value.toFixed(2)}</strong></div>`).join("")
+        : `<div class="empty-note">Content classification scores will appear after analysis starts.</div>`;
+    }
+
     function renderLayer1(payload){
       const l1 = payload.layer1 || {};
       const conf = Number(l1.confidence || 0);
@@ -787,6 +878,7 @@
       el.layer1Badge.textContent = v.label === "UNCERTAIN" ? "Uncertain confidence window" : `${v.label} verdict`;
       el.confidenceBar.style.width = `${Math.max(0,Math.min(100,conf))}%`;
       el.confidenceVal.textContent = `Model confidence: ${conf.toFixed(2)}%.`;
+      renderContentClassification(l1);
     }
 
     function canonicalDomain(domain){
@@ -1271,8 +1363,12 @@
       el.sessionUser.textContent = `User: ${user}`;
       el.sessionType.textContent = `Type: ${auth === "user" ? "Pro" : auth === "guest" ? "Guest" : "Anonymous"}`;
       const pct = Math.max(0, Math.min(100, limit ? (used / limit) * 100 : 0));
-      el.usageFill.style.width = `${pct}%`;
-      el.usageText.textContent = `${used} / ${limit}`;
+      if(el.usageFill){ el.usageFill.style.width = `${pct}%`; }
+      if(el.usageText){ el.usageText.textContent = `${used} / ${limit}`; }
+      const guestBlocked = auth !== "user" && used >= limit;
+      if(el.quotaNote){ el.quotaNote.classList.toggle("on", guestBlocked); }
+      if(el.loginToContinueBtn){ el.loginToContinueBtn.style.display = guestBlocked ? "inline-flex" : "none"; }
+      setRunEnabled();
     }
 
     function renderSidebarIntel(){
@@ -1287,6 +1383,35 @@
         el.intelLine1.textContent = "Model confidence stable.";
         el.intelLine2.textContent = "Tracking active and ready.";
       }
+      renderSnapshotCard();
+    }
+
+    function renderSnapshotCard(){
+      if(!state.analysis){
+        el.snapshotCopy.textContent = "Run an analysis to populate the current verdict, source footprint, and risk indicators.";
+        el.snapshotVerdict.textContent = "Awaiting scan";
+        el.snapshotRisk.textContent = "0%";
+        el.snapshotSources.textContent = "0";
+        el.snapshotTopDomain.textContent = "Not established";
+        el.snapshotNote.textContent = "Once analysis runs, this panel will summarize the strongest match signal, spread footprint, and current monitoring posture.";
+        return;
+      }
+      const layer1 = state.analysis.layer1 || {};
+      const layer2 = state.analysis.layer2 || {};
+      const layer3 = state.analysis.layer3 || {};
+      const verdict = verdictMeta(layer1.result, Number(layer1.confidence || 0)).label;
+      const risk = Number(layer3.risk_score || (layer3.risk && layer3.risk.risk_score) || 0);
+      const growth = Number((layer3.growth && layer3.growth.rate_percent) || layer3.growth_rate || 0);
+      const totalSources = layer2TotalCount(layer2);
+      const topDomain = Array.isArray(layer2.top_domains) && layer2.top_domains.length ? String(layer2.top_domains[0]) : "";
+      const bestLead = [...rankMatches([...(layer2Buckets(layer2).exact || []), ...(layer2Buckets(layer2).visual || []), ...(layer2Buckets(layer2).embedding || [])])][0];
+      const bestLeadScore = bestLead ? `${(layer2Similarity(bestLead) * 100).toFixed(1)}%` : "No strong lead";
+      el.snapshotCopy.textContent = `Current investigation shows a ${verdict.toLowerCase()} leaning verdict with ${totalSources} tracked source lead${totalSources !== 1 ? "s" : ""}.`;
+      el.snapshotVerdict.textContent = verdict;
+      el.snapshotRisk.textContent = `${(risk * 100).toFixed(1)}%`;
+      el.snapshotSources.textContent = String(totalSources);
+      el.snapshotTopDomain.textContent = topDomain || "Not established";
+      el.snapshotNote.textContent = `Strongest match: ${bestLeadScore}. Growth signal: ${growth.toFixed(1)}%. Monitoring remains ${classifyGrowth(growth, risk, totalSources)}.`;
     }
 
     function setupLayer2ChartObserver(){
@@ -1337,9 +1462,6 @@
           localStorage.setItem("dg_analysis_count", String(state.analysisCount));
           state.lastScanAt = new Date().toISOString();
           localStorage.setItem("dg_last_scan_at", state.lastScanAt);
-          if(payload){
-            addChat("b", `Initial insight: media is likely ${String(payload.layer1 && payload.layer1.result || "UNKNOWN")} with ${Number(payload.layer1 && payload.layer1.confidence || 0).toFixed(2)}% confidence, and ${layer2TotalCount(payload.layer2 || {})} Layer 2 result(s).`);
-          }
           await loadSession();
           renderSidebarIntel();
           return;
@@ -1373,6 +1495,14 @@
       try{
         const res = await fetch("/api/analyze", { method:"POST", body:fd, credentials:"same-origin" });
         const data = await parseApi(res);
+        if(res.status === 403){
+          updateSession({
+            auth_state: data.auth_state || state.authState || "guest",
+            guest_used: Number(data.guest_used ?? state.guestUsed),
+            guest_limit: Number(data.guest_limit ?? state.guestLimit)
+          });
+          throw new Error(String(data.error || "Guest limit reached. Please log in to continue."));
+        }
         if(!res.ok){ throw new Error(String(data.error || "Analysis failed. Please try again.")); }
         state.activeDomainFilter = "";
         if(data.analysis && typeof data.analysis === "object"){
@@ -1403,28 +1533,12 @@
       setRunEnabled();
     }
 
-    async function sendChat(){
-      const message = String(el.chatInput.value || "").trim();
-      if(!message){ return; }
-      addChat("u", message);
-      el.chatInput.value = "";
-      try{
-        const body = { message };
-        if(state.analysis){ body.layer1 = state.analysis.layer1; body.layer2 = state.analysis.layer2; body.layer3 = state.analysis.layer3; }
-        const res = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, credentials:"same-origin", body:JSON.stringify(body) });
-        const data = await parseApi(res);
-        if(!res.ok){ throw new Error(String(data.error || "Chat is unavailable right now.")); }
-        addChat("b", String(data.reply || "No response from assistant."));
-      }catch(err){
-        addChat("b", err instanceof Error ? err.message : "Chat is unavailable right now.");
-      }
-    }
-
     function resetAll(){
       state.file = null; state.analysis = null; state.activeDomainFilter = ""; state.activeJobId = "";
       if(state.pollTimer){ clearTimeout(state.pollTimer); state.pollTimer = null; }
       el.fileInput.value = "";
       el.fileName.textContent = "Drag and drop image/video here, or click to upload.";
+      el.previewName.textContent = "Nothing uploaded yet";
       el.sourceUrlInput.value = "";
       revokePreview(); showPreview(null);
       clearError();
@@ -1433,6 +1547,10 @@
       el.verdictVal.className = "verdict v-unc"; el.verdictVal.textContent = "Awaiting analysis";
       el.confidenceBar.style.width = "0%";
       el.confidenceVal.textContent = "Confidence will appear after analysis starts.";
+      el.contentTypeVal.textContent = "Unknown";
+      el.contentConfidenceVal.textContent = "0.00";
+      el.contentRawLabelVal.textContent = "unknown";
+      el.contentScores.innerHTML = `<div class="empty-note">Content classification scores will appear after analysis starts.</div>`;
       el.layer2Badge.textContent = "Waiting for analysis";
       el.layer2Summary.textContent = "No analysis yet. Matching sources and similarity evidence will appear here after scan.";
       el.matchExtra.textContent = "No matches found yet because analysis has not been run.";
@@ -1479,9 +1597,7 @@
     el.dropZone.addEventListener("drop", (e)=>{e.preventDefault();el.dropZone.classList.remove("drag");setFile(e.dataTransfer.files && e.dataTransfer.files[0]);});
     el.runBtn.addEventListener("click", runAnalysis);
     el.resetBtn.addEventListener("click", resetAll);
-    el.chatBtn.addEventListener("click", sendChat);
-    el.chatInput.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); sendChat(); } });
-    el.suggest.forEach((btn)=>btn.addEventListener("click", ()=>{ el.chatInput.value = String(btn.getAttribute("data-q") || ""); sendChat(); }));
+    el.loginToContinueBtn.addEventListener("click", ()=>{ window.location.href = "/"; });
 
     setTheme(localStorage.getItem("dg_theme") || "dark");
     renderProgress(0, "queued", "Preparing the upload and starting the investigation pipeline.", false);
