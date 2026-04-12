@@ -88,11 +88,13 @@
     .verdict{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1}.v-real{color:var(--ok)}.v-fake{color:var(--bad)}.v-unc{color:var(--warn)}
     .meter{height:10px;border-radius:999px;background:rgba(148,163,184,.2);overflow:hidden}.meter > div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .55s}
     .content-class{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-    .content-card{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:12px;background:rgba(255,255,255,.02);display:grid;gap:4px}
+    .content-card{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:12px;background:rgba(255,255,255,.02);display:grid;gap:6px}
     .content-label{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
     .content-value{font-size:14px;font-weight:800;color:var(--strong);line-height:1.35;overflow-wrap:anywhere;word-break:break-word}
+    .content-value.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}
     .score-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .score-chip{border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.02);font-size:11px;color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .score-chip span{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;overflow-wrap:anywhere;word-break:break-word}
     .score-chip strong{font-size:11px;color:var(--strong)}
 
     .layer2-meta{display:grid;gap:16px}
@@ -393,15 +395,15 @@
           <div class="muted" id="confidenceVal">Confidence will appear after analysis starts.</div>
           <div class="content-class">
             <article class="content-card">
-              <div class="content-label">Content type</div>
-              <div class="content-value" id="contentTypeVal">Unknown</div>
+              <div class="content-label">Content Category</div>
+              <div class="content-value code" id="contentTypeVal">unknown</div>
             </article>
             <article class="content-card">
-              <div class="content-label">Semantic confidence</div>
-              <div class="content-value" id="contentConfidenceVal">0.00</div>
+              <div class="content-label">Category Confidence</div>
+              <div class="content-value" id="contentConfidenceVal">0.00 / 1.00</div>
             </article>
             <article class="content-card">
-              <div class="content-label">Matched prompt</div>
+              <div class="content-label">Prompt Match</div>
               <div class="content-value" id="contentRawLabelVal">unknown</div>
             </article>
           </div>
@@ -846,8 +848,7 @@
 
     function formatContentType(value){
       const raw = String(value || "unknown").trim().toLowerCase();
-      if(!raw){ return "Unknown"; }
-      return raw.split("_").map((part)=>part ? part[0].toUpperCase() + part.slice(1) : "").join(" ");
+      return raw || "unknown";
     }
 
     function renderContentClassification(layer1){
@@ -857,12 +858,12 @@
       const rawLabel = String(classification.raw_label || "unknown");
       const allScores = classification.all_scores && typeof classification.all_scores === "object" ? classification.all_scores : {};
       el.contentTypeVal.textContent = formatContentType(contentType);
-      el.contentConfidenceVal.textContent = confidence.toFixed(2);
+      el.contentConfidenceVal.textContent = `${confidence.toFixed(2)} / 1.00`;
       el.contentRawLabelVal.textContent = rawLabel;
       const ranked = Object.entries(allScores)
         .map(([key, value])=>({ key, value: Number(value || 0) }))
         .sort((left, right)=>right.value - left.value)
-        .slice(0, 4);
+        .slice(0, 8);
       el.contentScores.innerHTML = ranked.length
         ? ranked.map((item)=>`<div class="score-chip"><span>${escapeHtml(formatContentType(item.key))}</span><strong>${item.value.toFixed(2)}</strong></div>`).join("")
         : `<div class="empty-note">Content classification scores will appear after analysis starts.</div>`;
@@ -1547,8 +1548,8 @@
       el.verdictVal.className = "verdict v-unc"; el.verdictVal.textContent = "Awaiting analysis";
       el.confidenceBar.style.width = "0%";
       el.confidenceVal.textContent = "Confidence will appear after analysis starts.";
-      el.contentTypeVal.textContent = "Unknown";
-      el.contentConfidenceVal.textContent = "0.00";
+      el.contentTypeVal.textContent = "unknown";
+      el.contentConfidenceVal.textContent = "0.00 / 1.00";
       el.contentRawLabelVal.textContent = "unknown";
       el.contentScores.innerHTML = `<div class="empty-note">Content classification scores will appear after analysis starts.</div>`;
       el.layer2Badge.textContent = "Waiting for analysis";
