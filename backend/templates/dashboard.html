@@ -534,6 +534,8 @@
       processing: false,
       activeJobId: "",
       pollTimer: null,
+      progressStartedAt: 0,
+      progressTimer: null,
       activeDomainFilter: "",
       layer2ChartsVisible: false,
       analysisCount: Number(localStorage.getItem("dg_analysis_count") || 0),
@@ -560,10 +562,7 @@
       progressCopy: document.getElementById("progressCopy"),
       progressFill: document.getElementById("progressFill"),
       progressPercent: document.getElementById("progressPercent"),
-      stage1: document.getElementById("stage1"),
-      stage2: document.getElementById("stage2"),
-      stage3: document.getElementById("stage3"),
-      stage4: document.getElementById("stage4"),
+      progressTimer: document.getElementById("progressTimer"),
       runBtn: document.getElementById("runBtn"),
       resetBtn: document.getElementById("resetBtn"),
       errorBox: document.getElementById("errorBox"),
@@ -667,43 +666,49 @@
       setRunEnabled();
     }
 
-    function stageNodes(){ return [el.stage1, el.stage2, el.stage3, el.stage4]; }
-    function stageIndexForName(stage){
-      const value = String(stage || "").toLowerCase();
-      if(value === "queued"){ return 0; }
-      if(value === "layer1_complete"){ return 1; }
-      if(value === "layer2_complete"){ return 2; }
-      if(value === "layer3_processing"){ return 3; }
-      if(value === "completed"){ return 3; }
-      return 0;
+    function formatElapsed(ms){
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function startProgressTimer(){
+      if(state.progressTimer){ clearInterval(state.progressTimer); }
+      state.progressStartedAt = Date.now();
+      el.progressTimer.textContent = "00:00";
+      state.progressTimer = window.setInterval(()=>{
+        el.progressTimer.textContent = formatElapsed(Date.now() - state.progressStartedAt);
+      }, 1000);
+    }
+
+    function stopProgressTimer(){
+      if(state.progressTimer){ clearInterval(state.progressTimer); state.progressTimer = null; }
     }
 
     function renderProgress(progress, stage, message, done){
       const pct = Math.max(0, Math.min(100, Number(progress || 0)));
-      const activeIndex = stageIndexForName(stage);
-      stageNodes().forEach((n, i) => {
-        n.classList.remove("active","done");
-        if(done || i < activeIndex){ n.classList.add("done"); }
-        else if(i === activeIndex){ n.classList.add("active"); }
-      });
       el.progressFill.style.width = `${pct}%`;
       el.progressPercent.textContent = `${Math.round(pct)}%`;
-      el.progressCopy.textContent = String(message || (done ? "Analysis complete." : "Running forensic pipeline..."));
+      el.progressCopy.textContent = done
+        ? "Finalizing the analysis results."
+        : "Please wait while the system completes the analysis.";
     }
 
     function startProcessing(message){
       state.processing = true;
       document.body.classList.add("processing-active");
       el.progressOverlay.classList.add("on");
-      renderProgress(8, "queued", message || "Preparing the upload and starting the investigation pipeline.", false);
+      startProgressTimer();
+      renderProgress(8, "queued", message || "Please wait while the system completes the analysis.", false);
       setRunEnabled();
     }
 
     function stopProcessing(success, message){
       state.processing = false;
       if(state.pollTimer){ clearTimeout(state.pollTimer); state.pollTimer = null; }
+      stopProgressTimer();
       if(success){ renderProgress(100, "completed", message || "Analysis complete.", true); }
-      else{ renderProgress(100, "completed", message || "Analysis failed.", false); }
       setTimeout(()=>{
         document.body.classList.remove("processing-active");
         el.progressOverlay.classList.remove("on");
@@ -1392,6 +1397,8 @@
         stopProcessing(false, err instanceof Error ? err.message : "Analysis failed unexpectedly.");
         showError(err instanceof Error ? err.message : "Analysis failed unexpectedly.");
         el.insightText.textContent = "Analysis could not complete. Check media format, network, and authentication session.";
+        document.body.classList.remove("processing-active");
+        el.progressOverlay.classList.remove("on");
       }
       setRunEnabled();
     }
@@ -1453,9 +1460,9 @@
       el.alertList.innerHTML = '<div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>';
       drawTimeline([]);
       renderProgress(0, "queued", "Preparing the upload and starting the investigation pipeline.", false);
+      stopProgressTimer();
       document.body.classList.remove("processing-active");
       el.progressOverlay.classList.remove("on");
-      stageNodes().forEach((n)=>n.classList.remove("active","done"));
       renderSidebarIntel();
       setRunEnabled();
     }

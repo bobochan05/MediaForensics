@@ -129,6 +129,9 @@ _ANALYSIS_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="layer
 _ANALYSIS_RESULT_CACHE: dict[str, dict[str, object]] = {}
 _ANALYSIS_RESULT_CACHE_META: dict[str, float] = {}
 _ANALYSIS_RESULT_CACHE_TTL_SECONDS = 24 * 3600
+_CHAT_RESPONSE_CACHE: dict[str, dict[str, object]] = {}
+_CHAT_RESPONSE_CACHE_META: dict[str, float] = {}
+_CHAT_RESPONSE_CACHE_TTL_SECONDS = 12 * 3600
 REQUEST_TIMEOUT_SECONDS = 15.0
 REVERSE_SEARCH_ALLOWED_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 REVERSE_SEARCH_ALLOWED_MIME_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
@@ -827,6 +830,10 @@ def _cleanup_analysis_jobs() -> None:
             if now - float(created_at) > _ANALYSIS_RESULT_CACHE_TTL_SECONDS:
                 _ANALYSIS_RESULT_CACHE.pop(key, None)
                 _ANALYSIS_RESULT_CACHE_META.pop(key, None)
+        for key, created_at in list(_CHAT_RESPONSE_CACHE_META.items()):
+            if now - float(created_at) > _CHAT_RESPONSE_CACHE_TTL_SECONDS:
+                _CHAT_RESPONSE_CACHE.pop(key, None)
+                _CHAT_RESPONSE_CACHE_META.pop(key, None)
 
 
 def _file_sha1(path: Path) -> str:
@@ -923,6 +930,19 @@ def _get_cached_analysis(cache_key: str) -> dict[str, object] | None:
     _cleanup_analysis_jobs()
     with _ANALYSIS_JOB_LOCK:
         payload = _ANALYSIS_RESULT_CACHE.get(cache_key)
+        return deepcopy(payload) if payload is not None else None
+
+
+def _set_cached_chat(cache_key: str, payload: dict[str, object]) -> None:
+    with _ANALYSIS_JOB_LOCK:
+        _CHAT_RESPONSE_CACHE[cache_key] = deepcopy(payload)
+        _CHAT_RESPONSE_CACHE_META[cache_key] = time.time()
+
+
+def _get_cached_chat(cache_key: str) -> dict[str, object] | None:
+    _cleanup_analysis_jobs()
+    with _ANALYSIS_JOB_LOCK:
+        payload = _CHAT_RESPONSE_CACHE.get(cache_key)
         return deepcopy(payload) if payload is not None else None
 
 
@@ -1135,8 +1155,8 @@ def _store_upload_metadata(
     upload_id: str,
     stored_path: Path,
     original_filename: str,
-    label: str,
-    confidence: float,
+    label: str | None,
+    confidence: float | None,
     source_url: str | None = None,
 ) -> None:
     payload = {
@@ -2052,19 +2072,30 @@ def _build_external_exploratory_items(
     from ai.layer2_matching.tracking.metadata_parser import OccurrenceRecord, credibility_score_for_source, infer_platform, normalize_timestamp
 
     external_client = pipeline.external_search
-    visual_embedding = pipeline.visual_embedder.embed_media(stored_path)
-    audio_extraction = extract_audio_from_media(stored_path, pipeline.config.cache_dir / "uploads")
-    audio_embedding = pipeline.audio_embedder.embed_audio(
-        waveform=audio_extraction.waveform,
-        sample_rate=audio_extraction.sample_rate,
-        duration_seconds=audio_extraction.duration_seconds,
-    )
+    phase_started_at = time.perf_counter()
+
+    def _compute_visual_embedding():
+        return pipeline.visual_embedder.embed_media(stored_path)
+
+    def _compute_audio_embedding():
+        audio_extraction = extract_audio_from_media(stored_path, pipeline.config.cache_dir / "uploads")
+        return pipeline.audio_embedder.embed_audio(
+            waveform=audio_extraction.waveform,
+            sample_rate=audio_extraction.sample_rate,
+            duration_seconds=audio_extraction.duration_seconds,
+        )
+
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="layer2-seed") as executor:
+        visual_future = executor.submit(_compute_visual_embedding)
+        audio_future = executor.submit(_compute_audio_embedding)
+        visual_embedding = visual_future.result()
+        audio_embedding = audio_future.result()
 
     reverse_candidates = []
     public_source_url = external_client._public_source_url(source_url)
     if public_source_url:
         requested_provider_results = max(limit * 2, DISCOVERY_SECTION_LIMIT * 2)
-        for provider in external_client.reverse_providers:
+        def _provider_candidates(provider):
             cached = external_client._load_provider_cache(provider.name, stored_path)
             provider_candidates = cached if cached is not None and len(cached) >= requested_provider_results else []
             if cached is None or len(provider_candidates) < requested_provider_results:
@@ -2077,13 +2108,22 @@ def _build_external_exploratory_items(
                     external_client._save_provider_cache(provider.name, stored_path, provider_candidates)
             else:
                 provider_candidates = external_client._sanitize_provider_candidates(provider_candidates, public_source_url)
-            reverse_candidates.extend(provider_candidates)
+            return provider_candidates
+
+        with ThreadPoolExecutor(max_workers=max(2, min(4, len(external_client.reverse_providers))), thread_name_prefix="reverse-provider") as executor:
+            for provider_candidates in executor.map(_provider_candidates, external_client.reverse_providers):
+                reverse_candidates.extend(provider_candidates)
     else:
         query_images = external_client._prepare_query_images(stored_path)
-        for frame_index, image_path in enumerate(query_images, start=1):
-            reverse_candidates.extend(
-                external_client._reverse_search_frame(image_path, frame_index=frame_index, max_results=limit * 2)
-            )
+        frame_inputs = [(frame_index, image_path) for frame_index, image_path in enumerate(query_images, start=1)]
+
+        def _frame_candidates(frame_payload: tuple[int, Path]) -> list:
+            frame_index, image_path = frame_payload
+            return external_client._reverse_search_frame(image_path, frame_index=frame_index, max_results=limit * 2)
+
+        with ThreadPoolExecutor(max_workers=max(2, min(4, len(frame_inputs) or 1)), thread_name_prefix="reverse-frame") as executor:
+            for frame_candidates in executor.map(_frame_candidates, frame_inputs):
+                reverse_candidates.extend(frame_candidates)
 
     merged_candidates = external_client._merge_reverse_candidates(reverse_candidates)
     exploratory_records = []
@@ -2268,7 +2308,12 @@ def _build_external_exploratory_items(
             seen_keys.add(key)
         if len(exploratory_records) >= limit * 3:
             break
-
+    LOGGER.info(
+        "layer2_external_exploration duration_ms=%s candidates=%s records=%s",
+        round((time.perf_counter() - phase_started_at) * 1000, 2),
+        len(merged_candidates),
+        len(exploratory_records),
+    )
     return exploratory_records
 
 
@@ -2287,6 +2332,7 @@ def _run_layer2_discovery(
     stored_path: Path,
     upload_metadata: dict[str, object],
 ) -> dict[str, object]:
+    phase_started_at = time.perf_counter()
     errors: list[str] = []
     pipeline = _get_layer2_pipeline()
 
@@ -2382,7 +2428,7 @@ def _run_layer2_discovery(
     )
 
     has_matches = bool(exact_matches or visual_matches_top10 or embedding_matches_top10)
-    return build_layer2_response(
+    payload = build_layer2_response(
         {
             "exact_matches": exact_matches,
             "visual_matches_top10": visual_matches_top10,
@@ -2405,6 +2451,15 @@ def _run_layer2_discovery(
             "status": "success" if not errors else "degraded",
         }
     )
+    LOGGER.info(
+        "layer2_discovery duration_ms=%s exact=%s visual=%s related=%s errors=%s",
+        round((time.perf_counter() - phase_started_at) * 1000, 2),
+        len(exact_matches),
+        len(visual_matches_top10),
+        len(embedding_matches_top10),
+        len(errors),
+    )
+    return payload
 
 
 def _build_layer3_payload(
