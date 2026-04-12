@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import mimetypes
@@ -10,6 +11,7 @@ import subprocess
 import sys
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
@@ -119,6 +121,14 @@ _LAYER2_RESULT_STORE: dict[str, dict[str, object]] = {}
 _LAYER2_RESULT_STORE_META: dict[str, float] = {}
 _LAYER2_RESULT_STORE_LOCK = Lock()
 _LAYER2_STORE_TTL_SECONDS = 3600
+_ANALYSIS_JOB_STORE: dict[str, dict[str, object]] = {}
+_ANALYSIS_JOB_META: dict[str, float] = {}
+_ANALYSIS_JOB_LOCK = Lock()
+_ANALYSIS_JOB_TTL_SECONDS = 24 * 3600
+_ANALYSIS_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="layer2-analysis")
+_ANALYSIS_RESULT_CACHE: dict[str, dict[str, object]] = {}
+_ANALYSIS_RESULT_CACHE_META: dict[str, float] = {}
+_ANALYSIS_RESULT_CACHE_TTL_SECONDS = 24 * 3600
 REQUEST_TIMEOUT_SECONDS = 15.0
 REVERSE_SEARCH_ALLOWED_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 REVERSE_SEARCH_ALLOWED_MIME_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
@@ -138,15 +148,19 @@ def _layer2_match_similarity(item: dict[str, object]) -> float:
     score_breakdown = dict(item.get("score_breakdown") or {})
     raw_similarity = _safe_float(
         item.get("similarity_score"),
-        score_breakdown.get("final_score"),
         _safe_float(
-            item.get("embedding_score"),
-            metadata.get("embedding_similarity"),
+            score_breakdown.get("final_score"),
             _safe_float(
-                item.get("visual_similarity"),
+                item.get("embedding_score"),
                 _safe_float(
-                    item.get("fused_similarity"),
-                    _safe_float(metadata.get("final_score")),
+                    metadata.get("embedding_similarity"),
+                    _safe_float(
+                        item.get("visual_similarity"),
+                        _safe_float(
+                            item.get("fused_similarity"),
+                            _safe_float(metadata.get("final_score")),
+                        ),
+                    ),
                 ),
             ),
         ),
@@ -797,6 +811,119 @@ def _cleanup_layer2_store() -> None:
         for key in expired_keys:
             _LAYER2_RESULT_STORE.pop(key, None)
             _LAYER2_RESULT_STORE_META.pop(key, None)
+
+
+def _cleanup_analysis_jobs() -> None:
+    now = time.time()
+    expired_keys: list[str] = []
+    with _ANALYSIS_JOB_LOCK:
+        for key, created_at in list(_ANALYSIS_JOB_META.items()):
+            if now - float(created_at) > _ANALYSIS_JOB_TTL_SECONDS:
+                expired_keys.append(key)
+        for key in expired_keys:
+            _ANALYSIS_JOB_STORE.pop(key, None)
+            _ANALYSIS_JOB_META.pop(key, None)
+        for key, created_at in list(_ANALYSIS_RESULT_CACHE_META.items()):
+            if now - float(created_at) > _ANALYSIS_RESULT_CACHE_TTL_SECONDS:
+                _ANALYSIS_RESULT_CACHE.pop(key, None)
+                _ANALYSIS_RESULT_CACHE_META.pop(key, None)
+
+
+def _file_sha1(path: Path) -> str:
+    digest = hashlib.sha1()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _empty_layer3_payload() -> dict[str, object]:
+    return {
+        "timeline": [],
+        "growth": {"rate_percent": 0.0, "spike_detected": False, "window": "1h"},
+        "growth_rate": 0.0,
+        "growth_indicator": "low",
+        "alerts": [],
+        "risk_score": 0.0,
+        "risk": {
+            "risk_score": 0.0,
+            "fake_probability": 0.0,
+            "spread_velocity": 0.0,
+            "source_credibility": 0.0,
+        },
+        "risk_insight": "No spread data yet. Monitoring will continue after discovery finishes.",
+    }
+
+
+def _assemble_analysis_response(
+    *,
+    upload_id: str,
+    original_filename: str,
+    auth_state: str,
+    guest_usage: dict[str, object] | None,
+    created_at: str,
+    layer1_payload: dict[str, object],
+    layer2_payload: dict[str, object] | None = None,
+    layer3_payload: dict[str, object] | None = None,
+) -> dict[str, object]:
+    normalized_layer2 = build_layer2_response(layer2_payload)
+    consistency_warning = _consistency_warning_payload(
+        str(layer1_payload.get("result") or ""),
+        float(layer1_payload.get("confidence") or 0.0),
+        list(normalized_layer2.get("exact_matches") or []),
+    )
+    normalized_layer2["consistency_warning"] = consistency_warning
+    normalized_layer3 = deepcopy(layer3_payload) if isinstance(layer3_payload, dict) else _empty_layer3_payload()
+    return {
+        "analysis_id": upload_id,
+        "upload_id": upload_id,
+        "auth_state": auth_state or "anonymous",
+        "guest_usage": guest_usage or {},
+        "layer1": deepcopy(layer1_payload),
+        "layer2": normalized_layer2,
+        "origin_summary": normalized_layer2.get("origin_summary"),
+        "top_domains": normalized_layer2.get("top_domains"),
+        "first_seen_estimate": normalized_layer2.get("first_seen_estimate"),
+        "domain_clusters": normalized_layer2.get("domain_clusters"),
+        "consistency_warning": consistency_warning,
+        "layer3": normalized_layer3,
+        "meta": {
+            "upload_id": upload_id,
+            "filename": Path(original_filename).name,
+            "created_at": created_at,
+            "model_version": "fusion-v1",
+        },
+    }
+
+
+def _set_analysis_job(job_id: str, payload: dict[str, object]) -> None:
+    _cleanup_analysis_jobs()
+    with _ANALYSIS_JOB_LOCK:
+        _ANALYSIS_JOB_STORE[job_id] = deepcopy(payload)
+        _ANALYSIS_JOB_META[job_id] = time.time()
+
+
+def _get_analysis_job(job_id: str) -> dict[str, object] | None:
+    _cleanup_analysis_jobs()
+    with _ANALYSIS_JOB_LOCK:
+        payload = _ANALYSIS_JOB_STORE.get(job_id)
+        return deepcopy(payload) if payload is not None else None
+
+
+def _set_cached_analysis(cache_key: str, payload: dict[str, object]) -> None:
+    with _ANALYSIS_JOB_LOCK:
+        _ANALYSIS_RESULT_CACHE[cache_key] = deepcopy(payload)
+        _ANALYSIS_RESULT_CACHE_META[cache_key] = time.time()
+
+
+def _get_cached_analysis(cache_key: str) -> dict[str, object] | None:
+    _cleanup_analysis_jobs()
+    with _ANALYSIS_JOB_LOCK:
+        payload = _ANALYSIS_RESULT_CACHE.get(cache_key)
+        return deepcopy(payload) if payload is not None else None
 
 
 def _build_layer2_channels(
@@ -2185,29 +2312,40 @@ def _run_layer2_discovery(
     fallback_used = False
     serpapi_status = "failed"
 
-    if layer2_source_url:
-        try:
-            from ai.layer2_matching.tracking.reverse_search_service import process_reverse_search
+    def _reverse_task() -> tuple[dict[str, object], float, bool, str]:
+        if not layer2_source_url:
+            return _empty_reverse_search_payload(), 0.0, False, "failed"
+        from ai.layer2_matching.tracking.reverse_search_service import process_reverse_search
 
-            reverse_result = process_reverse_search(image_url=layer2_source_url)
-            reverse_search_payload = dict(reverse_result.get("reverse_search") or _empty_reverse_search_payload())
-            reverse_confidence_score = float(reverse_result.get("confidence_score") or 0.0)
-            fallback_used = bool(reverse_result.get("fallback_used"))
-            serpapi_status = "ok"
-        except Exception as exc:  # pragma: no cover - network/provider safety
-            LOGGER.exception("Public reverse search failed for %s", stored_path)
-            errors.append(f"Public reverse search failed: {exc}")
+        reverse_result = process_reverse_search(image_url=layer2_source_url)
+        return (
+            dict(reverse_result.get("reverse_search") or _empty_reverse_search_payload()),
+            float(reverse_result.get("confidence_score") or 0.0),
+            bool(reverse_result.get("fallback_used")),
+            "ok",
+        )
 
-    try:
-        external_items = _build_external_exploratory_items(
+    def _exploratory_task() -> list[dict[str, object]]:
+        return _build_external_exploratory_items(
             pipeline,
             stored_path,
             layer2_source_url,
             limit=DISCOVERY_SECTION_LIMIT,
         )
-    except Exception as exc:  # pragma: no cover - network/provider safety
-        LOGGER.exception("External Layer 2 discovery failed for %s", stored_path)
-        errors.append(f"External reverse search failed: {exc}")
+
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="layer2-discovery") as executor:
+        reverse_future = executor.submit(_reverse_task)
+        exploratory_future = executor.submit(_exploratory_task)
+        try:
+            reverse_search_payload, reverse_confidence_score, fallback_used, serpapi_status = reverse_future.result()
+        except Exception as exc:  # pragma: no cover - network/provider safety
+            LOGGER.exception("Public reverse search failed for %s", stored_path)
+            errors.append(f"Public reverse search failed: {exc}")
+        try:
+            external_items = exploratory_future.result()
+        except Exception as exc:  # pragma: no cover - network/provider safety
+            LOGGER.exception("External Layer 2 discovery failed for %s", stored_path)
+            errors.append(f"External reverse search failed: {exc}")
 
     exact_matches, _ = _classify_discovery_results(external_items)
     exact_matches = exact_matches[:DISCOVERY_SECTION_LIMIT]
@@ -2267,6 +2405,199 @@ def _run_layer2_discovery(
             "status": "success" if not errors else "degraded",
         }
     )
+
+
+def _build_layer3_payload(
+    *,
+    confidence: float,
+    is_fake: bool,
+    layer2_payload: dict[str, object],
+    enable_layer3: bool,
+    upload_id: str,
+) -> dict[str, object]:
+    if not enable_layer3:
+        return _empty_layer3_payload()
+
+    timeline: list[dict[str, object]] = []
+    alerts: list[dict[str, object]] = []
+    growth_rate = 0.0
+    risk_metrics = {
+        "risk_score": 0.0,
+        "fake_probability": 0.0,
+        "spread_velocity": 0.0,
+        "source_credibility": 0.0,
+    }
+    growth_payload: dict[str, object] = {"rate_percent": 0.0, "spike_detected": False, "window": "1h"}
+    risk_score = 0.0
+    growth_indicator = "low"
+    risk_insight = "No spread data yet. Run analysis again after new activity appears."
+
+    source_credibility = 0.42 if is_fake else 0.78
+    timeline = _build_tracking_timeline(confidence=confidence, is_fake=is_fake)
+    risk_metrics = _build_dashboard_risk(
+        confidence=confidence,
+        timeline=timeline,
+        source_credibility=source_credibility,
+    )
+    if len(timeline) >= 2:
+        first_mentions = float(timeline[0]["mentions"])
+        last_mentions = float(timeline[-1]["mentions"])
+        growth_rate = round(((last_mentions - first_mentions) / max(1.0, first_mentions)) * 100.0, 2)
+    spike_detected = growth_rate >= 120
+    risk_score = float(risk_metrics.get("risk_score") or 0.0)
+    growth_payload = {"rate_percent": growth_rate, "spike_detected": spike_detected, "window": "1h"}
+    growth_indicator = build_growth_indicator(growth_rate)
+    risk_insight = build_risk_insight(
+        fake_probability=confidence if is_fake else (1.0 - confidence),
+        growth_rate_percent=growth_rate,
+        source_count=int((layer2_payload.get("counts") or {}).get("exact") or 0),
+    )
+    alerts = [
+        {
+            "id": f"alert-{upload_id}-{index}",
+            **alert,
+        }
+        for index, alert in enumerate(
+            build_alerts(
+                growth_rate_percent=growth_rate,
+                source_count=int((layer2_payload.get("counts") or {}).get("exact") or 0),
+            ),
+            start=1,
+        )
+    ]
+    return {
+        "timeline": timeline,
+        "growth": growth_payload,
+        "growth_rate": growth_rate,
+        "growth_indicator": growth_indicator,
+        "alerts": alerts,
+        "risk_score": risk_score,
+        "risk": risk_metrics,
+        "risk_insight": risk_insight,
+    }
+
+
+def _run_analysis_job(
+    *,
+    job_id: str,
+    upload_id: str,
+    stored_path: Path,
+    original_filename: str,
+    created_at: str,
+    auth_state: str,
+    guest_usage: dict[str, object],
+    enable_layer2: bool,
+    enable_layer3: bool,
+    layer1_payload: dict[str, object],
+    cache_key: str,
+) -> None:
+    try:
+        upload_metadata = _load_upload_metadata(upload_id)
+        partial_analysis = _assemble_analysis_response(
+            upload_id=upload_id,
+            original_filename=original_filename,
+            auth_state=auth_state,
+            guest_usage=guest_usage,
+            created_at=created_at,
+            layer1_payload=layer1_payload,
+        )
+        _set_analysis_job(
+            job_id,
+            {
+                "status": "processing",
+                "job_id": job_id,
+                "progress": 30,
+                "stage": "layer1_complete",
+                "message": "Authenticity complete. Searching public sources.",
+                "analysis": partial_analysis,
+            },
+        )
+
+        layer2_payload = build_layer2_response(None)
+        if enable_layer2:
+            layer2_payload = _run_layer2_discovery(
+                upload_id=upload_id,
+                stored_path=stored_path,
+                upload_metadata=upload_metadata,
+            )
+            _store_layer2_channels(upload_id, layer2_payload)
+
+        partial_analysis = _assemble_analysis_response(
+            upload_id=upload_id,
+            original_filename=original_filename,
+            auth_state=auth_state,
+            guest_usage=guest_usage,
+            created_at=created_at,
+            layer1_payload=layer1_payload,
+            layer2_payload=layer2_payload,
+        )
+        _set_analysis_job(
+            job_id,
+            {
+                "status": "processing",
+                "job_id": job_id,
+                "progress": 72,
+                "stage": "layer2_complete",
+                "message": "Source matching complete. Building spread intelligence.",
+                "analysis": partial_analysis,
+            },
+        )
+
+        is_fake = str(layer1_payload.get("result") or "").strip().upper() == "FAKE"
+        confidence_fraction = float(layer1_payload.get("confidence") or 0.0) / 100.0
+        _set_analysis_job(
+            job_id,
+            {
+                "status": "processing",
+                "job_id": job_id,
+                "progress": 88,
+                "stage": "layer3_processing",
+                "message": "Similarity scored. Building final insights and tracking signals.",
+                "analysis": partial_analysis,
+            },
+        )
+        layer3_payload = _build_layer3_payload(
+            confidence=confidence_fraction,
+            is_fake=is_fake,
+            layer2_payload=layer2_payload,
+            enable_layer3=enable_layer3,
+            upload_id=upload_id,
+        )
+        final_analysis = _assemble_analysis_response(
+            upload_id=upload_id,
+            original_filename=original_filename,
+            auth_state=auth_state,
+            guest_usage=guest_usage,
+            created_at=created_at,
+            layer1_payload=layer1_payload,
+            layer2_payload=layer2_payload,
+            layer3_payload=layer3_payload,
+        )
+        _set_cached_analysis(cache_key, final_analysis)
+        _set_analysis_job(
+            job_id,
+            {
+                "status": "completed",
+                "job_id": job_id,
+                "progress": 100,
+                "stage": "completed",
+                "message": "Analysis complete.",
+                "analysis": final_analysis,
+            },
+        )
+    except Exception as exc:  # pragma: no cover - background safety
+        LOGGER.exception("Background analysis job failed for %s", upload_id)
+        _set_analysis_job(
+            job_id,
+            {
+                "status": "error",
+                "job_id": job_id,
+                "progress": 100,
+                "stage": "failed",
+                "message": f"Analysis failed: {exc}",
+                "error": str(exc),
+            },
+        )
 
 
 def _request_image_url() -> str | None:
@@ -2349,6 +2680,7 @@ def initialize_request_context():
     g.request_id = _new_uuid()
     g.request_started_at = time.time()
     _cleanup_layer2_store()
+    _cleanup_analysis_jobs()
 
 
 @app.after_request
@@ -2510,107 +2842,81 @@ def api_analyze():
 
     now_iso = datetime.now(timezone.utc).isoformat()
     is_fake = label.lower() == "fake"
-
     layer1_payload: dict[str, object] = build_layer1_payload(is_fake=is_fake, confidence=confidence)
     if not enable_layer1:
         layer1_payload = {"result": "REAL", "confidence": 0.0, "heatmap": None}
 
-    layer2_payload = build_layer2_response(None)
-    upload_metadata = _load_upload_metadata(upload_id)
-    if enable_layer2:
-        layer2_payload = _run_layer2_discovery(
-            upload_id=upload_id,
-            stored_path=stored_path,
-            upload_metadata=upload_metadata,
-        )
-    consistency_warning = _consistency_warning_payload(
-        str(layer1_payload.get("result") or ""),
-        float(layer1_payload.get("confidence") or 0.0),
-        list(layer2_payload.get("exact_matches") or []),
-    )
-    layer2_payload["consistency_warning"] = consistency_warning
-    _store_layer2_channels(upload_id, layer2_payload)
-
-    timeline: list[dict[str, object]] = []
-    alerts: list[dict[str, object]] = []
-    growth_rate = 0.0
-    risk_metrics = {
-        "risk_score": 0.0,
-        "fake_probability": 0.0,
-        "spread_velocity": 0.0,
-        "source_credibility": 0.0,
-    }
-    growth_payload: dict[str, object] = {"rate_percent": 0.0, "spike_detected": False, "window": "1h"}
-    risk_score = 0.0
-    growth_indicator = "low"
-    risk_insight = "No spread data yet. Run analysis again after new activity appears."
-
-    if enable_layer3:
-        source_credibility = 0.42 if is_fake else 0.78
-        timeline = _build_tracking_timeline(confidence=confidence, is_fake=is_fake)
-        risk_metrics = _build_dashboard_risk(
-            confidence=confidence,
-            timeline=timeline,
-            source_credibility=source_credibility,
-        )
-        if len(timeline) >= 2:
-            first_mentions = float(timeline[0]["mentions"])
-            last_mentions = float(timeline[-1]["mentions"])
-            growth_rate = round(((last_mentions - first_mentions) / max(1.0, first_mentions)) * 100.0, 2)
-        spike_detected = growth_rate >= 120
-        risk_score = float(risk_metrics.get("risk_score") or 0.0)
-        growth_payload = {"rate_percent": growth_rate, "spike_detected": spike_detected, "window": "1h"}
-        growth_indicator = build_growth_indicator(growth_rate)
-        risk_insight = build_risk_insight(
-            fake_probability=confidence if is_fake else (1.0 - confidence),
-            growth_rate_percent=growth_rate,
-            source_count=int(layer2_payload["counts"]["exact"]),
-        )
-        alerts = [
+    cache_key = _file_sha1(stored_path)
+    cached_analysis = _get_cached_analysis(cache_key)
+    if cached_analysis is not None:
+        cached_analysis["analysis_id"] = upload_id
+        cached_analysis["upload_id"] = upload_id
+        cached_analysis["guest_usage"] = guest_usage
+        cached_analysis["auth_state"] = principal.get("auth_mode", "anonymous")
+        cached_analysis["meta"] = {
+            **dict(cached_analysis.get("meta") or {}),
+            "upload_id": upload_id,
+            "filename": Path(original_filename).name,
+            "created_at": now_iso,
+            "model_version": "fusion-v1",
+            "cached": True,
+        }
+        return jsonify(
             {
-                "id": f"alert-{upload_id}-{index}",
-                **alert,
+                "status": "completed",
+                "job_id": _new_uuid(),
+                "progress": 100,
+                "stage": "completed",
+                "message": "Cached analysis loaded instantly.",
+                "analysis": cached_analysis,
             }
-            for index, alert in enumerate(
-                build_alerts(
-                    growth_rate_percent=growth_rate,
-                    source_count=int(layer2_payload["counts"]["exact"]),
-                ),
-                start=1,
-            )
-        ]
+        )
 
+    auth_state = principal.get("auth_mode", "anonymous")
+    partial_analysis = _assemble_analysis_response(
+        upload_id=upload_id,
+        original_filename=original_filename,
+        auth_state=auth_state,
+        guest_usage=guest_usage,
+        created_at=now_iso,
+        layer1_payload=layer1_payload,
+    )
+    job_id = _new_uuid()
+    _set_analysis_job(
+        job_id,
+        {
+            "status": "processing",
+            "job_id": job_id,
+            "progress": 15,
+            "stage": "queued",
+            "message": "Media accepted. Starting intelligence pipeline.",
+            "analysis": partial_analysis,
+        },
+    )
+    _ANALYSIS_EXECUTOR.submit(
+        _run_analysis_job,
+        job_id=job_id,
+        upload_id=upload_id,
+        stored_path=stored_path,
+        original_filename=original_filename,
+        created_at=now_iso,
+        auth_state=auth_state,
+        guest_usage=guest_usage,
+        enable_layer2=enable_layer2,
+        enable_layer3=enable_layer3,
+        layer1_payload=layer1_payload,
+        cache_key=cache_key,
+    )
     return jsonify(
         {
-            "analysis_id": upload_id,
-            "upload_id": upload_id,
-            "auth_state": principal.get("auth_mode", "anonymous"),
-            "guest_usage": guest_usage,
-            "layer1": layer1_payload,
-            "layer2": layer2_payload,
-            "origin_summary": layer2_payload.get("origin_summary"),
-            "top_domains": layer2_payload.get("top_domains"),
-            "first_seen_estimate": layer2_payload.get("first_seen_estimate"),
-            "domain_clusters": layer2_payload.get("domain_clusters"),
-            "consistency_warning": consistency_warning,
-            "layer3": {
-                "timeline": timeline,
-                "growth": growth_payload,
-                "growth_rate": growth_rate,
-                "growth_indicator": growth_indicator,
-                "alerts": alerts,
-                "risk_score": risk_score,
-                "risk": risk_metrics,
-                "risk_insight": risk_insight,
-            },
-            "meta": {
-                "upload_id": upload_id,
-                "filename": Path(original_filename).name,
-                "created_at": now_iso,
-                "model_version": "fusion-v1",
-            },
+            "status": "processing",
+            "job_id": job_id,
+            "progress": 15,
+            "stage": "queued",
+            "message": "Media accepted. Starting intelligence pipeline.",
+            "analysis": partial_analysis,
         }
-    )
+    ), 202
 
 
 @app.post("/api/chat")
@@ -2665,6 +2971,15 @@ def api_chat():
             },
         }
     )
+
+
+@app.get("/api/status/<job_id>")
+@jwt_required(AUTH_SERVICE, allow_guest=True)
+def api_status(job_id: str):
+    payload = _get_analysis_job(str(job_id or "").strip())
+    if payload is None:
+        return jsonify({"status": "error", "message": "invalid job_id"}), 404
+    return jsonify(payload)
 
 
 @app.post("/api/predict")
