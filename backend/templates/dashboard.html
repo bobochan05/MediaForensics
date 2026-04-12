@@ -87,11 +87,14 @@
     .badge{border:1px solid rgba(148,163,184,.12);border-radius:999px;padding:6px 12px;font-size:12px;background:rgba(255,255,255,.03)}.b-real{color:var(--ok);border-color:rgba(52,211,153,.28)}.b-fake{color:var(--bad);border-color:rgba(251,113,133,.28)}.b-unc{color:var(--warn);border-color:rgba(251,191,36,.28)}
     .verdict{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1}.v-real{color:var(--ok)}.v-fake{color:var(--bad)}.v-unc{color:var(--warn)}
     .meter{height:10px;border-radius:999px;background:rgba(148,163,184,.2);overflow:hidden}.meter > div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .55s}
+    .content-summary{display:grid;gap:10px}
+    .content-summary-copy{font-size:12px;color:var(--muted);line-height:1.55}
     .content-class{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
     .content-card{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:12px;background:rgba(255,255,255,.02);display:grid;gap:6px}
     .content-label{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
     .content-value{font-size:14px;font-weight:800;color:var(--strong);line-height:1.35;overflow-wrap:anywhere;word-break:break-word}
     .content-value.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}
+    .score-title{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
     .score-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .score-chip{border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.02);font-size:11px;color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:8px}
     .score-chip span{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;overflow-wrap:anywhere;word-break:break-word}
@@ -393,20 +396,24 @@
           <div class="verdict v-unc" id="verdictVal">Awaiting analysis</div>
           <div class="meter"><div id="confidenceBar"></div></div>
           <div class="muted" id="confidenceVal">Confidence will appear after analysis starts.</div>
-          <div class="content-class">
-            <article class="content-card">
-              <div class="content-label">Content Category</div>
-              <div class="content-value code" id="contentTypeVal">unknown</div>
-            </article>
-            <article class="content-card">
-              <div class="content-label">Category Confidence</div>
-              <div class="content-value" id="contentConfidenceVal">0.00 / 1.00</div>
-            </article>
-            <article class="content-card">
-              <div class="content-label">Prompt Match</div>
-              <div class="content-value" id="contentRawLabelVal">unknown</div>
-            </article>
+          <div class="content-summary">
+            <div class="content-summary-copy" id="contentSummaryText">Layer 1 also classifies what kind of content this is, independently from the fake/real verdict.</div>
+            <div class="content-class">
+              <article class="content-card">
+                <div class="content-label">Content Category</div>
+                <div class="content-value code" id="contentTypeVal">unknown</div>
+              </article>
+              <article class="content-card">
+                <div class="content-label">Category Confidence</div>
+                <div class="content-value" id="contentConfidenceVal">0.00 / 1.00</div>
+              </article>
+              <article class="content-card">
+                <div class="content-label">Prompt Match</div>
+                <div class="content-value" id="contentRawLabelVal">unknown</div>
+              </article>
+            </div>
           </div>
+          <div class="score-title">Category Scores</div>
           <div class="score-list" id="contentScores"></div>
           <div class="muted">Confidence is based on detected facial inconsistencies, fusion-model agreement, and frame-level evidence.</div>
         </section>
@@ -635,6 +642,7 @@
       contentTypeVal: document.getElementById("contentTypeVal"),
       contentConfidenceVal: document.getElementById("contentConfidenceVal"),
       contentRawLabelVal: document.getElementById("contentRawLabelVal"),
+      contentSummaryText: document.getElementById("contentSummaryText"),
       contentScores: document.getElementById("contentScores"),
       layer2Badge: document.getElementById("layer2Badge"),
       layer2Summary: document.getElementById("layer2Summary"),
@@ -860,6 +868,9 @@
       el.contentTypeVal.textContent = formatContentType(contentType);
       el.contentConfidenceVal.textContent = `${confidence.toFixed(2)} / 1.00`;
       el.contentRawLabelVal.textContent = rawLabel;
+      el.contentSummaryText.textContent = confidence > 0
+        ? `This media is semantically classified as ${formatContentType(contentType)} based on the strongest vision-language prompt match.`
+        : "Layer 1 also classifies what kind of content this is, independently from the fake/real verdict.";
       const ranked = Object.entries(allScores)
         .map(([key, value])=>({ key, value: Number(value || 0) }))
         .sort((left, right)=>right.value - left.value)
@@ -1551,6 +1562,7 @@
       el.contentTypeVal.textContent = "unknown";
       el.contentConfidenceVal.textContent = "0.00 / 1.00";
       el.contentRawLabelVal.textContent = "unknown";
+      el.contentSummaryText.textContent = "Layer 1 also classifies what kind of content this is, independently from the fake/real verdict.";
       el.contentScores.innerHTML = `<div class="empty-note">Content classification scores will appear after analysis starts.</div>`;
       el.layer2Badge.textContent = "Waiting for analysis";
       el.layer2Summary.textContent = "No analysis yet. Matching sources and similarity evidence will appear here after scan.";

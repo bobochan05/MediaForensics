@@ -3,8 +3,12 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from pathlib import Path
+from threading import Lock
 from typing import Any
 from urllib.parse import urlparse
 
@@ -17,7 +21,8 @@ LOGGER = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 ENV_PATH = PROJECT_ROOT / ".env"
 SERPAPI_ENDPOINT = "https://serpapi.com/search.json"
-DEFAULT_TIMEOUT_SECONDS = 25
+DEFAULT_TIMEOUT_SECONDS = 5
+REVERSE_SEARCH_CACHE_TTL_SECONDS = 12 * 3600
 TRUSTED_DOMAINS = {
     "apnews.com",
     "bbc.com",
@@ -32,6 +37,9 @@ TRUSTED_DOMAINS = {
     "wikipedia.org",
 }
 _ENV_LOADED = False
+_REVERSE_SEARCH_CACHE: dict[str, dict[str, Any]] = {}
+_REVERSE_SEARCH_CACHE_META: dict[str, float] = {}
+_REVERSE_SEARCH_CACHE_LOCK = Lock()
 
 
 class ReverseSearchError(RuntimeError):
@@ -88,6 +96,29 @@ def _extract_domain(value: str | None) -> str | None:
         return None
     parsed = urlparse(value)
     return parsed.netloc.lower().removeprefix("www.")
+
+
+def _reverse_cache_key(image_url: str) -> str:
+    return _validate_url(image_url).strip().lower()
+
+
+def _get_cached_reverse_search(image_url: str) -> dict[str, Any] | None:
+    now = time.time()
+    cache_key = _reverse_cache_key(image_url)
+    with _REVERSE_SEARCH_CACHE_LOCK:
+        for key, created_at in list(_REVERSE_SEARCH_CACHE_META.items()):
+            if now - float(created_at) > REVERSE_SEARCH_CACHE_TTL_SECONDS:
+                _REVERSE_SEARCH_CACHE.pop(key, None)
+                _REVERSE_SEARCH_CACHE_META.pop(key, None)
+        payload = _REVERSE_SEARCH_CACHE.get(cache_key)
+        return deepcopy(payload) if payload is not None else None
+
+
+def _set_cached_reverse_search(image_url: str, payload: dict[str, Any]) -> None:
+    cache_key = _reverse_cache_key(image_url)
+    with _REVERSE_SEARCH_CACHE_LOCK:
+        _REVERSE_SEARCH_CACHE[cache_key] = deepcopy(payload)
+        _REVERSE_SEARCH_CACHE_META[cache_key] = time.time()
 
 
 def _first_text(*values: object) -> str | None:
@@ -493,31 +524,43 @@ def _merge_parsed_results(primary: dict[str, Any], fallback: dict[str, Any] | No
 def process_reverse_search(file=None, image_url: str | None = None) -> dict[str, Any]:
     """Execute the full reverse-search pipeline for a file upload or public URL."""
 
+    started_at = time.perf_counter()
     public_url = ensure_public_url(file=file, image_url=image_url)
+    cached = _get_cached_reverse_search(public_url)
+    if cached is not None:
+        LOGGER.info("reverse_search duration_ms=%s cache=hit url=%s", round((time.perf_counter() - started_at) * 1000, 1), public_url)
+        return cached
+
     primary_errors: list[str] = []
 
-    try:
-        primary_raw = reverse_image_search(public_url)
-        primary_parsed = parse_serpapi_results(primary_raw)
-    except ReverseSearchError as exc:
-        LOGGER.exception("Primary reverse image search failed.")
-        primary_errors.append(str(exc))
-        primary_parsed = {
-            "matches_found": False,
-            "top_matches": [],
-            "similar_images": [],
-            "sources": [],
-            "image_results": [],
-            "inline_images": [],
-            "visual_matches": [],
-            "knowledge_graph": None,
-            "errors": primary_errors,
-        }
-    else:
-        if primary_errors:
-            primary_parsed["errors"] = primary_errors
+    def run_primary() -> dict[str, Any]:
+        try:
+            primary_raw = reverse_image_search(public_url)
+            parsed = parse_serpapi_results(primary_raw)
+            if primary_errors:
+                parsed["errors"] = primary_errors
+            return parsed
+        except ReverseSearchError as exc:
+            LOGGER.exception("Primary reverse image search failed.")
+            primary_errors.append(str(exc))
+            return {
+                "matches_found": False,
+                "top_matches": [],
+                "similar_images": [],
+                "sources": [],
+                "image_results": [],
+                "inline_images": [],
+                "visual_matches": [],
+                "knowledge_graph": None,
+                "errors": list(primary_errors),
+            }
 
-    fallback_parsed = fallback_search(public_url)
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="reverse-search") as executor:
+        primary_future = executor.submit(run_primary)
+        fallback_future = executor.submit(fallback_search, public_url)
+        primary_parsed = primary_future.result()
+        fallback_parsed = fallback_future.result()
+
     fallback_used = bool(
         not primary_parsed.get("matches_found", False)
         and (fallback_parsed or {}).get("matches_found")
@@ -525,10 +568,18 @@ def process_reverse_search(file=None, image_url: str | None = None) -> dict[str,
     combined = _merge_parsed_results(primary_parsed, fallback_parsed)
     confidence_score = compute_confidence(combined)
 
-    return {
+    response = {
         "image_url": public_url,
         "reverse_search": combined,
         "fallback_used": fallback_used,
         "confidence_score": confidence_score,
         "message": "Matches found" if combined.get("matches_found") else "No matches found",
     }
+    _set_cached_reverse_search(public_url, response)
+    LOGGER.info(
+        "reverse_search duration_ms=%s cache=miss matches=%s sources=%s",
+        round((time.perf_counter() - started_at) * 1000, 1),
+        len(combined.get("top_matches") or []) + len(combined.get("similar_images") or []),
+        len(combined.get("sources") or []),
+    )
+    return response

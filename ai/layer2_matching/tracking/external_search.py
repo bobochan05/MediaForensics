@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.parse import urlparse
 
 import numpy as np
+import cv2
+from PIL import Image
 
 from ai.layer1_detection.frame_extractor import IMAGE_EXTENSIONS, extract_sampled_frames
 from ai.layer2_matching.similarity.embedding import VisualEmbeddingService
@@ -88,16 +91,73 @@ class ExternalSearchClient:
             "introduction",
             "history of",
         ]
+        self.max_reverse_frames = 3
+
+    @staticmethod
+    def _frame_phash_bits(frame: Image.Image) -> np.ndarray:
+        rgb = np.asarray(frame.convert("RGB"), dtype=np.uint8)
+        grayscale = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        reduced = cv2.resize(grayscale, (32, 32), interpolation=cv2.INTER_AREA).astype(np.float32)
+        dct = cv2.dct(reduced)
+        low_freq = dct[:8, :8]
+        flattened = low_freq.flatten()
+        median = float(np.median(flattened[1:])) if flattened.size > 1 else float(np.median(flattened))
+        return (low_freq > median).astype(np.uint8).reshape(-1)
+
+    @staticmethod
+    def _frame_energy(frame: Image.Image) -> float:
+        rgb = np.asarray(frame.convert("RGB"), dtype=np.float32)
+        return float(np.std(rgb))
+
+    @staticmethod
+    def _hamming_distance(left_bits: np.ndarray, right_bits: np.ndarray) -> int:
+        return int(np.count_nonzero(left_bits != right_bits))
+
+    def _select_diverse_frames(self, frames: list[Image.Image], limit: int) -> list[tuple[int, Image.Image, str]]:
+        if not frames:
+            return []
+
+        frame_hashes = [self._frame_phash_bits(frame) for frame in frames]
+        frame_energies = [self._frame_energy(frame) for frame in frames]
+        candidate_indexes = list(range(len(frames)))
+        candidate_indexes.sort(key=lambda index: frame_energies[index], reverse=True)
+
+        selected_indexes: list[int] = []
+        if candidate_indexes:
+            selected_indexes.append(candidate_indexes.pop(0))
+
+        while candidate_indexes and len(selected_indexes) < limit:
+            best_index = candidate_indexes[0]
+            best_score = -1
+            for index in candidate_indexes:
+                min_distance = min(
+                    self._hamming_distance(frame_hashes[index], frame_hashes[selected])
+                    for selected in selected_indexes
+                )
+                diversity_score = float(min_distance) + (frame_energies[index] * 0.05)
+                if diversity_score > best_score:
+                    best_score = diversity_score
+                    best_index = index
+            selected_indexes.append(best_index)
+            candidate_indexes.remove(best_index)
+
+        selected_indexes.sort()
+        return [
+            (
+                selected_index,
+                frames[selected_index],
+                hashlib.sha1(np.packbits(frame_hashes[selected_index]).tobytes()).hexdigest()[:16],
+            )
+            for selected_index in selected_indexes
+        ]
 
     def _prepare_query_images(self, file_path: Path) -> list[Path]:
         frames = extract_sampled_frames(
             video_path=file_path,
             image_size=512,
-            sample_fps=self.sample_fps,
-            frames_per_video=None,
+            sample_fps=max(1.0, self.sample_fps),
+            frames_per_video=max(self.max_frames_per_video * 2, 6),
         )
-        if file_path.suffix.lower() not in IMAGE_EXTENSIONS:
-            frames = frames[: self.max_frames_per_video]
 
         if not frames:
             return []
@@ -105,8 +165,12 @@ class ExternalSearchClient:
         media_hash = hashlib.sha1(str(file_path.resolve()).encode("utf-8")).hexdigest()[:16]
         frame_dir = ensure_dir(self.query_frame_dir / media_hash)
         query_paths: list[Path] = []
-        for index, frame in enumerate(frames, start=1):
-            frame_path = frame_dir / f"frame_{index:02d}.jpg"
+        selected_frames = self._select_diverse_frames(
+            frames,
+            limit=1 if file_path.suffix.lower() in IMAGE_EXTENSIONS else min(self.max_reverse_frames, self.max_frames_per_video),
+        )
+        for index, (_, frame, frame_key) in enumerate(selected_frames, start=1):
+            frame_path = frame_dir / f"frame_{index:02d}_{frame_key}.jpg"
             if not frame_path.exists():
                 frame.save(frame_path, format="JPEG", quality=92)
             query_paths.append(frame_path)
@@ -574,8 +638,15 @@ class ExternalSearchClient:
                     reverse_candidates.extend(provider_candidates)
             else:
                 query_images = self._prepare_query_images(file_path)
-                for frame_index, image_path in enumerate(query_images, start=1):
-                    reverse_candidates.extend(self._reverse_search_frame(image_path, frame_index=frame_index, max_results=max_results))
+                frame_inputs = [(frame_index, image_path) for frame_index, image_path in enumerate(query_images, start=1)]
+
+                def _search_frame(frame_payload: tuple[int, Path]) -> list[ReverseImageCandidate]:
+                    frame_index, image_path = frame_payload
+                    return self._reverse_search_frame(image_path, frame_index=frame_index, max_results=max_results)
+
+                with ThreadPoolExecutor(max_workers=max(1, min(len(frame_inputs), self.max_reverse_frames)), thread_name_prefix="video-frames") as executor:
+                    for frame_candidates in executor.map(_search_frame, frame_inputs):
+                        reverse_candidates.extend(frame_candidates)
             merged_candidates = self._merge_reverse_candidates(reverse_candidates)
             reverse_verified = self._verify_reverse_candidates(
                 merged_candidates=merged_candidates,

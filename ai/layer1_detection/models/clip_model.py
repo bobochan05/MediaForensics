@@ -52,3 +52,12 @@ class ClipModel(nn.Module):
         pixel_values = inputs["pixel_values"].to(self.device)
         features = self.forward(pixel_values)
         return features.cpu().numpy().astype(np.float32)
+
+    @torch.inference_mode()
+    def extract_text_features(self, texts: Sequence[str]) -> np.ndarray:
+        prompts = [str(text or "").strip() for text in texts]
+        inputs = self.processor(text=prompts, return_tensors="pt", padding=True, truncation=True)
+        inputs = {key: value.to(self.device) for key, value in inputs.items()}
+        text_features = self.model.get_text_features(**inputs)
+        text_features = F.normalize(text_features, p=2, dim=1)
+        return text_features.cpu().numpy().astype(np.float32)
