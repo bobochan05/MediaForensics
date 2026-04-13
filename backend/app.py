@@ -7,7 +7,6 @@ import mimetypes
 import os
 import re
 import requests
-import subprocess
 import sys
 import time
 import uuid
@@ -128,6 +127,7 @@ _ANALYSIS_JOB_META: dict[str, float] = {}
 _ANALYSIS_JOB_LOCK = Lock()
 _ANALYSIS_JOB_TTL_SECONDS = 24 * 3600
 _ANALYSIS_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="layer2-analysis")
+_LAYER3_REFINEMENT_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="layer3-refine")
 _ANALYSIS_RESULT_CACHE: dict[str, dict[str, object]] = {}
 _ANALYSIS_RESULT_CACHE_META: dict[str, float] = {}
 _ANALYSIS_RESULT_CACHE_TTL_SECONDS = 24 * 3600
@@ -924,6 +924,8 @@ def _empty_layer3_payload() -> dict[str, object]:
         "growth_rate": 0.0,
         "growth_indicator": "low",
         "alerts": [],
+        "refinement_status": "ready",
+        "refinement_message": "",
         "risk_score": 0.0,
         "risk": {
             "risk_score": 0.0,
@@ -932,6 +934,257 @@ def _empty_layer3_payload() -> dict[str, object]:
             "source_credibility": 0.0,
         },
         "risk_insight": "No spread data yet. Monitoring will continue after discovery finishes.",
+        "content_intelligence_summary": {
+            "summary": "No Layer 3 intelligence is available yet.",
+            "details": [
+                {"label": "First seen", "value": "Not available"},
+                {"label": "Cluster size", "value": "0 variants"},
+                {"label": "Spread trend", "value": "Stable"},
+                {"label": "Risk level", "value": "Low"},
+            ],
+            "status_tag": "NORMAL",
+        },
+    }
+
+
+def _format_relative_time(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "Not available"
+    try:
+        observed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return text
+    now_utc = datetime.now(timezone.utc)
+    delta = now_utc - observed.astimezone(timezone.utc)
+    total_seconds = max(0, int(delta.total_seconds()))
+    if total_seconds < 60:
+        return "Just now"
+    if total_seconds < 3600:
+        minutes = max(1, total_seconds // 60)
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    if total_seconds < 86400:
+        hours = max(1, total_seconds // 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    days = max(1, total_seconds // 86400)
+    return f"{days} day{'s' if days != 1 else ''} ago"
+
+
+def _layer3_status_tag(*, risk_score: float, spread_velocity: float, cluster_size: int, recent_activity: int) -> str:
+    if risk_score >= 0.85 or spread_velocity >= 0.75 or recent_activity >= 5:
+        return "CRITICAL"
+    if risk_score >= 0.65 or spread_velocity >= 0.45 or cluster_size >= 8:
+        return "VIRAL"
+    if risk_score >= 0.35 or recent_activity >= 2 or cluster_size >= 3:
+        return "EMERGING"
+    return "NORMAL"
+
+
+def _spread_trend_label(*, spread_velocity: float, recent_activity: int) -> str:
+    if spread_velocity >= 0.75 or recent_activity >= 5:
+        return "Rapid"
+    if spread_velocity >= 0.4 or recent_activity >= 2:
+        return "Increasing"
+    return "Stable"
+
+
+def _build_content_intelligence_summary(
+    *,
+    cluster_size: int,
+    spread_velocity: float,
+    detection_score: float,
+    recent_match_activity: int,
+    risk_score: float,
+    first_seen: object = None,
+) -> dict[str, object]:
+    trend = _spread_trend_label(
+        spread_velocity=float(spread_velocity),
+        recent_activity=int(recent_match_activity),
+    )
+    status_tag = _layer3_status_tag(
+        risk_score=float(risk_score),
+        spread_velocity=float(spread_velocity),
+        cluster_size=int(cluster_size),
+        recent_activity=int(recent_match_activity),
+    )
+    risk_level = (
+        "Critical" if risk_score >= 0.85 else
+        "High" if risk_score >= 0.65 else
+        "Medium" if risk_score >= 0.35 else
+        "Low"
+    )
+
+    if cluster_size <= 1 and recent_match_activity <= 1:
+        summary = (
+            "This content is currently isolated with limited repeat activity. "
+            "No strong propagation pattern has been established yet."
+        )
+    elif trend == "Rapid":
+        summary = (
+            "This content is part of a rapidly growing cluster with multiple recent detections. "
+            "The spread pattern suggests active propagation and increasing risk."
+        )
+    elif trend == "Increasing":
+        summary = (
+            "This content is appearing in multiple related detections and the cluster is still expanding. "
+            "The current pattern suggests continued spread that should be monitored closely."
+        )
+    else:
+        summary = (
+            "This content is linked to a stable tracked cluster with limited new movement. "
+            "Current signals suggest monitoring is still useful, but acceleration is not evident yet."
+        )
+
+    if detection_score >= 0.85 and risk_score >= 0.65 and trend != "Stable":
+        summary = (
+            "This content combines a strong synthetic-media detection signal with an active spread pattern. "
+            "The cluster is expanding and the overall risk posture is elevated."
+        )
+
+    return {
+        "summary": summary,
+        "details": [
+            {"label": "First seen", "value": _format_relative_time(first_seen)},
+            {"label": "Cluster size", "value": f"{int(cluster_size)} variant{'s' if int(cluster_size) != 1 else ''}"},
+            {"label": "Spread trend", "value": trend},
+            {"label": "Risk level", "value": risk_level},
+        ],
+        "status_tag": status_tag,
+    }
+
+
+def _layer3_risk_bucket(score: float) -> str:
+    if score >= 0.85:
+        return "critical"
+    if score >= 0.65:
+        return "high"
+    if score >= 0.35:
+        return "medium"
+    return "low"
+
+
+def _sample_propagation_points(points: list[dict[str, object]], limit: int = 10) -> list[dict[str, object]]:
+    cleaned = [dict(point) for point in points if isinstance(point, dict)]
+    if len(cleaned) <= limit:
+        return cleaned
+    step = max(1, (len(cleaned) + limit - 2) // max(1, limit - 1))
+    sampled = cleaned[::step]
+    last = cleaned[-1]
+    if not sampled or sampled[-1] != last:
+        sampled.append(last)
+    if len(sampled) > limit:
+        sampled = sampled[: limit - 1] + [last]
+    return sampled
+
+
+def _build_propagation_graph_payload(
+    *,
+    timeline: list[dict[str, object]],
+    similar_count: int,
+    spread_indicators: dict[str, object],
+    risk_score: float,
+    detection_score: float,
+    strength_items: list[dict[str, object]],
+    distribution: list[dict[str, object]],
+) -> dict[str, object]:
+    raw_points = [dict(point) for point in list(timeline or []) if isinstance(point, dict)]
+    sampled_points = _sample_propagation_points(raw_points, limit=10)
+    if not sampled_points and int(similar_count or 0) > 0:
+        sampled_points = [
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "mentions": max(1, int(similar_count)),
+            }
+        ]
+
+    domains: list[str] = []
+    for item in list(distribution or []):
+        if not isinstance(item, dict):
+            continue
+        domain = str(item.get("domain") or "").strip().lower()
+        if domain and domain not in domains:
+            domains.append(domain)
+    for item in list(spread_indicators.get("domains") or []):
+        domain = str(item or "").strip().lower()
+        if domain and domain not in domains:
+            domains.append(domain)
+
+    strength_scores = sorted(
+        [
+            round(_layer2_match_similarity(item), 4)
+            for item in list(strength_items or [])
+            if isinstance(item, dict) and _layer2_match_similarity(item) > 0
+        ],
+        reverse=True,
+    )
+    variation_detected = bool(
+        float(spread_indicators.get("mutation_rate") or 0.0) > 0.0
+        or bool(spread_indicators.get("rapid_reappearance"))
+        or len(domains) > 1
+    )
+
+    nodes: list[dict[str, object]] = []
+    for index, point in enumerate(sampled_points):
+        mentions = max(1, int(point.get("mentions") or point.get("cluster_size") or 1))
+        timestamp = point.get("timestamp") or point.get("time") or datetime.now(timezone.utc).isoformat()
+        similarity_score = (
+            strength_scores[min(index, len(strength_scores) - 1)]
+            if strength_scores
+            else round(min(0.98, 0.52 + (0.06 * min(index, 4)) + (0.02 * min(mentions, 5))), 4)
+        )
+        progression = (index + 1) / max(1, len(sampled_points))
+        node_risk = min(
+            1.0,
+            max(
+                0.08,
+                float(risk_score) * (0.7 + 0.3 * progression),
+                similarity_score * 0.75,
+            ),
+        )
+        nodes.append(
+            {
+                "id": f"node-{index + 1}",
+                "label": "Origin" if index == 0 else f"Variant {index}",
+                "sequence": index + 1,
+                "timestamp": timestamp,
+                "mentions": mentions,
+                "importance": max(1, mentions),
+                "domain": domains[index % len(domains)] if domains else "",
+                "similarity_score": round(similarity_score, 4),
+                "detection_score": round(float(detection_score), 4),
+                "risk_score": round(node_risk, 4),
+                "risk_level": _layer3_risk_bucket(node_risk),
+                "newest": index == len(sampled_points) - 1,
+            }
+        )
+
+    edges: list[dict[str, object]] = []
+    for index in range(1, len(nodes)):
+        previous = nodes[index - 1]
+        current = nodes[index]
+        edge_similarity = round(
+            (float(previous.get("similarity_score") or 0.0) + float(current.get("similarity_score") or 0.0)) / 2.0,
+            4,
+        )
+        edges.append(
+            {
+                "source": previous["id"],
+                "target": current["id"],
+                "similarity_score": edge_similarity,
+                "kind": "transformation" if variation_detected and abs(float(current.get("similarity_score") or 0.0) - float(previous.get("similarity_score") or 0.0)) > 0.06 else "reappearance",
+                "timestamp": current.get("timestamp"),
+            }
+        )
+
+    return {
+        "nodes": len(nodes),
+        "edges": len(edges),
+        "variation_detected": variation_detected,
+        "newest_node_id": nodes[-1]["id"] if nodes else "",
+        "playback_order": [str(node.get("id") or "") for node in nodes],
+        "sampled": len(sampled_points) < len(raw_points),
+        "node_list": nodes,
+        "edge_list": edges,
     }
 
 
@@ -1025,6 +1278,16 @@ def _build_temporary_layer3_payload(
     tracked_sources = int(counts.get("exact") or 0) + int(counts.get("visual") or 0) + int(counts.get("embedding") or 0)
     content_hash = _file_sha1(stored_path)
     top_domains = list(layer2_payload.get("top_domains") or [])
+    strength_items: list[dict[str, object]] = []
+    for key in ("exact_matches", "visual_matches_top10", "related_web_sources"):
+        bucket = layer2_payload.get(key)
+        if isinstance(bucket, list):
+            strength_items.extend(bucket)
+    distribution = [
+        dict(item)
+        for item in list(layer2_payload.get("domain_distribution") or [])[:6]
+        if isinstance(item, dict)
+    ]
     now_dt = datetime.now(timezone.utc)
     temp_entry = _store_temporary_layer3_entry(
         scope_id=session_scope_id,
@@ -1048,6 +1311,21 @@ def _build_temporary_layer3_payload(
     risk_metrics["risk_score"] = risk_score
     risk_metrics["spread_velocity"] = spread_velocity
     expires_at = (now_dt + timedelta(seconds=_TEMP_LAYER3_TTL_SECONDS)).isoformat()
+    spread_indicators = {
+        "spread_velocity": spread_velocity,
+        "platform_diversity": len(set(str(item).strip().lower() for item in top_domains if str(item).strip())),
+        "domains": top_domains[:6],
+        "temporary_session": True,
+    }
+    propagation_graph = _build_propagation_graph_payload(
+        timeline=timeline,
+        similar_count=max(observations, similar_count),
+        spread_indicators=spread_indicators,
+        risk_score=risk_score,
+        detection_score=float(confidence),
+        strength_items=strength_items,
+        distribution=distribution,
+    )
     payload.update(
         {
             "content_id": temp_entry.get("content_id"),
@@ -1070,17 +1348,8 @@ def _build_temporary_layer3_payload(
                 "temporary": True,
                 "expires_at": expires_at,
             },
-            "spread_indicators": {
-                "spread_velocity": spread_velocity,
-                "platform_diversity": len(set(str(item).strip().lower() for item in top_domains if str(item).strip())),
-                "domains": top_domains[:6],
-                "temporary_session": True,
-            },
-            "propagation_graph": {
-                "nodes": max(observations, 1),
-                "edges": max(observations - 1, 0),
-                "variation_detected": tracked_sources > 0,
-            },
+            "spread_indicators": spread_indicators,
+            "propagation_graph": propagation_graph,
             "alerts": (
                 [
                     {
@@ -1106,9 +1375,172 @@ def _build_temporary_layer3_payload(
                     "velocity": spread_velocity,
                     "risk_score": round(float(risk_score), 4),
                 },
-                "match_strength_distribution": [],
-                "source_distribution": [dict(item) for item in list(layer2_payload.get("domain_distribution") or [])[:6] if isinstance(item, dict)],
+                "match_strength_distribution": [
+                    {"label": "0.0-0.2", "count": sum(1 for item in strength_items if 0.0 <= _layer2_match_similarity(item) < 0.2)},
+                    {"label": "0.2-0.4", "count": sum(1 for item in strength_items if 0.2 <= _layer2_match_similarity(item) < 0.4)},
+                    {"label": "0.4-0.6", "count": sum(1 for item in strength_items if 0.4 <= _layer2_match_similarity(item) < 0.6)},
+                    {"label": "0.6-0.8", "count": sum(1 for item in strength_items if 0.6 <= _layer2_match_similarity(item) < 0.8)},
+                    {"label": "0.8-1.0", "count": sum(1 for item in strength_items if 0.8 <= _layer2_match_similarity(item) <= 1.0)},
+                ],
+                "source_distribution": distribution,
             },
+            "content_intelligence_summary": _build_content_intelligence_summary(
+                cluster_size=max(observations, similar_count),
+                spread_velocity=spread_velocity,
+                detection_score=float(confidence),
+                recent_match_activity=observations,
+                risk_score=risk_score,
+                first_seen=datetime.fromtimestamp(float((temp_entry.get("timestamps") or [now_dt.timestamp()])[0]), tz=timezone.utc).isoformat(),
+            ),
+        }
+    )
+    return payload
+
+
+def _build_provisional_layer3_payload(
+    *,
+    stored_path: Path,
+    confidence: float,
+    is_fake: bool,
+    layer2_payload: dict[str, object],
+    upload_id: str,
+    auth_state: str,
+    session_scope_id: str,
+    track_requested: bool,
+) -> dict[str, object]:
+    if auth_state != "user":
+        payload = _build_temporary_layer3_payload(
+            stored_path=stored_path,
+            confidence=confidence,
+            is_fake=is_fake,
+            layer2_payload=layer2_payload,
+            upload_id=upload_id,
+            session_scope_id=session_scope_id,
+            track_requested=track_requested,
+        )
+        payload["refinement_status"] = "ready"
+        payload["refinement_message"] = ""
+        return payload
+
+    payload = _empty_layer3_payload()
+    source_credibility = 0.42 if is_fake else 0.78
+    timeline = _build_tracking_timeline(confidence=confidence, is_fake=is_fake)
+    risk_metrics = _build_dashboard_risk(
+        confidence=confidence,
+        timeline=timeline,
+        source_credibility=source_credibility,
+    )
+    growth_rate = 0.0
+    if len(timeline) >= 2:
+        first_mentions = float(timeline[0]["mentions"])
+        last_mentions = float(timeline[-1]["mentions"])
+        growth_rate = round(((last_mentions - first_mentions) / max(1.0, first_mentions)) * 100.0, 2)
+
+    counts = dict(layer2_payload.get("counts") or {})
+    similar_count = int(counts.get("exact") or 0) + int(counts.get("visual") or 0) + int(counts.get("embedding") or 0)
+    top_domains = list(layer2_payload.get("top_domains") or [])
+    spread_velocity = round(min(1.0, max(0.0, growth_rate / 120.0)), 4)
+    risk_score = min(
+        1.0,
+        max(
+            float(risk_metrics.get("risk_score") or 0.0),
+            float(confidence) * 0.5 + min(1.0, similar_count / 12.0) * 0.25 + min(1.0, len(top_domains) / 6.0) * 0.1,
+        ),
+    )
+    risk_metrics["risk_score"] = risk_score
+    risk_metrics["spread_velocity"] = spread_velocity
+
+    strength_items = []
+    for key in ("exact_matches", "visual_matches_top10", "related_web_sources"):
+        bucket = layer2_payload.get(key)
+        if isinstance(bucket, list):
+            strength_items.extend(bucket)
+
+    distribution = [
+        dict(item)
+        for item in list(layer2_payload.get("domain_distribution") or [])[:6]
+        if isinstance(item, dict)
+    ]
+    spread_indicators = {
+        "spread_velocity": spread_velocity,
+        "platform_diversity": len(set(str(item).strip().lower() for item in top_domains if str(item).strip())),
+        "domains": top_domains[:6],
+        "cluster_size": similar_count,
+        "provisional": True,
+    }
+    propagation_graph = _build_propagation_graph_payload(
+        timeline=timeline,
+        similar_count=similar_count,
+        spread_indicators=spread_indicators,
+        risk_score=risk_score,
+        detection_score=float(confidence),
+        strength_items=strength_items,
+        distribution=distribution,
+    )
+    payload.update(
+        {
+            "tracking_requested": bool(track_requested),
+            "tracking_enabled": False,
+            "tracking_available": True,
+            "alerts_available": False,
+            "persistence_mode": "provisional",
+            "login_prompt": "",
+            "risk_level": "Critical" if risk_score >= 0.85 else "High" if risk_score >= 0.65 else "Medium" if risk_score >= 0.35 else "Low",
+            "timeline_summary": {
+                "first_seen": timeline[0]["timestamp"] if timeline else None,
+                "last_seen": timeline[-1]["timestamp"] if timeline else None,
+                "observations": len(timeline),
+                "provisional": True,
+            },
+            "timeline": timeline,
+            "spread_indicators": spread_indicators,
+            "propagation_graph": propagation_graph,
+            "growth": {"rate_percent": growth_rate, "spike_detected": growth_rate >= 120, "window": "provisional"},
+            "growth_rate": growth_rate,
+            "growth_indicator": build_growth_indicator(growth_rate),
+            "risk_score": risk_score,
+            "risk": risk_metrics,
+            "risk_insight": "Initial Layer 3 insight is ready. Persistent clustering, propagation mapping, and refined risk are still running in the background.",
+            "refinement_status": "pending",
+            "refinement_message": "Layer 3 refinement is still running in the background.",
+            "visualizations": {
+                "spread_timeline": list(timeline),
+                "cluster_growth": [
+                    {"timestamp": point["timestamp"], "cluster_size": min(max(similar_count, 1), int(point["mentions"]))}
+                    for point in timeline
+                ],
+                "risk_metrics": {
+                    "detection": round(float(confidence), 4),
+                    "spread": spread_velocity,
+                    "cluster": round(min(1.0, max(0.0, similar_count / 20.0)), 4),
+                    "velocity": spread_velocity,
+                    "risk_score": round(float(risk_score), 4),
+                },
+                "match_strength_distribution": [
+                    {"label": "0.0-0.2", "count": sum(1 for item in strength_items if 0.0 <= _layer2_match_similarity(item) < 0.2)},
+                    {"label": "0.2-0.4", "count": sum(1 for item in strength_items if 0.2 <= _layer2_match_similarity(item) < 0.4)},
+                    {"label": "0.4-0.6", "count": sum(1 for item in strength_items if 0.4 <= _layer2_match_similarity(item) < 0.6)},
+                    {"label": "0.6-0.8", "count": sum(1 for item in strength_items if 0.6 <= _layer2_match_similarity(item) < 0.8)},
+                    {"label": "0.8-1.0", "count": sum(1 for item in strength_items if 0.8 <= _layer2_match_similarity(item) <= 1.0)},
+                ],
+                "source_distribution": distribution,
+            },
+            "alerts": [
+                {
+                    "id": f"alert-{upload_id}-layer3-provisional",
+                    "title": "Layer 3 refining",
+                    "message": "Initial insight is ready. Persistent clustering and alert evaluation are still processing in the background.",
+                    "severity": "medium",
+                }
+            ],
+            "content_intelligence_summary": _build_content_intelligence_summary(
+                cluster_size=similar_count,
+                spread_velocity=spread_velocity,
+                detection_score=float(confidence),
+                recent_match_activity=len(timeline),
+                risk_score=risk_score,
+                first_seen=timeline[0]["timestamp"] if timeline else None,
+            ),
         }
     )
     return payload
@@ -1667,44 +2099,30 @@ def _inference_python() -> str:
 
 
 def _run_inference_subprocess(input_path: Path) -> tuple[str, float]:
-    command = [
-        _inference_python(),
-        "-m",
-        "ai.layer1_detection.inference",
-        "--input_path",
-        str(input_path),
-        "--classifier_path",
-        str(FUSION_PATH),
-        "--efficientnet_path",
-        str(EFFICIENTNET_PATH),
-        "--dino_path",
-        str(DINO_PATH),
-    ]
+    from ai.layer1_detection.inference import predict_video
+    from ai.shared.video_budget import adaptive_frame_plan
+
+    effective_sample_fps, effective_frames_per_video, _ = adaptive_frame_plan(
+        input_path,
+        purpose="detection",
+        requested_sample_fps=0.35,
+        requested_frames_per_video=6 if input_path.suffix.lower() in VIDEO_SUFFIXES else 1,
+    )
     try:
-        completed = subprocess.run(
-            command,
-            cwd=str(PROJECT_ROOT),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=INFERENCE_TIMEOUT_SECONDS,
+        return predict_video(
+            video_path=input_path,
+            classifier_path=FUSION_PATH,
+            efficientnet_path=EFFICIENTNET_PATH,
+            dino_path=DINO_PATH,
+            sample_fps=effective_sample_fps or 0.35,
+            frames_per_video=effective_frames_per_video,
+            image_size=224,
+            device="auto",
         )
-    except subprocess.TimeoutExpired as exc:
+    except TimeoutError as exc:
         raise RuntimeError(f"Inference timed out after {INFERENCE_TIMEOUT_SECONDS} seconds.") from exc
-
-    if completed.returncode != 0:
-        stderr = (completed.stderr or "").strip()
-        stdout = (completed.stdout or "").strip()
-        detail = stderr or stdout or "Unknown inference error."
-        raise RuntimeError(detail)
-
-    stdout = completed.stdout or ""
-    label_match = re.search(r"^Prediction:\s*(real|fake)\s*$", stdout, flags=re.IGNORECASE | re.MULTILINE)
-    confidence_match = re.search(r"^Confidence:\s*([0-9]*\.?[0-9]+)\s*$", stdout, flags=re.MULTILINE)
-    if not label_match or not confidence_match:
-        raise RuntimeError(f"Unexpected inference output:\n{stdout.strip()}")
-
-    return label_match.group(1).lower(), float(confidence_match.group(1))
+    except Exception as exc:
+        raise RuntimeError(str(exc) or "Unknown inference error.") from exc
 
 
 def _upload_meta_path(upload_id: str) -> Path:
@@ -1818,16 +2236,24 @@ def _ensure_public_source_url(upload_id: str, upload_metadata: dict[str, object]
         original_filename = str(upload_metadata.get("original_filename") or stored_path.name)
         if stored_path.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
             from ai.layer1_detection.frame_extractor import extract_sampled_frames
+            from ai.shared.video_budget import adaptive_frame_plan
 
             preview_dir = UI_UPLOADS_DIR / "preview_frames"
             preview_dir.mkdir(parents=True, exist_ok=True)
             preview_path = preview_dir / f"{upload_id}.jpg"
             if not preview_path.exists():
+                effective_sample_fps, effective_frames_per_video, _ = adaptive_frame_plan(
+                    stored_path,
+                    purpose="preview",
+                    requested_sample_fps=0.5,
+                    requested_frames_per_video=1,
+                )
                 frames = extract_sampled_frames(
                     video_path=stored_path,
                     image_size=512,
-                    sample_fps=0.5,
-                    frames_per_video=1,
+                    sample_fps=effective_sample_fps,
+                    frames_per_video=effective_frames_per_video,
+                    purpose="preview",
                 )
                 if not frames:
                     return None
@@ -2684,6 +3110,52 @@ def _embedding_matches_top10(items: list, excluded_keys: set[str] | None = None,
     return embedding_candidates[:limit]
 
 
+def _fallback_related_matches(items: list, excluded_keys: set[str] | None = None, limit: int = DISCOVERY_SECTION_LIMIT) -> list[dict[str, object]]:
+    fallback_candidates: list[dict[str, object]] = []
+    excluded_keys = excluded_keys or set()
+    seen_keys: set[str] = set()
+
+    for item in items:
+        key = _item_identity(item)
+        if key and key in excluded_keys:
+            continue
+        if key and key in seen_keys:
+            continue
+        if _resolver_status(item) != "ok":
+            continue
+
+        serialized = _serialize_discovery_item(item, "embedding_similar")
+        similarity = max(
+            _safe_float(serialized.get("embedding_score"), _embedding_similarity_value(item)),
+            _safe_float(serialized.get("similarity_score")),
+            _safe_float(serialized.get("fused_similarity")),
+        )
+        if similarity <= 0.0:
+            continue
+
+        serialized["match_type"] = "related"
+        serialized["confidence_label"] = _match_confidence_label(serialized, similarity, "related")
+        serialized["similarity_score"] = similarity
+        serialized["explanation"] = "Related public source surfaced by reverse-search discovery. It is weaker than the top visual matches but still useful for investigation."
+        metadata = dict(serialized.get("metadata") or {})
+        metadata["embedding_similarity"] = similarity
+        metadata["embedding_rank_score"] = similarity
+        metadata["fallback_related"] = True
+        serialized["metadata"] = metadata
+        fallback_candidates.append(serialized)
+        if key:
+            seen_keys.add(key)
+
+    fallback_candidates.sort(
+        key=lambda entry: (
+            _safe_float((entry.get("metadata") or {}).get("embedding_rank_score")),
+            _safe_float((entry.get("metadata") or {}).get("final_score"), _safe_float(entry.get("fused_similarity"))),
+        ),
+        reverse=True,
+    )
+    return fallback_candidates[:limit]
+
+
 def _build_external_exploratory_items(
     pipeline,
     stored_path: Path,
@@ -2692,9 +3164,43 @@ def _build_external_exploratory_items(
 ) -> list[dict[str, object]]:
     from ai.layer2_matching.audio.audio_extract import extract_audio_from_media
     from ai.layer2_matching.tracking.metadata_parser import OccurrenceRecord, credibility_score_for_source, infer_platform, normalize_timestamp
+    from ai.shared.video_budget import should_skip_reverse_search
 
     external_client = pipeline.external_search
     phase_started_at = time.perf_counter()
+
+    def _serialize_fallback_occurrence(record) -> dict[str, object]:
+        return {
+            "id": str(record.entry_id),
+            "entry_id": str(record.entry_id),
+            "platform": str(record.platform),
+            "page_url": str(record.url or ""),
+            "url": str(record.url or ""),
+            "title": str(record.title or record.url or "Fallback web lead"),
+            "caption": record.caption,
+            "timestamp": record.timestamp,
+            "source_type": str(record.source_type or "external"),
+            "credibility_score": float(record.credibility_score or 0.0),
+            "visual_similarity": None,
+            "audio_similarity": None,
+            "fused_similarity": float(record.fused_similarity or 0.0),
+            "context": getattr(record, "context", "news"),
+            "context_scores": getattr(record, "context_scores", {}),
+            "is_mock": bool(record.is_mock),
+            "label": getattr(record, "label", None),
+            "metadata": {
+                **dict(record.metadata or {}),
+                "match_type": "related",
+                "confidence_label": "LOW",
+                "embedding_similarity": float(record.fused_similarity or 0.0),
+                "final_score": float(record.fused_similarity or 0.0),
+            },
+            "match_type": "related",
+            "confidence_label": "LOW",
+            "similarity_score": float(record.fused_similarity or 0.0),
+            "embedding_score": float(record.fused_similarity or 0.0),
+            "explanation": str((record.metadata or {}).get("match_reason") or "Related public source surfaced by lightweight text fallback."),
+        }
 
     def _compute_visual_embedding():
         return pipeline.visual_embedder.embed_media(stored_path)
@@ -2714,9 +3220,21 @@ def _build_external_exploratory_items(
         audio_embedding = audio_future.result()
 
     reverse_candidates = []
+    skip_reverse_search, skip_reason, media_profile = should_skip_reverse_search(
+        stored_path,
+        has_strong_internal_match=False,
+        system_under_load=False,
+    )
     public_source_url = external_client._public_source_url(source_url)
-    if public_source_url:
-        requested_provider_results = max(limit * 2, DISCOVERY_SECTION_LIMIT * 2)
+    if skip_reverse_search:
+        LOGGER.info(
+            "layer2_exploratory_reverse_skip path=%s reason=%s duration_s=%s",
+            stored_path,
+            skip_reason,
+            round(float(media_profile.duration_seconds or 0.0), 2),
+        )
+    elif public_source_url:
+        requested_provider_results = min(max(limit, 4), 6)
         def _provider_candidates(provider):
             cached = external_client._load_provider_cache(provider.name, stored_path)
             provider_candidates = cached if cached is not None and len(cached) >= requested_provider_results else []
@@ -2732,7 +3250,7 @@ def _build_external_exploratory_items(
                 provider_candidates = external_client._sanitize_provider_candidates(provider_candidates, public_source_url)
             return provider_candidates
 
-        with ThreadPoolExecutor(max_workers=max(2, min(4, len(external_client.reverse_providers))), thread_name_prefix="reverse-provider") as executor:
+        with ThreadPoolExecutor(max_workers=max(1, min(2, len(external_client.reverse_providers))), thread_name_prefix="reverse-provider") as executor:
             for provider_candidates in executor.map(_provider_candidates, external_client.reverse_providers):
                 reverse_candidates.extend(provider_candidates)
     else:
@@ -2741,13 +3259,29 @@ def _build_external_exploratory_items(
 
         def _frame_candidates(frame_payload: tuple[int, Path]) -> list:
             frame_index, image_path = frame_payload
-            return external_client._reverse_search_frame(image_path, frame_index=frame_index, max_results=limit * 2)
+            return external_client._reverse_search_frame(image_path, frame_index=frame_index, max_results=min(limit, 6))
 
-        with ThreadPoolExecutor(max_workers=max(2, min(4, len(frame_inputs) or 1)), thread_name_prefix="reverse-frame") as executor:
+        with ThreadPoolExecutor(max_workers=max(1, min(2, len(frame_inputs) or 1)), thread_name_prefix="reverse-frame") as executor:
             for frame_candidates in executor.map(_frame_candidates, frame_inputs):
                 reverse_candidates.extend(frame_candidates)
 
-    merged_candidates = external_client._merge_reverse_candidates(reverse_candidates)
+    merged_candidates = external_client._merge_reverse_candidates(reverse_candidates)[: max(6, limit)]
+    if not merged_candidates:
+        fallback_query = stored_path.stem.replace("_", " ").replace("-", " ").strip() or None
+        fallback_records = external_client.query_fallback.search(
+            query_hint=fallback_query,
+            local_matches=[],
+            max_results=min(limit, 6),
+            allow_mock_fallback=False,
+        )
+        exploratory_records = [_serialize_fallback_occurrence(record) for record in fallback_records]
+        LOGGER.info(
+            "layer2_external_exploration duration_ms=%s candidates=%s records=%s mode=fallback",
+            round((time.perf_counter() - phase_started_at) * 1000, 2),
+            0,
+            len(exploratory_records),
+        )
+        return exploratory_records
     exploratory_records = []
     seen_keys: set[str] = set()
 
@@ -2861,6 +3395,8 @@ def _build_external_exploratory_items(
             "raw_visual_similarity": visual_similarity,
             "provider_visual_rank_score": base_rank_score if "google_lens_visual_matches" in provider_search_types else None,
             "exact_matches_hint": exact_matches_hint,
+            "reduced_processing_note": skip_reason,
+            "video_duration_seconds": round(float(media_profile.duration_seconds or 0.0), 2) if media_profile.is_video else None,
             "visual_threshold": getattr(external_client.verifier, "visual_threshold", None),
             "audio_threshold": getattr(external_client.verifier, "audio_threshold", None),
             "phash_diff": verification.metadata.get("phash_diff") if verification is not None else None,
@@ -2953,10 +3489,12 @@ def _run_layer2_discovery(
     upload_id: str,
     stored_path: Path,
     upload_metadata: dict[str, object],
+    reverse_timeout_seconds: float = 6.0,
 ) -> dict[str, object]:
     phase_started_at = time.perf_counter()
     errors: list[str] = []
     pipeline = _get_layer2_pipeline()
+    from ai.shared.video_budget import should_skip_reverse_search
 
     public_source_url: str | None
     try:
@@ -2968,6 +3506,13 @@ def _run_layer2_discovery(
 
     original_source_url = str(upload_metadata.get("source_url") or "").strip() or None
     layer2_source_url = public_source_url or original_source_url
+    skip_public_reverse_search, reverse_skip_reason, media_profile = should_skip_reverse_search(
+        stored_path,
+        has_strong_internal_match=False,
+        system_under_load=False,
+    )
+    if skip_public_reverse_search and reverse_skip_reason:
+        errors.append(reverse_skip_reason)
 
     manual_search_links, manual_search_note = _manual_search_links(
         str(upload_metadata.get("original_filename") or stored_path.name),
@@ -2981,6 +3526,8 @@ def _run_layer2_discovery(
     serpapi_status = "failed"
 
     def _reverse_task() -> tuple[dict[str, object], float, bool, str]:
+        if skip_public_reverse_search:
+            return _empty_reverse_search_payload([reverse_skip_reason] if reverse_skip_reason else None), 0.0, False, "skipped"
         if not layer2_source_url:
             return _empty_reverse_search_payload(), 0.0, False, "failed"
         from ai.layer2_matching.tracking.reverse_search_service import process_reverse_search
@@ -3001,11 +3548,14 @@ def _run_layer2_discovery(
             limit=DISCOVERY_SECTION_LIMIT,
         )
 
-    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="layer2-discovery") as executor:
+    executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="layer2-discovery")
+    try:
         reverse_future = executor.submit(_reverse_task)
         exploratory_future = executor.submit(_exploratory_task)
         try:
-            reverse_search_payload, reverse_confidence_score, fallback_used, serpapi_status = reverse_future.result()
+            reverse_search_payload, reverse_confidence_score, fallback_used, serpapi_status = reverse_future.result(timeout=reverse_timeout_seconds)
+        except TimeoutError:
+            errors.append("Public reverse search timed out and was skipped to keep analysis responsive.")
         except Exception as exc:  # pragma: no cover - network/provider safety
             LOGGER.exception("Public reverse search failed for %s", stored_path)
             errors.append(f"Public reverse search failed: {exc}")
@@ -3014,6 +3564,8 @@ def _run_layer2_discovery(
         except Exception as exc:  # pragma: no cover - network/provider safety
             LOGGER.exception("External Layer 2 discovery failed for %s", stored_path)
             errors.append(f"External reverse search failed: {exc}")
+    finally:
+        executor.shutdown(wait=False, cancel_futures=False)
 
     exact_matches, _ = _classify_discovery_results(external_items)
     exact_matches = exact_matches[:DISCOVERY_SECTION_LIMIT]
@@ -3043,11 +3595,32 @@ def _run_layer2_discovery(
         for item in [*exact_matches, *visual_matches_top10]
         if str(item.get("page_url") or item.get("url") or "").strip()
     }
-    embedding_matches_top10 = _related_web_source_matches(
+    consumed_keys = {
+        identity
+        for item in [*exact_matches, *visual_matches_top10]
+        if (identity := _item_identity(item))
+    }
+    verified_related_matches = _embedding_matches_top10(
+        external_items,
+        excluded_keys=consumed_keys,
+        limit=DISCOVERY_SECTION_LIMIT,
+    )
+    reverse_related_matches = _related_web_source_matches(
         reverse_search_payload,
         excluded_urls=visual_urls,
         limit=DISCOVERY_SECTION_LIMIT,
     )
+    embedding_matches_top10 = _merge_section_items(
+        verified_related_matches,
+        reverse_related_matches,
+        limit=DISCOVERY_SECTION_LIMIT,
+    )
+    if not embedding_matches_top10:
+        embedding_matches_top10 = _fallback_related_matches(
+            external_items,
+            excluded_keys=consumed_keys,
+            limit=DISCOVERY_SECTION_LIMIT,
+        )
 
     has_matches = bool(exact_matches or visual_matches_top10 or embedding_matches_top10)
     payload = build_layer2_response(
@@ -3060,6 +3633,12 @@ def _run_layer2_discovery(
             "provider_status": {
                 "cloudinary": "ok" if layer2_source_url else "failed",
                 "serpapi": serpapi_status,
+            },
+            "processing_budget": {
+                "media_type": "video" if media_profile.is_video else "image",
+                "video_duration_seconds": round(float(media_profile.duration_seconds or 0.0), 2) if media_profile.is_video else None,
+                "reverse_search_skipped": skip_public_reverse_search,
+                "reverse_search_skip_reason": reverse_skip_reason,
             },
             "image_url": layer2_source_url or "",
             "reverse_search": reverse_search_payload,
@@ -3082,6 +3661,19 @@ def _run_layer2_discovery(
         len(errors),
     )
     return payload
+
+
+def _layer2_needs_enrichment(layer2_payload: dict[str, object]) -> bool:
+    provider_status = dict(layer2_payload.get("provider_status") or {})
+    if str(provider_status.get("cloudinary") or "failed") != "ok":
+        return True
+    if str(provider_status.get("serpapi") or "failed") != "ok":
+        return True
+    if str(layer2_payload.get("status") or "").lower() == "degraded":
+        return True
+    if layer2TotalCount := int((layer2_payload.get("counts") or {}).get("exact") or 0) + int((layer2_payload.get("counts") or {}).get("visual") or 0) + int((layer2_payload.get("counts") or {}).get("embedding") or 0):
+        return False
+    return bool(layer2_payload.get("image_url"))
 
 
 def _build_layer3_payload(
@@ -3221,6 +3813,24 @@ def _build_layer3_payload(
     if cluster_risk > risk_score:
         risk_score = cluster_risk
         risk_metrics["risk_score"] = cluster_risk
+    strength_items = []
+    for key in ("exact_matches", "visual_matches_top10", "related_web_sources"):
+        bucket = layer2_payload.get(key)
+        if isinstance(bucket, list):
+            strength_items.extend(bucket)
+    distribution: list[dict[str, object]] = []
+    raw_distribution = layer2_payload.get("domain_distribution")
+    if isinstance(raw_distribution, list):
+        distribution = [dict(item) for item in raw_distribution[:6] if isinstance(item, dict)]
+    propagation_graph = _build_propagation_graph_payload(
+        timeline=list(intelligence.get("timeline_points") or timeline),
+        similar_count=int(intelligence.get("similar_count") or 0),
+        spread_indicators=spread_indicators,
+        risk_score=risk_score,
+        detection_score=float(confidence),
+        strength_items=strength_items,
+        distribution=distribution,
+    )
     payload.update(
         {
             "content_id": intelligence.get("content_id"),
@@ -3236,20 +3846,11 @@ def _build_layer3_payload(
             "timeline_summary": timeline_summary,
             "timeline": list(intelligence.get("timeline_points") or timeline),
             "spread_indicators": spread_indicators,
-            "propagation_graph": dict(intelligence.get("propagation_graph") or {}),
+            "propagation_graph": propagation_graph,
             "risk_score": risk_score,
             "risk": risk_metrics,
         }
     )
-    strength_items = []
-    for key in ("exact_matches", "visual_matches_top10", "related_web_sources"):
-        bucket = layer2_payload.get(key)
-        if isinstance(bucket, list):
-            strength_items.extend(bucket)
-    distribution: list[dict[str, object]] = []
-    raw_distribution = layer2_payload.get("domain_distribution")
-    if isinstance(raw_distribution, list):
-        distribution = [dict(item) for item in raw_distribution[:6] if isinstance(item, dict)]
     payload["visualizations"] = {
         "spread_timeline": list(payload.get("timeline") or []),
         "cluster_growth": [
@@ -3293,6 +3894,14 @@ def _build_layer3_payload(
         ],
         "source_distribution": distribution,
     }
+    payload["content_intelligence_summary"] = _build_content_intelligence_summary(
+        cluster_size=int(payload.get("similar_count") or 0),
+        spread_velocity=float(spread_indicators.get("spread_velocity") or 0.0),
+        detection_score=float(confidence),
+        recent_match_activity=int(timeline_summary.get("observations") or 0),
+        risk_score=float(risk_score),
+        first_seen=timeline_summary.get("first_seen"),
+    )
     if payload["tracking_enabled"]:
         summary_observations = int(timeline_summary.get("observations") or 0)
         payload["alerts"] = list(payload["alerts"]) + [
@@ -3442,34 +4051,155 @@ def _run_analysis_job(
 
         is_fake = str(layer1_payload.get("result") or "").strip().upper() == "FAKE"
         confidence_fraction = float(layer1_payload.get("confidence") or 0.0) / 100.0
+        track_requested = bool(upload_metadata.get("tracking_enabled"))
+        media_url = str(upload_metadata.get("source_url") or "")
+        layer3_payload = (
+            _build_provisional_layer3_payload(
+                stored_path=stored_path,
+                confidence=confidence_fraction,
+                is_fake=is_fake,
+                layer2_payload=layer2_payload,
+                upload_id=upload_id,
+                auth_state=auth_state,
+                session_scope_id=session_scope_id,
+                track_requested=track_requested,
+            )
+            if enable_layer3
+            else _empty_layer3_payload()
+        )
+        final_analysis = _assemble_analysis_response(
+            upload_id=upload_id,
+            original_filename=original_filename,
+            auth_state=auth_state,
+            guest_usage=guest_usage,
+            created_at=created_at,
+            layer1_payload=layer1_payload,
+            layer2_payload=layer2_payload,
+            layer3_payload=layer3_payload,
+        )
         _set_analysis_job(
             job_id,
             {
-                "status": "processing",
+                "status": "completed",
                 "job_id": job_id,
-                "progress": 88,
-                "stage": "layer3_processing",
-                "message": "Analysis in progress.",
-                "analysis": partial_analysis,
+                "progress": 100,
+                "stage": "completed",
+                "message": "Initial analysis ready." if enable_layer3 else "Analysis complete.",
+                "analysis": final_analysis,
             },
         )
-        layer3_started_at = time.perf_counter()
+        layer2_needs_enrichment = bool(enable_layer2 and _layer2_needs_enrichment(layer2_payload))
+        if layer2_needs_enrichment:
+            _LAYER3_REFINEMENT_EXECUTOR.submit(
+                _run_layer2_layer3_enrichment_job,
+                job_id=job_id,
+                upload_id=upload_id,
+                stored_path=stored_path,
+                original_filename=original_filename,
+                created_at=created_at,
+                auth_state=auth_state,
+                user_id=user_id,
+                user_email=user_email,
+                session_scope_id=session_scope_id,
+                guest_usage=guest_usage,
+                cache_key=cache_key,
+                confidence_fraction=confidence_fraction,
+                is_fake=is_fake,
+                layer1_payload=layer1_payload,
+                track_requested=track_requested,
+            )
+        if enable_layer3 and auth_state == "user" and not layer2_needs_enrichment:
+            _LAYER3_REFINEMENT_EXECUTOR.submit(
+                _run_layer3_refinement_job,
+                job_id=job_id,
+                upload_id=upload_id,
+                stored_path=stored_path,
+                original_filename=original_filename,
+                created_at=created_at,
+                auth_state=auth_state,
+                user_id=user_id,
+                user_email=user_email,
+                session_scope_id=session_scope_id,
+                guest_usage=guest_usage,
+                cache_key=cache_key,
+                confidence_fraction=confidence_fraction,
+                is_fake=is_fake,
+                layer1_payload=layer1_payload,
+                layer2_payload=layer2_payload,
+                track_requested=track_requested,
+                media_url=media_url,
+            )
+        LOGGER.info(
+            "analysis_total duration_ms=%s upload_id=%s layer2=%s layer3=%s",
+            round((time.perf_counter() - job_started_at) * 1000, 1),
+            upload_id,
+            enable_layer2,
+            enable_layer3,
+        )
+    except Exception as exc:  # pragma: no cover - background safety
+        LOGGER.exception("Background analysis job failed for %s", upload_id)
+        get_alert_service().trigger_alert(
+            AlertEvent(
+                event_type="analysis_job_failure",
+                severity="CRITICAL",
+                message="Background analysis job failed.",
+                error_type=type(exc).__name__,
+                explanation=str(exc),
+            )
+        )
+        _set_analysis_job(
+            job_id,
+            {
+                "status": "error",
+                "job_id": job_id,
+                "progress": 100,
+                "stage": "failed",
+                "message": f"Analysis failed: {exc}",
+                "error": str(exc),
+            },
+        )
+
+
+def _run_layer3_refinement_job(
+    *,
+    job_id: str,
+    upload_id: str,
+    stored_path: Path,
+    original_filename: str,
+    created_at: str,
+    auth_state: str,
+    user_id: int | None,
+    user_email: str,
+    session_scope_id: str,
+    guest_usage: dict[str, object],
+    cache_key: str,
+    confidence_fraction: float,
+    is_fake: bool,
+    layer1_payload: dict[str, object],
+    layer2_payload: dict[str, object],
+    track_requested: bool,
+    media_url: str,
+) -> None:
+    layer3_started_at = time.perf_counter()
+    try:
         layer3_payload = _build_layer3_payload(
             stored_path=stored_path,
             confidence=confidence_fraction,
             is_fake=is_fake,
             layer2_payload=layer2_payload,
-            enable_layer3=enable_layer3,
+            enable_layer3=True,
             upload_id=upload_id,
             auth_state=auth_state,
             user_id=user_id,
             user_email=user_email,
             session_scope_id=session_scope_id,
-            media_url=str(upload_metadata.get("source_url") or ""),
-            track_requested=bool(upload_metadata.get("tracking_enabled")),
+            media_url=media_url,
+            track_requested=track_requested,
         )
+        layer3_payload["refinement_status"] = "ready"
+        layer3_payload["refinement_message"] = ""
         layer3_duration_ms = (time.perf_counter() - layer3_started_at) * 1000
-        if enable_layer3 and layer3_duration_ms > LAYER3_LATENCY_ALERT_MS:
+        if layer3_duration_ms > LAYER3_LATENCY_ALERT_MS:
             get_alert_service().trigger_alert(
                 AlertEvent(
                     event_type="layer3_latency_spike",
@@ -3501,34 +4231,122 @@ def _run_analysis_job(
                 "analysis": final_analysis,
             },
         )
-        LOGGER.info(
-            "analysis_total duration_ms=%s upload_id=%s layer2=%s layer3=%s",
-            round((time.perf_counter() - job_started_at) * 1000, 1),
-            upload_id,
-            enable_layer2,
-            enable_layer3,
-        )
     except Exception as exc:  # pragma: no cover - background safety
-        LOGGER.exception("Background analysis job failed for %s", upload_id)
+        LOGGER.exception("Layer 3 refinement job failed for %s", upload_id)
         get_alert_service().trigger_alert(
             AlertEvent(
-                event_type="analysis_job_failure",
+                event_type="layer3_refinement_failure",
                 severity="CRITICAL",
-                message="Background analysis job failed.",
+                message="Layer 3 refinement failed after provisional analysis completed.",
                 error_type=type(exc).__name__,
                 explanation=str(exc),
             )
         )
+        current_payload = _get_analysis_job(job_id) or {}
+        current_analysis = deepcopy(current_payload.get("analysis") or {})
+        current_layer3 = deepcopy(current_analysis.get("layer3") or _empty_layer3_payload())
+        current_layer3["refinement_status"] = "error"
+        current_layer3["refinement_message"] = f"Background Layer 3 refinement failed: {exc}"
+        current_layer3["alerts"] = list(current_layer3.get("alerts") or []) + [
+            {
+                "id": f"alert-{upload_id}-layer3-refinement-failure",
+                "title": "Layer 3 refinement failed",
+                "message": f"Persistent clustering and tracking could not finish for this run: {exc}",
+                "severity": "high",
+            }
+        ]
+        current_layer3["risk_insight"] = "Initial Layer 3 insight is available, but background refinement failed. Review the alerts panel and retry if needed."
+        current_analysis["layer3"] = current_layer3
         _set_analysis_job(
             job_id,
             {
-                "status": "error",
+                "status": "completed",
                 "job_id": job_id,
                 "progress": 100,
-                "stage": "failed",
-                "message": f"Analysis failed: {exc}",
-                "error": str(exc),
+                "stage": "completed",
+                "message": "Initial analysis ready. Layer 3 refinement failed in the background.",
+                "analysis": current_analysis,
             },
+        )
+
+
+def _run_layer2_layer3_enrichment_job(
+    *,
+    job_id: str,
+    upload_id: str,
+    stored_path: Path,
+    original_filename: str,
+    created_at: str,
+    auth_state: str,
+    user_id: int | None,
+    user_email: str,
+    session_scope_id: str,
+    guest_usage: dict[str, object],
+    cache_key: str,
+    confidence_fraction: float,
+    is_fake: bool,
+    layer1_payload: dict[str, object],
+    track_requested: bool,
+) -> None:
+    try:
+        upload_metadata = _load_upload_metadata(upload_id)
+        enriched_layer2 = _run_layer2_discovery(
+            upload_id=upload_id,
+            stored_path=stored_path,
+            upload_metadata=upload_metadata,
+            reverse_timeout_seconds=18.0,
+        )
+        media_url = str(upload_metadata.get("source_url") or "")
+        enriched_layer3 = _build_layer3_payload(
+            stored_path=stored_path,
+            confidence=confidence_fraction,
+            is_fake=is_fake,
+            layer2_payload=enriched_layer2,
+            enable_layer3=True,
+            upload_id=upload_id,
+            auth_state=auth_state,
+            user_id=user_id,
+            user_email=user_email,
+            session_scope_id=session_scope_id,
+            media_url=media_url,
+            track_requested=track_requested,
+        )
+        if auth_state != "user":
+            enriched_layer3["refinement_status"] = "ready"
+            enriched_layer3["refinement_message"] = ""
+        analysis = _assemble_analysis_response(
+            upload_id=upload_id,
+            original_filename=original_filename,
+            auth_state=auth_state,
+            guest_usage=guest_usage,
+            created_at=created_at,
+            layer1_payload=layer1_payload,
+            layer2_payload=enriched_layer2,
+            layer3_payload=enriched_layer3,
+        )
+        if auth_state == "user":
+            _set_cached_analysis(cache_key, analysis)
+        _set_analysis_job(
+            job_id,
+            {
+                "status": "completed",
+                "job_id": job_id,
+                "progress": 100,
+                "stage": "completed",
+                "message": "Analysis complete.",
+                "analysis": analysis,
+            },
+        )
+    except Exception as exc:  # pragma: no cover - background safety
+        LOGGER.exception("Layer 2/3 enrichment job failed for %s", upload_id)
+        get_alert_service().trigger_alert(
+            AlertEvent(
+                event_type="layer23_enrichment_failure",
+                severity="HIGH",
+                message="Background Layer 2/Layer 3 enrichment failed.",
+                error_type=type(exc).__name__,
+                explanation=str(exc),
+            )
         )
 
 
@@ -3850,7 +4668,7 @@ def api_analyze():
 
     cache_key = f"{_file_sha1(stored_path)}:{'user-' + str(principal.get('user_id')) if auth_state == 'user' else session_scope_id}"
     now_iso = datetime.now(timezone.utc).isoformat()
-    cached_analysis = _get_cached_analysis(cache_key) if auth_state == "user" else None
+    cached_analysis = _get_cached_analysis(cache_key)
     if cached_analysis is not None:
         cached_analysis["analysis_id"] = upload_id
         cached_analysis["upload_id"] = upload_id
