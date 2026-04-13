@@ -38,11 +38,11 @@ class Layer2Config:
     analyses_dir: Path
     cache_dir: Path
     index_dir: Path
-    sample_fps: float = 0.5
-    max_frames_per_video: int = 8
+    sample_fps: float = 0.35
+    max_frames_per_video: int = 4
     max_seed_items: int = 512
     max_audio_seed_items: int = 32
-    top_k: int = 20
+    top_k: int = 10
     device: str = "auto"
 
 

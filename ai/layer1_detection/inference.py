@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
+from threading import Lock
 
 import numpy as np
 import torch
@@ -16,7 +17,12 @@ from ai.layer1_detection.models.dino_model import DINOModel
 from ai.layer1_detection.models.efficientnet_model import EfficientNetModel
 from ai.layer1_detection.models.fft_model import compute_frequency_inputs
 from ai.layer1_detection.models.fusion_model import load_fusion_model, predict_probabilities
+from ai.shared.video_budget import adaptive_frame_plan
 from ai.shared.file_utils import LABEL_TO_NAME
+
+
+_MODEL_CACHE: dict[tuple[str, str, str, str], tuple[ClipModel, EfficientNetModel, DINOModel, torch.nn.Module]] = {}
+_MODEL_CACHE_LOCK = Lock()
 
 
 def _resolve_device(requested_device: str) -> str:
@@ -39,12 +45,38 @@ def _configure_torch_runtime(device: str) -> None:
         torch.backends.cudnn.allow_tf32 = True
 
 
+def _cached_model_bundle(
+    *,
+    classifier_path: Path,
+    efficientnet_path: Path,
+    dino_path: Path,
+    device: str,
+) -> tuple[ClipModel, EfficientNetModel, DINOModel, torch.nn.Module]:
+    cache_key = (
+        str(classifier_path.resolve()),
+        str(efficientnet_path.resolve()),
+        str(dino_path.resolve()),
+        str(device),
+    )
+    with _MODEL_CACHE_LOCK:
+        bundle = _MODEL_CACHE.get(cache_key)
+        if bundle is None:
+            bundle = (
+                ClipModel(device=device),
+                EfficientNetModel(model_path=efficientnet_path, device=device),
+                DINOModel(model_path=dino_path, device=device),
+                load_fusion_model(classifier_path, device=device),
+            )
+            _MODEL_CACHE[cache_key] = bundle
+        return bundle
+
+
 def predict_video(
     video_path: str | Path,
     classifier_path: str | Path = "artifacts/fusion_model.pth",
     efficientnet_path: str | Path = "artifacts/efficientnet_finetuned.pth",
     dino_path: str | Path = "artifacts/dino_finetuned.pth",
-    sample_fps: float = 0.5,
+    sample_fps: float = 0.35,
     frames_per_video: int | None = None,
     image_size: int = 224,
     device: str = "auto",
@@ -62,16 +94,25 @@ def predict_video(
 
     device = _resolve_device(device)
     _configure_torch_runtime(device)
-    clip_model = ClipModel(device=device)
-    eff_model = EfficientNetModel(model_path=efficientnet_path, device=device)
-    dino_model = DINOModel(model_path=dino_path, device=device)
-    classifier = load_fusion_model(classifier_path, device=device)
+    clip_model, eff_model, dino_model, classifier = _cached_model_bundle(
+        classifier_path=classifier_path,
+        efficientnet_path=efficientnet_path,
+        dino_path=dino_path,
+        device=device,
+    )
+    effective_sample_fps, effective_frames_per_video, _ = adaptive_frame_plan(
+        input_path,
+        purpose="detection",
+        requested_sample_fps=sample_fps,
+        requested_frames_per_video=frames_per_video,
+    )
 
     frames = extract_sampled_frames(
         video_path=input_path,
         image_size=image_size,
-        sample_fps=sample_fps,
-        frames_per_video=frames_per_video,
+        sample_fps=effective_sample_fps,
+        frames_per_video=effective_frames_per_video,
+        purpose="detection",
     )
     if not frames:
         raise ValueError(f"No frames could be extracted from {input_path}")
@@ -124,7 +165,7 @@ def parse_args() -> argparse.Namespace:
         default="artifacts/dino_finetuned.pth",
         help="Path to the fine-tuned DINO weights.",
     )
-    parser.add_argument("--sample_fps", type=float, default=0.5, help="Frames per second to sample.")
+    parser.add_argument("--sample_fps", type=float, default=0.35, help="Frames per second to sample.")
     parser.add_argument("--device", type=str, default="auto", choices=("auto", "cuda", "cpu"), help="Inference device.")
     parser.add_argument(
         "--frames_per_video",

@@ -22,6 +22,7 @@ from ai.layer3_tracking.db.models import Content, ContentCluster, ContentStatus
 from ai.layer3_tracking.services.alerting import AlertEvent, get_alert_service
 from ai.layer3_tracking.services.risk_analyzer import RiskAnalyzer
 from ai.layer3_tracking.services.url_utils import extract_domain, is_trusted_domain, normalize_urls
+from ai.shared.video_budget import adaptive_frame_plan
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,6 +32,11 @@ EXACT_PHASH_DISTANCE = 5
 NEAR_PHASH_DISTANCE = 10
 RAPID_REAPPEARANCE_WINDOW = timedelta(hours=12)
 LOW_RISK_TTL = timedelta(days=14)
+RECENT_RESULT_TTL = timedelta(minutes=10)
+RECENT_LOOKUP_TTL = timedelta(minutes=10)
+RECENT_CACHE_LIMIT = 256
+INDEX_SAVE_INTERVAL = 8
+INDEX_SAVE_MAX_DELAY = timedelta(seconds=45)
 
 
 def _utcnow() -> datetime:
@@ -46,7 +52,19 @@ def _sha256_file(path: Path) -> str:
 
 
 def _first_frame(path: Path):
-    frames = extract_sampled_frames(path, image_size=256, sample_fps=1.0, frames_per_video=1)
+    effective_sample_fps, effective_frames_per_video, _ = adaptive_frame_plan(
+        path,
+        purpose="layer3",
+        requested_sample_fps=1.0,
+        requested_frames_per_video=1,
+    )
+    frames = extract_sampled_frames(
+        path,
+        image_size=256,
+        sample_fps=effective_sample_fps,
+        frames_per_video=effective_frames_per_video,
+        purpose="layer3",
+    )
     if not frames:
         raise ValueError(f"No frame available for Layer 3 intelligence: {path}")
     return frames[0]
@@ -150,11 +168,55 @@ class Layer3IntelligenceStore:
         self.index_dir = self.root_dir / "indexes"
         self.embedding_dir.mkdir(parents=True, exist_ok=True)
         self.index_dir.mkdir(parents=True, exist_ok=True)
-        self.embedder = VisualEmbeddingService(device="cpu", sample_fps=1.0, max_frames_per_video=4, image_size=224)
+        self.embedder = VisualEmbeddingService(device="cpu", sample_fps=0.35, max_frames_per_video=2, image_size=224)
         self.index = FaissVectorIndex("layer3_content_vectors", self.index_dir)
         self.risk_analyzer = RiskAnalyzer()
         self._lock = Lock()
         self._last_prune_at: datetime | None = None
+        self._recent_result_cache: dict[str, tuple[datetime, dict[str, Any]]] = {}
+        self._recent_cluster_cache: dict[str, tuple[datetime, tuple[str | None, int, float, int | None]]] = {}
+        self._index_dirty_adds = 0
+        self._last_index_save_at = _utcnow()
+
+    def _prune_recent_caches(self, now: datetime) -> None:
+        result_cutoff = now - RECENT_RESULT_TTL
+        for key, (ts, _) in list(self._recent_result_cache.items()):
+            if ts < result_cutoff:
+                self._recent_result_cache.pop(key, None)
+        lookup_cutoff = now - RECENT_LOOKUP_TTL
+        for key, (ts, _) in list(self._recent_cluster_cache.items()):
+            if ts < lookup_cutoff:
+                self._recent_cluster_cache.pop(key, None)
+        while len(self._recent_result_cache) > RECENT_CACHE_LIMIT:
+            oldest_key = min(self._recent_result_cache.items(), key=lambda item: item[1][0])[0]
+            self._recent_result_cache.pop(oldest_key, None)
+        while len(self._recent_cluster_cache) > RECENT_CACHE_LIMIT:
+            oldest_key = min(self._recent_cluster_cache.items(), key=lambda item: item[1][0])[0]
+            self._recent_cluster_cache.pop(oldest_key, None)
+
+    def _cache_result_key(self, *, content_hash: str, detection_score: float, source_urls: list[str], tracking_enabled: bool) -> str:
+        return "|".join(
+            [
+                content_hash,
+                f"{float(detection_score):.4f}",
+                "1" if tracking_enabled else "0",
+                ",".join(sorted(source_urls)[:12]),
+            ]
+        )
+
+    def _cluster_lookup_key(self, *, content_hash: str, perceptual_hash: str) -> str:
+        return f"{content_hash}|{perceptual_hash}"
+
+    def _maybe_save_index(self, *, force: bool = False) -> None:
+        now = _utcnow()
+        if not force:
+            if self._index_dirty_adds <= 0:
+                return
+            if self._index_dirty_adds < INDEX_SAVE_INTERVAL and (now - self._last_index_save_at) < INDEX_SAVE_MAX_DELAY:
+                return
+        self.index.save()
+        self._index_dirty_adds = 0
+        self._last_index_save_at = now
 
     def _find_cluster_match(
         self,
@@ -164,6 +226,14 @@ class Layer3IntelligenceStore:
         perceptual_hash: str,
         embedding: np.ndarray,
     ) -> tuple[ContentCluster | None, int, float, int | None]:
+        cache_key = self._cluster_lookup_key(content_hash=content_hash, perceptual_hash=perceptual_hash)
+        cached = self._recent_cluster_cache.get(cache_key)
+        if cached and (_utcnow() - cached[0]) <= RECENT_LOOKUP_TTL:
+            cluster_id, similar_count, best_score, best_distance = cached[1]
+            cluster = crud.get_cluster(session, UUID(cluster_id)) if cluster_id else None
+            if cluster_id is None or cluster is not None:
+                return cluster, similar_count, best_score, best_distance
+
         similar_count = 0
         best_cluster: ContentCluster | None = None
         best_score = 0.0
@@ -207,6 +277,10 @@ class Layer3IntelligenceStore:
                 best_cluster = candidate.cluster
                 best_score = score
                 best_distance = distance
+        self._recent_cluster_cache[cache_key] = (
+            _utcnow(),
+            (str(best_cluster.id) if best_cluster is not None else None, similar_count, best_score, best_distance),
+        )
         return best_cluster, similar_count, best_score, best_distance
 
     def _rebuild_index(self, session: Session) -> None:
@@ -235,6 +309,8 @@ class Layer3IntelligenceStore:
             rebuilt.add(np.asarray(vectors, dtype=np.float32), metadata)
         rebuilt.save()
         self.index = rebuilt
+        self._index_dirty_adds = 0
+        self._last_index_save_at = _utcnow()
 
     def _prune_stale_content(self, session: Session, checked_at: datetime) -> None:
         if self._last_prune_at and (checked_at - self._last_prune_at) < timedelta(hours=6):
@@ -377,24 +453,51 @@ class Layer3IntelligenceStore:
     ) -> dict[str, Any]:
         target = Path(media_path)
         checked_at = _utcnow()
+        self._prune_recent_caches(checked_at)
         content_hash = _sha256_file(target)
         first_frame = _first_frame(target)
         perceptual_hash = _perceptual_hash(first_frame)
         media_type = _media_type_for(target)
         source_urls = _extract_source_urls(layer2_payload)
+        result_cache_key = self._cache_result_key(
+            content_hash=content_hash,
+            detection_score=float(detection_score),
+            source_urls=source_urls,
+            tracking_enabled=bool(track_requested),
+        )
 
         with self._lock:
-            embedding = self.embedder.embed_media(target)
-            embedding_path = _save_embedding(self.embedding_dir / f"{content_hash}.npy", embedding)
             with SessionLocal.begin() as session:
                 self._prune_stale_content(session, checked_at)
                 existing = crud.get_content_by_hash(session, content_hash, for_update=True)
-                cluster, similar_count, best_score, best_distance = self._find_cluster_match(
-                    session,
-                    content_hash=content_hash,
-                    perceptual_hash=perceptual_hash,
-                    embedding=embedding,
-                )
+                if existing is None and perceptual_hash:
+                    existing = crud.get_content_by_perceptual_hash(session, perceptual_hash, for_update=True)
+                if existing is not None:
+                    cached_result = self._recent_result_cache.get(result_cache_key)
+                    if cached_result and (checked_at - cached_result[0]) <= RECENT_RESULT_TTL:
+                        self._store_sources_and_tracking(
+                            session,
+                            content=existing,
+                            source_urls=source_urls,
+                            checked_at=checked_at,
+                        )
+                        return dict(cached_result[1])
+
+                embedding: np.ndarray | None = None
+                embedding_path = str(self.embedding_dir / f"{content_hash}.npy")
+                cluster = existing.cluster if existing is not None else None
+                similar_count = int(existing.similar_count or 0) if existing is not None else 0
+                best_score = 1.0 if existing is not None else 0.0
+                best_distance = 0 if existing is not None else None
+                if existing is None:
+                    embedding = self.embedder.embed_media(target)
+                    embedding_path = _save_embedding(self.embedding_dir / f"{content_hash}.npy", embedding)
+                    cluster, similar_count, best_score, best_distance = self._find_cluster_match(
+                        session,
+                        content_hash=content_hash,
+                        perceptual_hash=perceptual_hash,
+                        embedding=embedding,
+                    )
                 rapid_reappearance = bool(existing and existing.last_checked and (checked_at - existing.last_checked) <= RAPID_REAPPEARANCE_WINDOW)
 
                 if existing is None:
@@ -402,7 +505,7 @@ class Layer3IntelligenceStore:
                     cluster = self._update_cluster(
                         session,
                         cluster=cluster,
-                        embedding=embedding,
+                        embedding=embedding if embedding is not None else _load_embedding(embedding_path) or np.zeros((512,), dtype=np.float32),
                         embedding_path=embedding_path,
                         perceptual_hash=perceptual_hash,
                         checked_at=checked_at,
@@ -439,16 +542,18 @@ class Layer3IntelligenceStore:
                             }
                         ],
                     )
-                    self.index.save()
+                    self._index_dirty_adds += 1
+                    self._maybe_save_index()
                 else:
                     content = existing
                     cluster = content.cluster or cluster
                     if cluster is None:
+                        seed_embedding = _load_embedding(content.embedding_path) or self.embedder.embed_media(target)
                         cluster = self._update_cluster(
                             session,
                             cluster=None,
-                            embedding=embedding,
-                            embedding_path=embedding_path,
+                            embedding=seed_embedding,
+                            embedding_path=content.embedding_path or embedding_path,
                             perceptual_hash=perceptual_hash,
                             checked_at=checked_at,
                             risk_score=float(detection_score),
@@ -524,7 +629,7 @@ class Layer3IntelligenceStore:
                 cluster = self._update_cluster(
                     session,
                     cluster=cluster,
-                    embedding=embedding,
+                    embedding=_load_embedding(content.embedding_path) or embedding or self.embedder.embed_media(target),
                     embedding_path=embedding_path,
                     perceptual_hash=perceptual_hash,
                     checked_at=checked_at,
@@ -604,4 +709,6 @@ class Layer3IntelligenceStore:
                             metadata={"cluster_size": cluster_size, "mutation_rate": mutation_rate},
                         )
                     )
-                return result.to_dict()
+                payload = result.to_dict()
+                self._recent_result_cache[result_cache_key] = (checked_at, dict(payload))
+                return payload

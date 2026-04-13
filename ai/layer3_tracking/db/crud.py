@@ -65,6 +65,17 @@ def get_content_by_hash(session: Session, content_hash: str, *, for_update: bool
     return session.scalars(statement).first()
 
 
+def get_content_by_perceptual_hash(session: Session, perceptual_hash: str, *, for_update: bool = False) -> Content | None:
+    statement = (
+        select(Content)
+        .where(Content.perceptual_hash == perceptual_hash)
+        .options(selectinload(Content.sources), selectinload(Content.tracking_logs), selectinload(Content.cluster))
+    )
+    if for_update:
+        statement = statement.with_for_update()
+    return session.scalars(statement).first()
+
+
 def create_cluster(
     session: Session,
     *,

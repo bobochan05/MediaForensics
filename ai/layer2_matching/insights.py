@@ -136,6 +136,7 @@ def _load_first_frame(media_path: str | Path) -> np.ndarray | None:
             image_size=224,
             sample_fps=0.5,
             frames_per_video=1,
+            purpose="preview",
         )
     except Exception:
         return None

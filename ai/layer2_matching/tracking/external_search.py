@@ -25,6 +25,7 @@ from ai.layer2_matching.tracking.reverse_image_providers import (
     reverse_query_cache_key,
     reverse_search_provider_status,
 )
+from ai.shared.video_budget import adaptive_frame_plan, profile_media, should_skip_reverse_search
 from ai.shared.file_utils import ensure_dir, load_json, save_json
 
 
@@ -38,11 +39,11 @@ class ExternalSearchClient:
         cache_dir: str | Path,
         visual_embedder: VisualEmbeddingService,
         audio_verifier_embedder,
-        sample_fps: float = 0.5,
-        max_frames_per_video: int = 8,
+        sample_fps: float = 0.35,
+        max_frames_per_video: int = 4,
         verification_visual_threshold: float = 0.8,
         verification_audio_threshold: float = 0.75,
-        timeout_seconds: int = 20,
+        timeout_seconds: int = 6,
     ) -> None:
         self.cache_dir = ensure_dir(cache_dir)
         self.sample_fps = float(sample_fps)
@@ -91,7 +92,15 @@ class ExternalSearchClient:
             "introduction",
             "history of",
         ]
-        self.max_reverse_frames = 3
+        self.max_reverse_frames = 2
+
+    @staticmethod
+    def _strong_internal_match(local_matches: list[dict[str, object]]) -> bool:
+        for match in local_matches:
+            fused = float(match.get("fused_similarity") or match.get("combined_score") or match.get("visual_similarity") or 0.0)
+            if fused >= 0.9:
+                return True
+        return False
 
     @staticmethod
     def _frame_phash_bits(frame: Image.Image) -> np.ndarray:
@@ -152,11 +161,18 @@ class ExternalSearchClient:
         ]
 
     def _prepare_query_images(self, file_path: Path) -> list[Path]:
+        effective_sample_fps, effective_frames_per_video, profile = adaptive_frame_plan(
+            file_path,
+            purpose="reverse_search",
+            requested_sample_fps=max(0.35, self.sample_fps),
+            requested_frames_per_video=min(max(self.max_frames_per_video, 3), 4),
+        )
         frames = extract_sampled_frames(
             video_path=file_path,
             image_size=512,
-            sample_fps=max(1.0, self.sample_fps),
-            frames_per_video=max(self.max_frames_per_video * 2, 6),
+            sample_fps=effective_sample_fps,
+            frames_per_video=effective_frames_per_video,
+            purpose="reverse_search",
         )
 
         if not frames:
@@ -167,7 +183,7 @@ class ExternalSearchClient:
         query_paths: list[Path] = []
         selected_frames = self._select_diverse_frames(
             frames,
-            limit=1 if file_path.suffix.lower() in IMAGE_EXTENSIONS else min(self.max_reverse_frames, self.max_frames_per_video),
+            limit=1 if file_path.suffix.lower() in IMAGE_EXTENSIONS else min(self.max_reverse_frames, effective_frames_per_video or 1, 1 if profile.is_long_video else 2),
         )
         for index, (_, frame, frame_key) in enumerate(selected_frames, start=1):
             frame_path = frame_dir / f"frame_{index:02d}_{frame_key}.jpg"
@@ -423,7 +439,9 @@ class ExternalSearchClient:
         candidates: list[ReverseImageCandidate] = []
         search_target = self._ensure_public_query_url(image_path) or image_path
         query_public_url = search_target if isinstance(search_target, str) and search_target.startswith(("http://", "https://")) else None
-        for provider in self.reverse_providers:
+
+        def _provider_candidates(provider) -> list[ReverseImageCandidate]:
+            localized: list[ReverseImageCandidate] = []
             cached = self._load_provider_cache(provider.name, image_path)
             provider_candidates = cached if cached is not None and len(cached) >= max_results else []
             if cached is None or len(provider_candidates) < max_results:
@@ -439,7 +457,7 @@ class ExternalSearchClient:
             for candidate in provider_candidates:
                 metadata = dict(candidate.metadata)
                 metadata["frame_index"] = frame_index
-                candidates.append(
+                localized.append(
                     ReverseImageCandidate(
                         provider=candidate.provider,
                         page_url=candidate.page_url,
@@ -452,6 +470,20 @@ class ExternalSearchClient:
                         metadata=metadata,
                     )
                 )
+
+            return localized
+
+        if len(self.reverse_providers) <= 1:
+            for provider in self.reverse_providers:
+                candidates.extend(_provider_candidates(provider))
+            return candidates
+
+        with ThreadPoolExecutor(
+            max_workers=max(1, min(2, len(self.reverse_providers))),
+            thread_name_prefix="reverse-provider",
+        ) as executor:
+            for provider_result in executor.map(_provider_candidates, self.reverse_providers):
+                candidates.extend(provider_result)
         return candidates
 
     @staticmethod
@@ -616,9 +648,14 @@ class ExternalSearchClient:
         source_url: str | None = None,
     ) -> list[OccurrenceRecord]:
         file_path = Path(file_path)
+        skip_reverse_search, skip_reason, media_profile = should_skip_reverse_search(
+            file_path,
+            has_strong_internal_match=self._strong_internal_match(local_matches),
+            system_under_load=False,
+        )
 
         reverse_verified: list[OccurrenceRecord] = []
-        if self.reverse_providers and original_visual_embedding is not None:
+        if not skip_reverse_search and self.reverse_providers and original_visual_embedding is not None:
             reverse_candidates: list[ReverseImageCandidate] = []
             public_source_url = self._public_source_url(source_url)
             if public_source_url:
@@ -675,6 +712,10 @@ class ExternalSearchClient:
                 "Returned by text-based fallback because verified reverse-search results were unavailable.",
             )
             result.metadata.setdefault("reverse_source_url_used", bool(source_url))
+            if skip_reason:
+                result.metadata.setdefault("reduced_processing_note", skip_reason)
+            if media_profile.is_video:
+                result.metadata.setdefault("video_duration_seconds", round(float(media_profile.duration_seconds), 2))
         filtered_fallback = self._filter_low_signal_records(fallback_results)
         adjusted_fallback = [self._adjust_record_score(record) for record in filtered_fallback]
         adjusted_fallback.sort(key=lambda item: float(item.metadata.get("final_score", item.fused_similarity)), reverse=True)

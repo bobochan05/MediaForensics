@@ -10,6 +10,7 @@ import numpy as np
 
 from ai.layer1_detection.frame_extractor import extract_sampled_frames
 from ai.layer1_detection.models.clip_model import ClipModel
+from ai.shared.video_budget import adaptive_frame_plan
 
 PROMPT_TO_CONTENT_TYPE: dict[str, str] = {
     "a real photo of a human face": "real_human",
@@ -24,8 +25,8 @@ PROMPT_TO_CONTENT_TYPE: dict[str, str] = {
 
 CONTENT_PROMPTS: list[str] = list(PROMPT_TO_CONTENT_TYPE.keys())
 CONTENT_KEYS: list[str] = list(PROMPT_TO_CONTENT_TYPE.values())
-UNKNOWN_CONFIDENCE_THRESHOLD = 0.16
-UNKNOWN_MARGIN_THRESHOLD = 0.02
+LOW_CONFIDENCE_THRESHOLD = 0.30
+LOW_MARGIN_THRESHOLD = 0.05
 FACE_CASCADE = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class ContentClassification:
     content_type: str
     confidence: float
     raw_label: str
+    status: str
     all_scores: dict[str, float]
 
     def to_dict(self) -> dict[str, object]:
@@ -46,6 +48,7 @@ class ContentClassification:
             "content_type": self.content_type,
             "confidence": round(float(self.confidence), 4),
             "raw_label": self.raw_label,
+            "status": self.status,
             "all_scores": {key: round(float(value), 4) for key, value in self.all_scores.items()},
         }
 
@@ -73,7 +76,8 @@ def _unknown_result() -> ContentClassification:
     return ContentClassification(
         content_type="unknown",
         confidence=0.0,
-        raw_label="unknown",
+        raw_label="No strong semantic match detected",
+        status="low_confidence",
         all_scores={key: 0.0 for key in CONTENT_KEYS},
     )
 
@@ -125,12 +129,20 @@ def _heuristic_classification(frame) -> ContentClassification:
     normalized_scores = {key: float(value / total) for key, value in scores.items()}
     best_key = max(normalized_scores, key=normalized_scores.get)
     best_confidence = float(normalized_scores[best_key])
-    if best_confidence < 0.18:
+    sorted_scores = sorted(normalized_scores.values(), reverse=True)
+    second_confidence = float(sorted_scores[1]) if len(sorted_scores) > 1 else 0.0
+    if best_confidence < LOW_CONFIDENCE_THRESHOLD or (best_confidence - second_confidence) < LOW_MARGIN_THRESHOLD:
         best_key = "unknown"
+        raw_label = "No strong semantic match detected"
+        status = "low_confidence"
+    else:
+        raw_label = best_key
+        status = "ok"
     return ContentClassification(
         content_type=best_key,
         confidence=best_confidence,
-        raw_label=best_key,
+        raw_label=raw_label,
+        status=status,
         all_scores=normalized_scores,
     )
 
@@ -141,11 +153,18 @@ def classify_media_content(media_path: str | Path) -> dict[str, object]:
         return _unknown_result().to_dict()
 
     try:
+        effective_sample_fps, effective_frames_per_video, _ = adaptive_frame_plan(
+            input_path,
+            purpose="classification",
+            requested_sample_fps=0.5,
+            requested_frames_per_video=2,
+        )
         frames = extract_sampled_frames(
             video_path=input_path,
             image_size=224,
-            sample_fps=1.0,
-            frames_per_video=3,
+            sample_fps=effective_sample_fps,
+            frames_per_video=effective_frames_per_video,
+            purpose="classification",
         )
         if not frames:
             return _unknown_result().to_dict()
@@ -163,8 +182,12 @@ def classify_media_content(media_path: str | Path) -> dict[str, object]:
 
         sorted_probs = np.sort(probabilities)[::-1]
         second_confidence = float(sorted_probs[1]) if sorted_probs.size > 1 else 0.0
-        if best_confidence < UNKNOWN_CONFIDENCE_THRESHOLD or (best_confidence - second_confidence) < UNKNOWN_MARGIN_THRESHOLD:
+        status = "ok"
+        raw_label = best_prompt
+        if best_confidence < LOW_CONFIDENCE_THRESHOLD or (best_confidence - second_confidence) < LOW_MARGIN_THRESHOLD:
             best_type = "unknown"
+            raw_label = "No strong semantic match detected"
+            status = "low_confidence"
 
         all_scores = {
             PROMPT_TO_CONTENT_TYPE[prompt]: float(probabilities[index])
@@ -173,13 +196,24 @@ def classify_media_content(media_path: str | Path) -> dict[str, object]:
         return ContentClassification(
             content_type=best_type,
             confidence=best_confidence,
-            raw_label=best_prompt,
+            raw_label=raw_label,
+            status=status,
             all_scores=all_scores,
         ).to_dict()
     except Exception as exc:
         LOGGER.warning("Layer1 content classifier fell back to heuristics for %s: %s", input_path, exc)
         try:
-            fallback = _heuristic_classification(frames[0] if 'frames' in locals() and frames else extract_sampled_frames(video_path=input_path, image_size=224, sample_fps=1.0, frames_per_video=1)[0])
+            fallback = _heuristic_classification(
+                frames[0]
+                if "frames" in locals() and frames
+                else extract_sampled_frames(
+                    video_path=input_path,
+                    image_size=224,
+                    sample_fps=1.0,
+                    frames_per_video=1,
+                    purpose="classification",
+                )[0]
+            )
             return fallback.to_dict()
         except Exception as fallback_exc:
             LOGGER.warning("Layer1 content classifier fallback failed for %s: %s", input_path, fallback_exc)

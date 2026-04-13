@@ -66,6 +66,7 @@ def _extract_reference_frame(media_path: str | Path, image_size: int = HASH_PREP
             image_size=image_size,
             sample_fps=0.5,
             frames_per_video=1,
+            purpose="layer3",
         )
     except Exception:
         return None
@@ -212,6 +213,7 @@ def _preprocessed_embedding_for_media(media_path: str | Path, visual_embedder: V
             image_size=EMBED_PREPROCESS_SIZE,
             sample_fps=visual_embedder.sample_fps,
             frames_per_video=visual_embedder.max_frames_per_video,
+            purpose="embedding",
         )
     except Exception:
         return None

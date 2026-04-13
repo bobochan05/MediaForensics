@@ -11,8 +11,12 @@
     html[data-theme="blue"]{--bg:#d8ecf8;--bg2:#cfe5f4;--text:#1e293b;--strong:#0f172a;--muted:#475569;--line:rgba(96,165,250,.16);--a:#0284c7;--a2:#2563eb;--ok:#15803d;--warn:#c2410c;--bad:#be123c;--panel:rgba(255,255,255,.62);--panel-strong:rgba(255,255,255,.88);--surface:rgba(255,255,255,.58);--surface-soft:rgba(241,249,255,.92);--g1:rgba(125,211,252,.18);--g2:rgba(59,130,246,.08);--shadow-soft:0 18px 48px rgba(56,189,248,.16);--shadow-card:0 12px 32px rgba(14,116,144,.12)}
     *{box-sizing:border-box} html,body{margin:0;padding:0;min-height:100vh;overflow-x:hidden;font-family:Manrope,Inter,Segoe UI,Arial,sans-serif;color:var(--text);background:radial-gradient(circle at 82% 14%,var(--g1),transparent 40%),radial-gradient(circle at 12% 88%,var(--g2),transparent 42%),linear-gradient(160deg,var(--bg),var(--bg2))}
     .top{position:sticky;top:0;z-index:40;height:74px;background:rgba(8,14,25,.72);border-bottom:1px solid rgba(148,163,184,.08);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:0 10px 30px rgba(2,8,23,.18)}
-    .top-left,.top-right{display:flex;align-items:center;gap:10px;min-width:280px}.top-right{justify-content:flex-end}
+    .top-left,.top-right{display:flex;align-items:center;gap:10px;min-width:280px}.top-right{justify-content:flex-end;flex-wrap:wrap}
     .top-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}.logo{height:48px;width:auto;display:block}
+    .top-meta{display:none}
+    .top-mini{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.03);font-size:12px;color:var(--muted);line-height:1}
+    .top-mini strong{color:var(--strong);font-weight:800}
+    .top-mini .sep{opacity:.45}
     .chip{border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.04);color:var(--text);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:700;backdrop-filter:blur(12px)}
     .theme{border:1px solid rgba(148,163,184,.14);border-radius:12px;background:rgba(255,255,255,.04);color:var(--strong);padding:9px 12px;font-size:12px;font-weight:700;backdrop-filter:blur(12px)}
     html[data-theme="light"] .top,
@@ -392,7 +396,7 @@
     html[data-theme="light"] .toast,
     html[data-theme="blue"] .toast{background:rgba(255,255,255,.96)}
 
-    @media (max-width:1220px){.app-container{padding:12px 14px 16px 64px}.content-area{grid-template-columns:minmax(0,1fr)}.match-grid,.chart-grid,.strength-grid,.snapshot-grid,.content-class,.score-list,.layer3-intel-points,.layer3-summary,.layer3-grid,.distribution-wrap{grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:68px;flex-wrap:wrap;padding:10px 14px;gap:10px}.top-left,.top-right{min-width:unset}.main{gap:18px}.card,.header,.side-card,.snapshot{padding:16px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:16px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.upload-shell{grid-template-columns:260px minmax(0,1fr)}.drop{width:min(100%,260px)}.preview-stage{min-height:220px}}
+    @media (max-width:1220px){.app-container{padding:12px 14px 16px 64px}.content-area{grid-template-columns:minmax(0,1fr)}.match-grid,.chart-grid,.strength-grid,.snapshot-grid,.content-class,.score-list,.layer3-intel-points,.layer3-summary,.layer3-grid,.distribution-wrap{grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:68px;flex-wrap:wrap;padding:10px 14px;gap:10px}.top-left,.top-right{min-width:unset}.top-meta{justify-content:flex-start}.main{gap:18px}.card,.header,.side-card,.snapshot{padding:16px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:16px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.upload-shell{grid-template-columns:260px minmax(0,1fr)}.drop{width:min(100%,260px)}.preview-stage{min-height:220px}}
     @media (max-width:900px){.app-container{padding:14px}.sidebar{width:100%;height:auto;position:relative;left:auto;top:auto;padding:10px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:100%;padding:10px}.sidebar a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.sidebar a::after{display:none}.content-area{width:100%;grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.upload-shell{grid-template-columns:1fr}.upload-stage{padding-top:4px;justify-items:center}.upload-note{text-align:center}.drop{width:min(100%,260px);border-radius:22px;padding:18px}.drop::before{width:52px;height:52px;border-radius:18px;font-size:28px}.drop-main{font-size:15px}.preview-stage{min-height:220px}.breakdown-row{grid-template-columns:90px minmax(0,1fr) 42px}}
   </style>
 </head>
@@ -405,6 +409,11 @@
     <div class="top-center"><img class="logo" src="{{ url_for('static', filename='tracelyt-logo.png') }}" alt="Tracelyt logo" /></div>
     <div class="top-right">
       <span class="chip" id="authChip">Auth: loading...</span>
+      <div class="top-meta">
+        <span class="top-mini"><strong>User:</strong> <span id="sessionInlineUser">loading...</span><span class="sep">•</span><strong>Type:</strong> <span id="sessionInlineType">loading...</span></span>
+        <span class="top-mini"><strong>Scans:</strong> <span id="analysisInlineCount">0</span><span class="sep">•</span><strong>Last:</strong> <span id="analysisInlineLast">not yet</span></span>
+        <span class="top-mini"><strong>API:</strong> <span id="usageInlineText">0 / 5</span></span>
+      </div>
       <select id="themeSelect" class="theme" aria-label="Theme">
         <option value="dark">Dark</option>
         <option value="light">Light</option>
@@ -794,27 +803,8 @@
     </main>
 
     <aside class="right">
-      <section class="panel side-card">
-        <h3 class="side-ttl">Session Info</h3>
-        <div class="muted" id="sessionUser">User: loading...</div>
-        <div class="muted" id="sessionType">Type: loading...</div>
-        <div class="muted" id="analysisCount">Analysis count: 0</div>
-        <div class="muted" id="lastScanAt">Last scan: not yet</div>
-      </section>
-
-      <section class="panel side-card">
-        <h3 class="side-ttl">System Intelligence</h3>
-        <div class="muted" id="intelLine1">Model confidence stable.</div>
-        <div class="muted" id="intelLine2">Tracking active and ready.</div>
-        <div class="usage-wrap">
-          <div class="muted">API usage</div>
-          <div class="usage-track"><div class="usage-fill" id="usageFill"></div></div>
-          <div class="usage-copy" id="usageText">0 / 5</div>
-        </div>
-        <div class="quota-note" id="quotaNote">Guest limit reached. Please log in to continue analysis.</div>
-        <button class="btn small" id="loginToContinueBtn" type="button" style="display:none">Login to continue</button>
-      </section>
-
+      <div class="quota-note" id="quotaNote">Guest limit reached. Please log in to continue analysis.</div>
+      <button class="btn small" id="loginToContinueBtn" type="button" style="display:none">Login to continue</button>
       <section class="panel snapshot">
         <h3 class="side-ttl">Investigation Snapshot</h3>
         <div class="snapshot-copy" id="snapshotCopy">Run an analysis to populate the current verdict, source footprint, and risk indicators.</div>
@@ -977,10 +967,15 @@
       sessionType: document.getElementById("sessionType"),
       analysisCount: document.getElementById("analysisCount"),
       lastScanAt: document.getElementById("lastScanAt"),
+      sessionInlineUser: document.getElementById("sessionInlineUser"),
+      sessionInlineType: document.getElementById("sessionInlineType"),
+      analysisInlineCount: document.getElementById("analysisInlineCount"),
+      analysisInlineLast: document.getElementById("analysisInlineLast"),
       intelLine1: document.getElementById("intelLine1"),
       intelLine2: document.getElementById("intelLine2"),
       usageFill: document.getElementById("usageFill"),
       usageText: document.getElementById("usageText"),
+      usageInlineText: document.getElementById("usageInlineText"),
       quotaNote: document.getElementById("quotaNote"),
       loginToContinueBtn: document.getElementById("loginToContinueBtn"),
       toastStack: document.getElementById("toastStack"),
@@ -1498,44 +1493,309 @@
       attachCanvasTooltips(el.sourceDistributionCanvas);
     }
 
-    function drawPropagationGraph(graph){
-      const ctx = el.propagationCanvas.getContext("2d"); if(!ctx){ return; }
-      const w = el.propagationCanvas.width, h = el.propagationCanvas.height;
-      if(Number(graph.nodes || 0) <= 1){
-        drawCanvasEmpty(ctx, el.propagationCanvas, "Not enough data to map propagation yet");
-        attachCanvasTooltips(el.propagationCanvas);
+    function propagationRiskColor(level, newest){
+      const normalized = String(level || "").toLowerCase();
+      let color = "#93c5fd";
+      if(normalized === "critical"){ color = "#fb7185"; }
+      else if(normalized === "high"){ color = "#fb923c"; }
+      else if(normalized === "medium"){ color = "#fbbf24"; }
+      else if(normalized === "low"){ color = "#34d399"; }
+      return newest ? "#e2e8f0" : color;
+    }
+
+    function normalizePropagationGraph(graph){
+      const raw = graph && typeof graph === "object" ? graph : {};
+      const rawNodes = Array.isArray(raw.node_list) ? raw.node_list.filter((item)=>item && typeof item === "object") : [];
+      const nodes = rawNodes
+        .slice(0, 14)
+        .sort((a, b)=>{
+          const aTime = new Date(a.timestamp || 0).getTime();
+          const bTime = new Date(b.timestamp || 0).getTime();
+          if(!Number.isNaN(aTime) && !Number.isNaN(bTime) && aTime !== bTime){ return aTime - bTime; }
+          return Number(a.sequence || 0) - Number(b.sequence || 0);
+        })
+        .map((item, index)=>({
+          id: String(item.id || `node-${index + 1}`),
+          label: String(item.label || (index === 0 ? "Origin" : `Variant ${index}`)),
+          timestamp: item.timestamp || "",
+          mentions: Number(item.mentions || item.importance || 1),
+          importance: Number(item.importance || item.mentions || 1),
+          domain: String(item.domain || ""),
+          similarityScore: Number(item.similarity_score || 0),
+          detectionScore: Number(item.detection_score || 0),
+          riskScore: Number(item.risk_score || 0),
+          riskLevel: String(item.risk_level || "low"),
+          newest: Boolean(item.newest),
+          sequence: Number(item.sequence || index + 1),
+        }));
+      const visibleIds = new Set(nodes.map((item)=>item.id));
+      const edges = (Array.isArray(raw.edge_list) ? raw.edge_list : [])
+        .filter((item)=>item && typeof item === "object" && visibleIds.has(String(item.source || "")) && visibleIds.has(String(item.target || "")))
+        .map((item)=>({
+          source: String(item.source || ""),
+          target: String(item.target || ""),
+          similarityScore: Number(item.similarity_score || 0),
+          kind: String(item.kind || "reappearance"),
+          timestamp: item.timestamp || "",
+        }));
+      return {
+        nodes,
+        edges,
+        variationDetected: Boolean(raw.variation_detected),
+        newestNodeId: String(raw.newest_node_id || (nodes.length ? nodes[nodes.length - 1].id : "")),
+        playbackOrder: Array.isArray(raw.playback_order) && raw.playback_order.length
+          ? raw.playback_order.map((item)=>String(item || "")).filter((item)=>visibleIds.has(item))
+          : nodes.map((item)=>item.id),
+        sampled: Boolean(raw.sampled),
+      };
+    }
+
+    function updatePropagationControls(graph){
+      const total = graph && Array.isArray(graph.nodes) ? graph.nodes.length : 0;
+      const step = Math.max(0, Math.min(total - 1, Number(state.propagationStep || 0)));
+      const isPlayable = total > 1;
+      if(el.propagationPlayBtn){
+        el.propagationPlayBtn.disabled = !isPlayable;
+        el.propagationPlayBtn.classList.toggle("on", Boolean(state.propagationAutoplay && isPlayable));
+        el.propagationPlayBtn.textContent = state.propagationAutoplay && isPlayable ? "Pause" : "Auto-play";
+      }
+      if(el.propagationPrevBtn){ el.propagationPrevBtn.disabled = !isPlayable || step <= 0; }
+      if(el.propagationNextBtn){ el.propagationNextBtn.disabled = !isPlayable || step >= total - 1; }
+      if(el.propagationStatus){
+        if(!total){
+          el.propagationStatus.textContent = "Waiting for graph data";
+        }else{
+          const selected = state.propagationSelectedNodeId ? " • node selected" : "";
+          const sampled = graph.sampled ? " • sampled" : "";
+          el.propagationStatus.textContent = `Showing ${Math.min(total, step + 1)} of ${total} nodes${state.propagationAutoplay && isPlayable ? " • autoplay" : ""}${selected}${sampled}`;
+        }
+      }
+    }
+
+    function stopPropagationPlayback(){
+      if(state.propagationTimer){
+        clearInterval(state.propagationTimer);
+        state.propagationTimer = null;
+      }
+      state.propagationAutoplay = false;
+      updatePropagationControls(state.propagationGraphData || { nodes: [] });
+    }
+
+    function setPropagationFrame(nextIndex){
+      const graph = state.propagationGraphData || { nodes: [] };
+      const total = Array.isArray(graph.nodes) ? graph.nodes.length : 0;
+      if(!total){
+        state.propagationStep = 0;
+        updatePropagationControls(graph);
         return;
       }
-      ctx.clearRect(0,0,w,h);
-      const nodes = Math.max(1, Math.min(12, Number(graph.nodes || 0) || 1));
-      const centerX = w / 2, centerY = h / 2, radius = Math.min(w, h) * 0.34;
-      const positions = [];
-      for(let i=0;i<nodes;i+=1){
-        const angle = (Math.PI * 2 * i / nodes) - Math.PI / 2;
-        positions.push({ x:centerX + Math.cos(angle) * radius, y:centerY + Math.sin(angle) * radius });
+      state.propagationStep = Math.max(0, Math.min(total - 1, Number(nextIndex || 0)));
+      updatePropagationControls(graph);
+      if(state.layer3Visible){
+        drawPropagationGraph(graph);
       }
-      ctx.strokeStyle = "rgba(96,165,250,.24)";
-      ctx.lineWidth = 1.2;
-      for(let i=1;i<positions.length;i+=1){
+    }
+
+    function togglePropagationAutoplay(forceOn){
+      const graph = state.propagationGraphData || { nodes: [] };
+      const total = Array.isArray(graph.nodes) ? graph.nodes.length : 0;
+      if(total <= 1){
+        stopPropagationPlayback();
+        return;
+      }
+      const shouldPlay = typeof forceOn === "boolean" ? forceOn : !state.propagationAutoplay;
+      if(!shouldPlay){
+        stopPropagationPlayback();
+        return;
+      }
+      if(state.propagationStep >= total - 1){
+        state.propagationStep = 0;
+      }
+      state.propagationAutoplay = true;
+      updatePropagationControls(graph);
+      if(state.propagationTimer){ clearInterval(state.propagationTimer); }
+      state.propagationTimer = window.setInterval(()=>{
+        if(state.propagationStep >= total - 1){
+          stopPropagationPlayback();
+          return;
+        }
+        setPropagationFrame(state.propagationStep + 1);
+      }, 900);
+    }
+
+    function bindPropagationCanvas(){
+      if(!el.propagationCanvas || el.propagationCanvas.dataset.graphBound === "1"){ return; }
+      el.propagationCanvas.dataset.graphBound = "1";
+      el.propagationCanvas.addEventListener("click", (event)=>{
+        const points = Array.isArray(el.propagationCanvas._graphPoints) ? el.propagationCanvas._graphPoints : [];
+        if(!points.length){
+          state.propagationSelectedNodeId = "";
+          return;
+        }
+        const rect = el.propagationCanvas.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * el.propagationCanvas.width;
+        const y = ((event.clientY - rect.top) / rect.height) * el.propagationCanvas.height;
+        let hit = null;
+        points.forEach((point)=>{
+          const dx = x - Number(point.x || 0);
+          const dy = y - Number(point.y || 0);
+          if(Math.sqrt(dx * dx + dy * dy) <= Number(point.radius || 20)){
+            hit = point.id;
+          }
+        });
+        state.propagationSelectedNodeId = state.propagationSelectedNodeId === hit ? "" : (hit || "");
+        drawPropagationGraph(state.propagationGraphData || { nodes: [] });
+      });
+    }
+
+    function setPropagationGraph(graph, graphKey){
+      const normalized = normalizePropagationGraph(graph);
+      const nextKey = `${String(graphKey || "current")}:${normalized.nodes.map((item)=>item.id).join("|")}:${normalized.edges.length}`;
+      const changed = state.propagationGraphKey !== nextKey;
+      state.propagationGraphKey = nextKey;
+      state.propagationGraphData = normalized;
+      if(changed){
+        state.propagationSelectedNodeId = "";
+        state.propagationStep = normalized.nodes.length > 1 ? 0 : Math.max(0, normalized.nodes.length - 1);
+        stopPropagationPlayback();
+        if(normalized.nodes.length > 1 && state.layer3Visible){
+          togglePropagationAutoplay(true);
+        }else{
+          updatePropagationControls(normalized);
+        }
+      }else{
+        updatePropagationControls(normalized);
+      }
+      if(state.layer3Visible){
+        drawPropagationGraph(normalized);
+      }
+    }
+
+    function drawPropagationGraph(graph){
+      const ctx = el.propagationCanvas.getContext("2d"); if(!ctx){ return; }
+      const data = graph && Array.isArray(graph.nodes) ? graph : normalizePropagationGraph(graph);
+      const w = el.propagationCanvas.width, h = el.propagationCanvas.height;
+      if(!data.nodes.length || data.nodes.length <= 1){
+        drawCanvasEmpty(ctx, el.propagationCanvas, "Not enough data to map propagation yet");
+        el.propagationCanvas._graphPoints = [];
+        attachCanvasTooltips(el.propagationCanvas);
+        updatePropagationControls(data);
+        return;
+      }
+      const playbackIds = new Set(data.playbackOrder.slice(0, Math.max(1, state.propagationStep + 1)));
+      const visibleNodes = data.nodes.filter((node)=>playbackIds.has(node.id));
+      const visibleIds = new Set(visibleNodes.map((node)=>node.id));
+      const visibleEdges = data.edges.filter((edge)=>visibleIds.has(edge.source) && visibleIds.has(edge.target));
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(9,17,31,.3)";
+      ctx.fillRect(0, 0, w, h);
+
+      const padX = 58;
+      const padY = 24;
+      const innerW = w - padX * 2;
+      const innerH = h - padY * 2 - 8;
+      const uniqueDomains = Array.from(new Set(data.nodes.map((node)=>String(node.domain || "cluster")).filter(Boolean))).slice(0, 4);
+      const laneCount = Math.max(1, uniqueDomains.length || 1);
+      const laneMap = new Map(uniqueDomains.map((domain, index)=>[domain, index]));
+      const timestamps = data.nodes.map((node)=>new Date(node.timestamp || 0).getTime()).filter((value)=>!Number.isNaN(value));
+      const minTime = timestamps.length ? Math.min(...timestamps) : 0;
+      const maxTime = timestamps.length ? Math.max(...timestamps) : minTime + Math.max(1, data.nodes.length - 1);
+
+      const positioned = data.nodes.map((node, index)=>{
+        const rawTime = new Date(node.timestamp || 0).getTime();
+        const ratio = maxTime > minTime && !Number.isNaN(rawTime)
+          ? (rawTime - minTime) / Math.max(1, maxTime - minTime)
+          : (index / Math.max(1, data.nodes.length - 1));
+        const laneKey = String(node.domain || uniqueDomains[index % laneCount] || "cluster");
+        const laneIndex = laneMap.has(laneKey) ? Number(laneMap.get(laneKey)) : (index % laneCount);
+        const x = padX + ratio * innerW;
+        const y = padY + 18 + (laneCount === 1 ? innerH / 2 : laneIndex * ((innerH - 36) / Math.max(1, laneCount - 1)));
+        return {
+          ...node,
+          x,
+          y,
+          radius: 8 + Math.min(12, Number(node.importance || 1) * 1.8),
+        };
+      });
+      const nodeMap = new Map(positioned.map((node)=>[node.id, node]));
+
+      ctx.strokeStyle = "rgba(148,163,184,.1)";
+      ctx.lineWidth = 1;
+      for(let i = 0; i < 4; i += 1){
+        const guideX = padX + (innerW * i / 3);
         ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(positions[i].x, positions[i].y);
+        ctx.moveTo(guideX, padY);
+        ctx.lineTo(guideX, h - padY);
         ctx.stroke();
       }
-      ctx.fillStyle = "#60a5fa";
-      ctx.beginPath(); ctx.arc(centerX, centerY, 8, 0, Math.PI * 2); ctx.fill();
-      positions.forEach((point, index)=>{
-        if(index===0){ return; }
-        ctx.fillStyle = graph.variation_detected ? "#fbbf24" : "#93c5fd";
-        ctx.beginPath(); ctx.arc(point.x, point.y, 5, 0, Math.PI * 2); ctx.fill();
+
+      const selectedId = String(state.propagationSelectedNodeId || "");
+      const connectedIds = new Set();
+      visibleEdges.forEach((edge)=>{
+        if(edge.source === selectedId || edge.target === selectedId){
+          connectedIds.add(edge.source);
+          connectedIds.add(edge.target);
+        }
       });
-      el.propagationCanvas._tooltipPoints = [
-        { x:centerX, y:centerY, radius:16, title:"Origin node", body:"Represents the central tracked content instance in this cluster." },
-        ...positions.slice(1).map((point, index)=>({
-          x: point.x, y: point.y, radius:16, title:`Variant ${index + 1}`, body: graph.variation_detected ? "A transformed or edited variant linked by similarity." : "A related content instance linked by similarity."
-        }))
-      ];
+
+      visibleEdges.forEach((edge)=>{
+        const source = nodeMap.get(edge.source);
+        const target = nodeMap.get(edge.target);
+        if(!source || !target){ return; }
+        const active = !selectedId || edge.source === selectedId || edge.target === selectedId;
+        ctx.strokeStyle = active ? "rgba(96,165,250,.72)" : "rgba(71,85,105,.28)";
+        ctx.lineWidth = active ? 2.2 : 1.2;
+        ctx.beginPath();
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.stroke();
+      });
+
+      const tooltipPoints = [];
+      positioned.forEach((node)=>{
+        const visible = visibleIds.has(node.id);
+        if(!visible){ return; }
+        const active = !selectedId || node.id === selectedId || connectedIds.has(node.id);
+        ctx.beginPath();
+        ctx.fillStyle = active ? propagationRiskColor(node.riskLevel, false) : "rgba(100,116,139,.45)";
+        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+        ctx.fill();
+        if(node.id === data.newestNodeId || node.newest){
+          ctx.beginPath();
+          ctx.strokeStyle = "rgba(255,255,255,.95)";
+          ctx.lineWidth = 2;
+          ctx.arc(node.x, node.y, node.radius + 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        if(selectedId && node.id === selectedId){
+          ctx.beginPath();
+          ctx.strokeStyle = "rgba(96,165,250,.95)";
+          ctx.lineWidth = 2.4;
+          ctx.arc(node.x, node.y, node.radius + 7, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.fillStyle = "rgba(226,232,240,.82)";
+        ctx.font = "10px sans-serif";
+        ctx.fillText(String(node.sequence || ""), node.x - 3, node.y + 3);
+        tooltipPoints.push({
+          id: node.id,
+          x: node.x,
+          y: node.y,
+          radius: node.radius + 12,
+          title: `${String(node.label || "")} • ${safeDate(node.timestamp)}`,
+          body: `Similarity ${Number(node.similarityScore || 0).toFixed(2)} • Detection ${Number(node.detectionScore || 0).toFixed(2)} • ${Number(node.mentions || 0)} observed matches${node.domain ? ` • ${node.domain}` : ""}`,
+        });
+      });
+
+      ctx.fillStyle = "rgba(226,232,240,.72)";
+      ctx.font = "11px sans-serif";
+      ctx.fillText("Earlier detections", padX, h - 6);
+      ctx.fillText("Newest activity", Math.max(padX, w - 136), h - 6);
+
+      el.propagationCanvas._tooltipPoints = tooltipPoints;
+      el.propagationCanvas._graphPoints = tooltipPoints;
       attachCanvasTooltips(el.propagationCanvas);
+      updatePropagationControls(data);
     }
 
     function buildLayer3Events(l3, alerts){
@@ -2109,6 +2369,7 @@
       const strengthDistribution = Array.isArray(visuals.match_strength_distribution) ? visuals.match_strength_distribution : [];
       const sourceDistribution = Array.isArray(visuals.source_distribution) ? visuals.source_distribution : [];
       const riskBreakdown = visuals.risk_metrics && typeof visuals.risk_metrics === "object" ? visuals.risk_metrics : {};
+      const propagationGraph = normalizePropagationGraph(l3.propagation_graph || {});
       const clusterSize = Number(spread.cluster_size || srcCount || 0);
       const velocity = Number(spread.spread_velocity || 0);
       const lvl = classifyGrowth(growth, risk, srcCount);
@@ -2145,7 +2406,7 @@
       const strongestBand = strengthDistribution.reduce((best, item)=>Number(item.count || 0) > Number(best.count || 0) ? item : best, strengthDistribution[0] || { label:"0.0-0.2", count:0 });
       el.histogramMeta.textContent = `Latest cluster size ${latestCluster}`;
       el.strengthMeta.textContent = `Most evidence falls in ${String(strongestBand.label || "0.0-0.2")}`;
-      el.propagationMeta.textContent = `${Number((l3.propagation_graph || {}).nodes || 0)} nodes · ${Number((l3.propagation_graph || {}).edges || 0)} edges`;
+      el.propagationMeta.textContent = `${propagationGraph.nodes.length} nodes · ${propagationGraph.edges.length} edges`;
       el.riskBreakdownMeta.textContent = `Risk level ${lvlText}`;
       el.distributionMeta.textContent = `${platformDiversity} domain${platformDiversity !== 1 ? "s" : ""} observed`;
       setInsight(
@@ -2167,8 +2428,12 @@
       );
       setInsight(
         el.propagationInsight,
-        Number((l3.propagation_graph || {}).nodes || 0) > 2 ? "medium" : "low",
-        Number((l3.propagation_graph || {}).nodes || 0) > 2 ? "🕸 Multiple connected variants detected" : "⚠ Not enough data to map propagation yet"
+        propagationGraph.nodes.length > 4 ? "high" : propagationGraph.nodes.length > 2 ? "medium" : "low",
+        propagationGraph.nodes.length > 4
+          ? "🕸 Spread is evolving across multiple connected detections"
+          : propagationGraph.nodes.length > 2
+            ? "🕸 Relationships between variants are now visible over time"
+            : "⚠ Not enough data to map propagation yet"
       );
 
       const alerts = Array.isArray(l3.alerts) ? l3.alerts : [];
@@ -2181,6 +2446,7 @@
         const fallback = lvl === "viral" ? "Spike detected in the latest observation window. Review response priority." : srcCount > 0 ? "New source detected. Continue monitoring for propagation changes." : "No spread detected yet. Monitoring will continue over time.";
         el.alertList.innerHTML = `<div class="alert">${fallback}</div>`;
       }
+      setPropagationGraph(l3.propagation_graph || {}, analysisKey);
       if(state.layer3Visible){
         drawTimeline(timeline);
         drawClusterGrowth(clusterGrowth);
@@ -2197,7 +2463,6 @@
             ? l2.domain_distribution
             : Object.entries(l2.domain_clusters || {}).map(([domain, items])=>({ domain, count: Array.isArray(items) ? items.length : 0 })));
         drawSourceDistribution(distribution);
-        drawPropagationGraph(l3.propagation_graph || {});
       }
       const events = buildLayer3Events(l3, alerts);
       el.eventFeedMeta.textContent = `${events.length} recent signal${events.length !== 1 ? "s" : ""}`;
@@ -2268,11 +2533,14 @@
       el.userChip.textContent = `User: ${user}`;
       el.authChip.textContent = `Auth: ${auth}`;
       el.attemptChip.textContent = `Attempts: ${used}/${limit}`;
-      el.sessionUser.textContent = `User: ${user}`;
-      el.sessionType.textContent = `Type: ${auth === "user" ? "Pro" : auth === "guest" ? "Guest" : "Anonymous"}`;
+      if(el.sessionUser){ el.sessionUser.textContent = `User: ${user}`; }
+      if(el.sessionType){ el.sessionType.textContent = `Type: ${auth === "user" ? "Pro" : auth === "guest" ? "Guest" : "Anonymous"}`; }
+      if(el.sessionInlineUser){ el.sessionInlineUser.textContent = `${user}`; }
+      if(el.sessionInlineType){ el.sessionInlineType.textContent = `${auth === "user" ? "Pro" : auth === "guest" ? "Guest" : "Anonymous"}`; }
       const pct = Math.max(0, Math.min(100, limit ? (used / limit) * 100 : 0));
       if(el.usageFill){ el.usageFill.style.width = `${pct}%`; }
       if(el.usageText){ el.usageText.textContent = `${used} / ${limit}`; }
+      if(el.usageInlineText){ el.usageInlineText.textContent = `${used} / ${limit}`; }
       const guestBlocked = auth !== "user" && used >= limit;
       if(el.quotaNote){ el.quotaNote.classList.toggle("on", guestBlocked); }
       if(el.loginToContinueBtn){ el.loginToContinueBtn.style.display = guestBlocked ? "inline-flex" : "none"; }
@@ -2281,17 +2549,10 @@
     }
 
     function renderSidebarIntel(){
-      el.analysisCount.textContent = `Analysis count: ${state.analysisCount}`;
-      el.lastScanAt.textContent = `Last scan: ${state.lastScanAt ? safeDate(state.lastScanAt) : "not yet"}`;
-      if(state.analysis){
-        const conf = Number(state.analysis.layer1 && state.analysis.layer1.confidence || 0);
-        const risk = Number(state.analysis.layer3 && (state.analysis.layer3.risk_score || (state.analysis.layer3.risk && state.analysis.layer3.risk.risk_score)) || 0);
-        el.intelLine1.textContent = conf >= 80 ? "Model confidence stable." : "Confidence moderate. Manual verification recommended.";
-        el.intelLine2.textContent = risk >= 0.7 ? "Tracking active with high-risk signal." : "Tracking active and stable.";
-      }else{
-        el.intelLine1.textContent = "Model confidence stable.";
-        el.intelLine2.textContent = "Tracking active and ready.";
-      }
+      if(el.analysisCount){ el.analysisCount.textContent = `Analysis count: ${state.analysisCount}`; }
+      if(el.lastScanAt){ el.lastScanAt.textContent = `Last scan: ${state.lastScanAt ? safeDate(state.lastScanAt) : "not yet"}`; }
+      if(el.analysisInlineCount){ el.analysisInlineCount.textContent = `${state.analysisCount}`; }
+      if(el.analysisInlineLast){ el.analysisInlineLast.textContent = `${state.lastScanAt ? safeDate(state.lastScanAt) : "not yet"}`; }
       renderSnapshotCard();
     }
 
@@ -2351,6 +2612,9 @@
         if(!visible){ return; }
         state.layer3Visible = true;
         if(state.analysis){ renderLayer3(state.analysis); }
+        if(state.propagationGraphData && Array.isArray(state.propagationGraphData.nodes) && state.propagationGraphData.nodes.length > 1 && !state.propagationAutoplay && state.propagationStep === 0){
+          togglePropagationAutoplay(true);
+        }
         observer.disconnect();
       }, { rootMargin: "140px 0px" });
       observer.observe(document.getElementById("layer3Card"));
@@ -2529,6 +2793,11 @@
     }
 
     function resetAll(){
+      stopPropagationPlayback();
+      state.propagationGraphKey = "";
+      state.propagationGraphData = null;
+      state.propagationStep = 0;
+      state.propagationSelectedNodeId = "";
       state.file = null; state.analysis = null; state.activeDomainFilter = ""; state.activeJobId = "";
       if(state.pollTimer){ clearTimeout(state.pollTimer); state.pollTimer = null; }
       stopBackgroundLayer3Refresh();
@@ -2595,6 +2864,7 @@
       el.histogramMeta.textContent = "How the cluster is expanding over time";
       el.strengthMeta.textContent = "Similarity score distribution across current evidence";
       el.propagationMeta.textContent = "Variant connectivity";
+      el.propagationStatus.textContent = "Waiting for graph data";
       el.riskBreakdownMeta.textContent = "How Layer 3 is scoring this case";
       el.distributionMeta.textContent = "Active public domains";
       el.riskBreakdownList.innerHTML = "";

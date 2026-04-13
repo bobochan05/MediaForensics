@@ -9,6 +9,7 @@ from PIL import Image
 
 from ai.layer1_detection.frame_extractor import extract_sampled_frames
 from ai.layer1_detection.models.clip_model import ClipModel
+from ai.shared.video_budget import adaptive_frame_plan
 
 
 def _normalize(vector: np.ndarray) -> np.ndarray:
@@ -57,11 +58,7 @@ class VisualEmbeddingService:
 
     def _generate_views(self, image: Image.Image) -> list[Image.Image]:
         base = image.convert("RGB")
-        return [
-            base,
-            self._center_crop(base, 0.9),
-            self._center_crop(base, 0.75),
-        ]
+        return [base]
 
     def embed_images(self, images: Sequence[Image.Image]) -> np.ndarray:
         if not images:
@@ -82,11 +79,18 @@ class VisualEmbeddingService:
         return _normalize(np.mean(frame_embeddings, axis=0))
 
     def embed_media(self, media_path: str | Path) -> np.ndarray:
+        effective_sample_fps, effective_frames_per_video, _ = adaptive_frame_plan(
+            media_path,
+            purpose="embedding",
+            requested_sample_fps=self.sample_fps,
+            requested_frames_per_video=self.max_frames_per_video,
+        )
         frames = extract_sampled_frames(
             video_path=media_path,
             image_size=self.image_size,
-            sample_fps=self.sample_fps,
-            frames_per_video=self.max_frames_per_video,
+            sample_fps=effective_sample_fps,
+            frames_per_video=effective_frames_per_video,
+            purpose="embedding",
         )
         if not frames:
             raise ValueError(f"No frames available for visual embedding: {media_path}")

@@ -3615,12 +3615,23 @@ def _run_layer2_discovery(
         reverse_related_matches,
         limit=DISCOVERY_SECTION_LIMIT,
     )
-    if not embedding_matches_top10:
-        embedding_matches_top10 = _fallback_related_matches(
+    if len(embedding_matches_top10) < DISCOVERY_SECTION_LIMIT:
+        existing_related_keys = {
+            identity
+            for item in embedding_matches_top10
+            if (identity := _item_identity(item))
+        }
+        fallback_related = _fallback_related_matches(
             external_items,
-            excluded_keys=consumed_keys,
-            limit=DISCOVERY_SECTION_LIMIT,
+            excluded_keys={*consumed_keys, *existing_related_keys},
+            limit=max(0, DISCOVERY_SECTION_LIMIT - len(embedding_matches_top10)),
         )
+        if fallback_related:
+            embedding_matches_top10 = _merge_section_items(
+                embedding_matches_top10,
+                fallback_related,
+                limit=DISCOVERY_SECTION_LIMIT,
+            )
 
     has_matches = bool(exact_matches or visual_matches_top10 or embedding_matches_top10)
     payload = build_layer2_response(
