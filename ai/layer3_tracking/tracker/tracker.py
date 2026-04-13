@@ -5,7 +5,7 @@ import os
 import threading
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -27,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _utcnow() -> datetime:
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 
 def _extract_urls_from_layer2_payload(payload: dict[str, Any]) -> list[str]:

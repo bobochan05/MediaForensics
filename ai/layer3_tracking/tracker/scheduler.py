@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from threading import Lock
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -37,7 +37,7 @@ class Layer3Scheduler:
         )
         self.scheduler.add_job(
             self.run_startup_recovery,
-            DateTrigger(run_date=datetime.now(UTC) + timedelta(seconds=15)),
+            DateTrigger(run_date=datetime.now(timezone.utc) + timedelta(seconds=15)),
             id="layer3-startup-recovery",
             replace_existing=True,
             max_instances=1,
@@ -60,10 +60,10 @@ class Layer3Scheduler:
             LOGGER.warning("Skipping scheduled Layer 3 tracking cycle because another run is active")
             return
         try:
-            self.last_run_started_at = datetime.now(UTC)
+            self.last_run_started_at = datetime.now(timezone.utc)
             LOGGER.info("Running scheduled Layer 3 tracking cycle")
             self.tracking_service.track_all_content()
-            self.last_run_completed_at = datetime.now(UTC)
+            self.last_run_completed_at = datetime.now(timezone.utc)
         finally:
             self._run_lock.release()
 

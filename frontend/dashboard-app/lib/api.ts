@@ -100,6 +100,7 @@ export async function analyzeMedia(file: File, toggles: AnalysisToggles): Promis
 
 export async function sendChatMessage(input: {
   message: string;
+  analysis_id?: string;
   layer1?: Record<string, unknown>;
   layer2?: Record<string, unknown>;
   layer3?: Record<string, unknown>;
@@ -119,4 +120,29 @@ export async function sendChatMessage(input: {
   }
 
   return payload as unknown as ChatResponse;
+}
+
+export async function fetchAnalysisSummary(uploadId: string): Promise<{ summary: string; provider: string }> {
+  if (USE_DUMMY) {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    return {
+      summary: "## Summary\nThis content appears to be highly suspicious...\n\n## Key Findings\n- AI artifacts detected in Layer 1\n- Multiple source matches in Layer 2",
+      provider: "mock",
+    };
+  }
+
+  const res = await requestWithRefresh("/api/analysis-summary", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ upload_id: uploadId }),
+  });
+
+  if (!res.ok) {
+    const payload = await parseJsonSafe<Record<string, unknown>>(res);
+    throw new Error(String(payload.error || "Failed to fetch AI summary."));
+  }
+
+  return res.json();
 }

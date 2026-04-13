@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from ai.layer3_tracking.db.models import ContentStatus
 
@@ -35,9 +35,9 @@ class RiskAnalyzer:
         if previous_checked_at is None:
             return 1.0
         if current_checked_at.tzinfo is not None and previous_checked_at.tzinfo is None:
-            previous_checked_at = previous_checked_at.replace(tzinfo=UTC)
+            previous_checked_at = previous_checked_at.replace(tzinfo=timezone.utc)
         elif current_checked_at.tzinfo is None and previous_checked_at.tzinfo is not None:
-            current_checked_at = current_checked_at.replace(tzinfo=UTC)
+            current_checked_at = current_checked_at.replace(tzinfo=timezone.utc)
         hours = (current_checked_at - previous_checked_at).total_seconds() / 3600.0
         return hours if hours > 0 else 1.0
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import { ExternalLink } from "lucide-react";
@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ReportGenerator } from "@/components/dashboard/report-generator";
 import { useDashboardStore } from "@/store/dashboard-store";
 import { shortDateTime } from "@/lib/utils";
+import { InsightSummary } from "@/components/dashboard/insight-summary";
 
 export function ResultsPanel() {
   const result = useDashboardStore((state) => state.result);
@@ -41,6 +42,8 @@ export function ResultsPanel() {
 
   return (
     <div className="space-y-4">
+      <InsightSummary uploadId={result.analysis_id} />
+
       <Card>
         <CardHeader>
           <div>

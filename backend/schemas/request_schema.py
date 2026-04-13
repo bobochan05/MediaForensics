@@ -38,6 +38,7 @@ class AnalyzeRequest:
 @dataclass(frozen=True)
 class ChatRequest:
     message: str
+    analysis_id: str | None
     layer1: dict[str, Any]
     layer2: dict[str, Any]
     layer3: dict[str, Any]
@@ -48,6 +49,7 @@ class ChatRequest:
         message = str(payload.get("message") or "").strip()
         if not message:
             raise ValueError("message is required.")
+        analysis_id = str(payload.get("analysis_id") or "").strip() or None
         context = payload.get("context") if isinstance(payload.get("context"), dict) else {}
         history_payload = payload.get("history") if isinstance(payload.get("history"), list) else []
         history: list[dict[str, str]] = []
@@ -61,6 +63,7 @@ class ChatRequest:
             history.append({"role": role, "content": content[:1200]})
         return cls(
             message=message,
+            analysis_id=analysis_id,
             layer1=context.get("layer1") if isinstance(context.get("layer1"), dict) else (payload.get("layer1") if isinstance(payload.get("layer1"), dict) else {}),
             layer2=context.get("layer2") if isinstance(context.get("layer2"), dict) else (payload.get("layer2") if isinstance(payload.get("layer2"), dict) else {}),
             layer3=context.get("layer3") if isinstance(context.get("layer3"), dict) else (payload.get("layer3") if isinstance(payload.get("layer3"), dict) else {}),

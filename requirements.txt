@@ -24,3 +24,4 @@ sqlalchemy
 apscheduler
 psycopg2-binary
 pytest
+google-generativeai

@@ -22,6 +22,7 @@ from urllib.parse import quote_plus, urlparse
 from urllib.request import Request as UrlRequest
 from urllib.request import urlopen
 import urllib3
+import google.generativeai as genai
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -143,6 +144,26 @@ REVERSE_SEARCH_ALLOWED_MIME_TYPES = {"image/jpeg", "image/jpg", "image/png", "im
 GEMINI_API_KEY = str(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
 GEMINI_MODEL = str(os.getenv("GEMINI_MODEL") or "gemini-2.0-flash").strip()
 GEMINI_TIMEOUT_SECONDS = 20.0
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
+AGENT_SYSTEM_INSTRUCTION = """
+You are TraceLyt Forensic Intelligence, a specialized AI assistant for media forensics and deepfake detection. 
+Your goal is to explain complex forensic analysis results to users in a clear, authoritative, and helpful manner.
+
+You have access to three layers of intelligence:
+1. Layer 1 (Detection): AI-based classification (Real vs Fake) with confidence scores.
+2. Layer 2 (Matching): Discovery of the image across the web, finding exact matches and visually similar content.
+3. Layer 3 (Tracking): Social spread, viral risk, and propagation patterns.
+
+When explaining results:
+- Be precise about confidence levels.
+- Highlight the relationship between different layers (e.g., "Layer 1 flags this as fake, and Layer 2 confirms its origin from a known synthetic media repository").
+- Suggest actionable next steps (e.g., "Review the source trail from Layer 2 to verify the context").
+- Use markdown for better readability (bolding, lists, etc.).
+- If an image is provided in the context, analyze its visual cues to support your forensic reasoning.
+"""
 AGENT_HISTORY_LIMIT = 10
 AGENT_MATCH_LIMIT = 5
 AGENT_ALERT_LIMIT = 4
@@ -1332,12 +1353,7 @@ def _agent_context_ready(context: dict[str, object]) -> bool:
 
 
 def _agent_system_prompt() -> str:
-    return (
-        "You are a digital media forensics assistant. You analyze AI-generated content, explain detection results, "
-        "and help users understand risks and propagation. Base every answer only on the provided Layer 1, Layer 2, "
-        "and Layer 3 context. Be concise, analytical, and specific. Reference layers clearly when useful. "
-        "Do not hallucinate missing facts. If evidence is missing, say it is unavailable."
-    )
+    return AGENT_SYSTEM_INSTRUCTION
 
 
 def _agent_cache_key(message: str, context: dict[str, object], history: list[dict[str, str]]) -> str:
@@ -1402,49 +1418,56 @@ def _extract_gemini_text(payload: dict[str, object]) -> str:
     return "".join(texts).strip()
 
 
-def _build_gemini_payload(message: str, context: dict[str, object], history: list[dict[str, str]]) -> dict[str, object]:
-    content_items: list[dict[str, object]] = []
-    for item in history[-6:]:
-        role = "model" if item.get("role") == "assistant" else "user"
-        content_items.append({"role": role, "parts": [{"text": item.get("content") or ""}]})
-    prompt = (
-        f"User question:\n{message}\n\n"
-        f"Forensic context JSON:\n{json.dumps(context, ensure_ascii=True, separators=(',', ':'))}"
-    )
-    content_items.append({"role": "user", "parts": [{"text": prompt}]})
-    return {
-        "system_instruction": {"parts": [{"text": _agent_system_prompt()}]},
-        "contents": content_items,
-        "generationConfig": {
-            "temperature": 0.3,
-            "topP": 0.9,
-            "maxOutputTokens": 500,
-        },
-    }
-
-
-def _generate_agent_reply(message: str, context: dict[str, object], history: list[dict[str, str]]) -> tuple[str, str]:
+def _generate_agent_reply(
+    message: str,
+    context: dict[str, object],
+    history: list[dict[str, str]],
+    file_path: Path | None = None
+) -> tuple[str, str]:
     if not _agent_context_ready(context):
         return "No analysis data available. Please upload media first.", "fallback"
     if not GEMINI_API_KEY:
         return _agent_fallback_reply(message, context), "fallback"
+    
     try:
-        response = AI_HTTP.post(
-            _gemini_endpoint(stream=False),
-            json=_build_gemini_payload(message, context, history),
-            timeout=(5, GEMINI_TIMEOUT_SECONDS),
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=_agent_system_prompt()
         )
-        response.raise_for_status()
-        payload = response.json()
-        text = _extract_gemini_text(payload)
-        if text:
-            return text, "gemini"
-    except Exception as exc:  # pragma: no cover - network/provider behavior
-        LOGGER.warning("agent_provider_failed provider=gemini error=%s", exc)
+        
+        chat_history = []
+        for item in history[-6:]:
+            role = "model" if item.get("role") == "assistant" else "user"
+            chat_history.append({"role": role, "parts": [{"text": item.get("content") or ""}]})
+            
+        chat = model.start_chat(history=chat_history)
+        
+        prompt_parts = [
+            f"User question:\n{message}\n\n",
+            f"Forensic context JSON:\n{json.dumps(context, ensure_ascii=True, separators=(',', ':'))}"
+        ]
+        
+        if file_path and file_path.exists():
+            try:
+                img = Image.open(file_path)
+                prompt_parts.append(img)
+            except Exception:
+                LOGGER.warning("failed_to_load_image_for_gemini path=%s", file_path)
+        
+        response = chat.send_message(prompt_parts)
+        return response.text, "gemini"
+    except Exception as exc:
+        LOGGER.warning("agent_provider_failed provider=gemini SDK error=%s", exc)
+    
     return _agent_fallback_reply(message, context), "fallback"
 
 
-def _stream_agent_reply(message: str, context: dict[str, object], history: list[dict[str, str]]):
+def _stream_agent_reply(
+    message: str,
+    context: dict[str, object],
+    history: list[dict[str, str]],
+    file_path: Path | None = None
+):
     if not _agent_context_ready(context):
         fallback = "No analysis data available. Please upload media first."
         yield fallback
@@ -1454,45 +1477,42 @@ def _stream_agent_reply(message: str, context: dict[str, object], history: list[
         yield fallback
         return fallback, "fallback"
 
-    accumulated = ""
     try:
-        with AI_HTTP.post(
-            _gemini_endpoint(stream=True),
-            json=_build_gemini_payload(message, context, history),
-            stream=True,
-            timeout=(5, GEMINI_TIMEOUT_SECONDS + 10),
-        ) as response:
-            response.raise_for_status()
-            for raw_line in response.iter_lines(decode_unicode=True):
-                if not raw_line:
-                    continue
-                line = str(raw_line).strip()
-                if not line.startswith("data:"):
-                    continue
-                chunk_payload = line[5:].strip()
-                if not chunk_payload or chunk_payload == "[DONE]":
-                    continue
-                try:
-                    parsed = json.loads(chunk_payload)
-                except json.JSONDecodeError:
-                    continue
-                text = _extract_gemini_text(parsed)
-                if not text:
-                    continue
-                if text.startswith(accumulated):
-                    delta = text[len(accumulated):]
-                    accumulated = text
-                elif accumulated.endswith(text):
-                    delta = ""
-                else:
-                    delta = text
-                    accumulated += text
-                if delta:
-                    yield delta
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=_agent_system_prompt()
+        )
+        
+        chat_history = []
+        for item in history[-6:]:
+            role = "model" if item.get("role") == "assistant" else "user"
+            chat_history.append({"role": role, "parts": [{"text": item.get("content") or ""}]})
+            
+        chat = model.start_chat(history=chat_history)
+        
+        prompt_parts = [
+            f"User question:\n{message}\n\n",
+            f"Forensic context JSON:\n{json.dumps(context, ensure_ascii=True, separators=(',', ':'))}"
+        ]
+        
+        if file_path and file_path.exists():
+            try:
+                img = Image.open(file_path)
+                prompt_parts.append(img)
+            except Exception:
+                LOGGER.warning("failed_to_load_stream_image_for_gemini path=%s", file_path)
+                
+        response = chat.send_message(prompt_parts, stream=True)
+        accumulated = ""
+        for chunk in response:
+            text = chunk.text
+            accumulated += text
+            yield text
+        
         if accumulated.strip():
             return accumulated.strip(), "gemini"
-    except Exception as exc:  # pragma: no cover - network/provider behavior
-        LOGGER.warning("agent_stream_failed provider=gemini error=%s", exc)
+    except Exception as exc:
+        LOGGER.warning("agent_stream_failed provider=gemini SDK error=%s", exc)
 
     fallback = _agent_fallback_reply(message, context)
     yield fallback
@@ -3931,6 +3951,58 @@ def api_analyze():
     ), 202
 
 
+@app.post("/api/analysis-summary")
+@jwt_required(AUTH_SERVICE, allow_guest=True)
+def api_analysis_summary():
+    payload = request.get_json(silent=True) or {}
+    upload_id = str(payload.get("upload_id") or "").strip()
+    if not upload_id:
+        return jsonify({"error": "upload_id is required"}), 400
+
+    try:
+        metadata = _load_upload_metadata(upload_id)
+        file_path = Path(str(metadata.get("stored_path")))
+        
+        # Load all layers for context
+        layer1 = _get_analysis_job(upload_id).get("layer1") or {}
+        layer2 = _get_layer2_channels(upload_id) or {}
+        layer3 = _get_analysis_job(upload_id).get("layer3") or {}
+        
+        context = _build_agent_context(layer1, layer2, layer3)
+        
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=_agent_system_prompt()
+        )
+        
+        prompt = (
+            "Provide a concise, high-level executive summary of the forensic results for this media file. "
+            "Explain the final verdict clearly and highlight the most critical evidence from each layer. "
+            "Use markdown formatting with a clear structure (e.g. ## Summary, ## Key Findings, ## Recommendation)."
+        )
+        
+        prompt_parts = [
+            prompt,
+            f"Forensic context JSON:\n{json.dumps(context, ensure_ascii=True, separators=(',', ':'))}"
+        ]
+        
+        if file_path.exists():
+            try:
+                img = Image.open(file_path)
+                prompt_parts.append(img)
+            except Exception:
+                pass
+
+        response = model.generate_content(prompt_parts)
+        return jsonify({
+            "summary": response.text,
+            "provider": "gemini"
+        })
+    except Exception as exc:
+        LOGGER.exception("Failed to generate analysis summary.")
+        return jsonify({"error": str(exc)}), 500
+
+
 @app.post("/api/chat")
 @app.post("/api/agent")
 @jwt_required(AUTH_SERVICE, allow_guest=True)
@@ -3942,6 +4014,7 @@ def api_chat():
         return jsonify({"error": str(exc)}), 400
 
     message = parsed_request.message
+    analysis_id = parsed_request.analysis_id
     layer1 = parsed_request.layer1
     layer2 = parsed_request.layer2
     layer3 = parsed_request.layer3
@@ -3950,6 +4023,15 @@ def api_chat():
     context = _build_agent_context(layer1, layer2, layer3)
     context_ready = _agent_context_ready(context)
     history = (session_history + incoming_history)[-AGENT_HISTORY_LIMIT:]
+    
+    file_path = None
+    if analysis_id:
+        try:
+            metadata = _load_upload_metadata(analysis_id)
+            file_path = Path(str(metadata.get("stored_path")))
+        except Exception:
+            pass
+
     cache_key = _agent_cache_key(message, context, history)
     cached_chat = _get_cached_chat(cache_key)
     if cached_chat is not None:
@@ -3960,7 +4042,7 @@ def api_chat():
         def generate():
             assembled = ""
             provider = "fallback"
-            for chunk in _stream_agent_reply(message, context, history):
+            for chunk in _stream_agent_reply(message, context, history, file_path=file_path):
                 assembled += chunk
                 yield chunk
             if assembled.strip():
@@ -3979,7 +4061,7 @@ def api_chat():
 
         return Response(stream_with_context(generate()), mimetype="text/plain; charset=utf-8")
 
-    reply, provider = _generate_agent_reply(message, context, history)
+    reply, provider = _generate_agent_reply(message, context, history, file_path=file_path)
     _append_agent_history("user", message)
     _append_agent_history("assistant", reply)
     response_payload = {

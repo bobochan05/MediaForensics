@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -34,7 +34,7 @@ class ApiLimiter:
         self.override_risk_threshold = override_risk_threshold
 
     def reserve_call(self, session: Session, *, risk_score: float) -> ApiLimitDecision:
-        today = datetime.now(UTC).date()
+        today = datetime.now(timezone.utc).date()
         usage = crud.get_or_create_api_usage(session, today, for_update=True)
         monthly_calls = crud.get_monthly_calls(session, today)
 
@@ -63,7 +63,7 @@ class ApiLimiter:
         )
 
     def usage_snapshot(self, session: Session) -> dict[str, int]:
-        today = datetime.now(UTC).date()
+        today = datetime.now(timezone.utc).date()
         return {
             "daily_calls": crud.get_daily_api_usage(session, today),
             "daily_limit": self.daily_limit,
