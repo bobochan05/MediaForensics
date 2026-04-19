@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+
+enum EmailTokenType {
+  VERIFY_EMAIL
+  PASSWORD_RESET
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+enum EmailJobType {
+  VERIFY_EMAIL
+  NEW_LOGIN_ALERT
+  PASSWORD_RESET
+}
+
+model User {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  fullName          String
+  passwordHash      String
+  emailVerified     Boolean      @default(false)
+  verifiedAt        DateTime?
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  status            UserStatus   @default(PENDING)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  emailTokens       EmailToken[]
+  loginEvents       LoginEvent[]
+  emailJobs         EmailJob[]
+}
+
+model EmailToken {
+  id                String              @id @default(cuid())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              EmailTokenType
+  hashedToken       String              @unique
+  expiresAt         DateTime
+  sentAt            DateTime?
+  usedAt            DateTime?
+  invalidatedAt     DateTime?
+  contextJson       Json?
+  deliveryStatus    EmailDeliveryStatus @default(PENDING)
+  sendAttempts      Int                 @default(0)
+  lastSentAttemptAt DateTime?
+  lastDeliveryError String?
+  providerName      String?
+  providerMessageId String?
+  createdAt         DateTime            @default(now())
+  emailJobs         EmailJob[]
+
+  @@index([userId, type, createdAt])
+  @@index([type, expiresAt])
+}
+
+model EmailJob {
+  id                String              @id @default(cuid())
+  type              EmailJobType
+  status            EmailDeliveryStatus @default(PENDING)
+  recipientEmail    String
+  payload           Json
+  dedupeKey         String?             @unique
+  attempts          Int                 @default(0)
+  maxAttempts       Int                 @default(5)
+  availableAt       DateTime            @default(now())
+  lockedAt          DateTime?
+  sentAt            DateTime?
+  lastError         String?
+  providerName      String?
+  providerMessageId String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  tokenId           String?
+  token             EmailToken?         @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  userId            String?
+  user              User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt])
+  @@index([userId, createdAt])
+}
+
+model LoginEvent {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress         String
+  userAgent         String
+  deviceFingerprint String
+  deviceLabel       String
+  loginAt           DateTime @default(now())
+  isNewDevice       Boolean
+  isNewIp           Boolean
+  alertSent         Boolean  @default(false)
+
+  @@index([userId, loginAt])
+  @@index([userId, deviceFingerprint])
+  @@index([userId, ipAddress])
+}

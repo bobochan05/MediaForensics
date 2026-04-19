@@ -246,25 +246,26 @@
     .layer3-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
     .layer3-toggle{padding:8px 12px;border-radius:999px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.02);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
     .layer3-toggle.on{border-color:rgba(148,163,184,.24);color:var(--strong);background:rgba(148,163,184,.08)}
-    .layer3-summary-bar{display:grid;gap:12px;padding:14px 16px;border:1px solid rgba(148,163,184,.1);border-radius:16px;background:rgba(9,17,31,.32)}
+    .layer3-summary-bar{display:grid;gap:18px;padding:22px 24px;border:1px solid rgba(148,163,184,.12);border-radius:20px;background:linear-gradient(180deg, rgba(10,18,31,.7), rgba(9,17,31,.42))}
     .layer3-summary-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-    .layer3-summary-title{margin:0;font-size:14px;font-weight:800;color:var(--strong)}
-    .layer3-summary-meta{margin-top:4px;font-size:11px;color:var(--muted);line-height:1.5}
-    .layer3-status-badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;border:1px solid rgba(148,163,184,.16);background:rgba(255,255,255,.02);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--strong);white-space:nowrap}
-    .layer3-status-badge.low{border-color:rgba(148,163,184,.16);color:#cbd5e1}
-    .layer3-status-badge.medium{border-color:rgba(234,179,8,.22);color:#fde68a}
-    .layer3-status-badge.high{border-color:rgba(14,165,233,.24);color:#bae6fd}
-    .layer3-summary-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-    .layer3-summary-item{display:grid;gap:4px;padding:10px 12px;border:1px solid rgba(148,163,184,.08);border-radius:12px;background:rgba(255,255,255,.02);min-width:0}
-    .layer3-summary-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-    .layer3-summary-value{font-size:13px;font-weight:700;color:var(--strong);line-height:1.35;word-break:break-word}
-    .layer3-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,0.95fr);gap:12px}
-    .intel-stack,.side-split{display:grid;gap:12px}
-    .intel-panel,.key-insight-card,.risk-drivers-card{border:1px solid rgba(148,163,184,.08);border-radius:14px;padding:14px;background:rgba(9,17,31,.28);display:grid;gap:10px;min-width:0}
+    .layer3-summary-title{margin:0;font-size:22px;font-weight:900;color:var(--strong);line-height:1.2}
+    .layer3-summary-meta{margin-top:6px;font-size:13px;color:var(--muted);line-height:1.6}
+    .layer3-status-badge{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:999px;border:1px solid rgba(148,163,184,.16);background:rgba(255,255,255,.02);font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--strong);white-space:nowrap}
+    .layer3-status-badge.low{border-color:rgba(34,197,94,.2);color:#bbf7d0;background:rgba(20,83,45,.18)}
+    .layer3-status-badge.medium{border-color:rgba(250,204,21,.2);color:#fde68a;background:rgba(113,63,18,.18)}
+    .layer3-status-badge.high{border-color:rgba(248,113,113,.18);color:#fca5a5;background:rgba(127,29,29,.18)}
+    .layer3-summary-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .layer3-summary-item{display:grid;gap:6px;padding:16px 18px;border:1px solid rgba(148,163,184,.1);border-radius:16px;background:rgba(255,255,255,.03);min-width:0}
+    .layer3-summary-label{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .layer3-summary-value{font-size:22px;font-weight:800;color:var(--strong);line-height:1.2;word-break:break-word}
+    .layer3-summary-note{font-size:13px;color:var(--muted);line-height:1.5}
+    .layer3-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,1fr);gap:16px}
+    .intel-stack,.side-split{display:grid;gap:16px}
+    .intel-panel,.key-insight-card,.risk-drivers-card{border:1px solid rgba(148,163,184,.1);border-radius:18px;padding:20px;background:rgba(9,17,31,.32);display:grid;gap:12px;min-width:0}
     .intel-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .intel-panel-title{margin:0;font-size:13px;font-weight:800;color:var(--strong)}
-    .intel-panel-meta{font-size:11px;color:var(--muted)}
-    .intel-insight{display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:100%;padding:5px 9px;border-radius:999px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.02);font-size:11px;font-weight:700;color:var(--strong)}
+    .intel-panel-title{margin:0;font-size:20px;font-weight:900;color:var(--strong)}
+    .intel-panel-meta{font-size:13px;color:var(--muted);line-height:1.5}
+    .intel-insight{display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:100%;padding:7px 12px;border-radius:999px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.02);font-size:13px;font-weight:700;color:var(--strong)}
     .intel-insight.low{border-color:rgba(148,163,184,.14);color:#cbd5e1}
     .intel-insight.medium{border-color:rgba(14,165,233,.18);color:#bfdbfe}
     .intel-insight.high{border-color:rgba(251,191,36,.2);color:#fde68a}
@@ -272,19 +273,23 @@
     .chart-tooltip.on{display:block}
     .chart-tooltip strong{display:block;color:#f8fafc;font-size:12px;margin-bottom:4px}
     .chart-canvas{width:100%;height:100%;display:block}
-    .timeline-panel{min-height:236px}
-    .histogram-panel{min-height:168px}
-    .key-insight-card{border-color:rgba(148,163,184,.14);background:rgba(10,16,27,.48);box-shadow:inset 0 1px 0 rgba(255,255,255,.02)}
-    .key-insight-kicker{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-    .key-insight-copy{font-size:14px;line-height:1.65;color:var(--strong)}
+    .timeline-panel{min-height:280px}
+    .histogram-panel{min-height:210px}
+    .key-insight-card{border-color:rgba(148,163,184,.16);background:rgba(10,16,27,.56);box-shadow:inset 0 1px 0 rgba(255,255,255,.03);padding:24px}
+    .key-insight-kicker{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .key-insight-copy{font-size:30px;line-height:1.35;color:var(--strong);font-weight:900;max-width:16ch}
+    .key-insight-support{font-size:15px;line-height:1.7;color:var(--muted);max-width:64ch}
+    .layer3-action-row{display:flex;flex-wrap:wrap;gap:10px}
+    .layer3-action-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:12px;border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.03);color:var(--strong);font-size:13px;font-weight:800;cursor:pointer}
+    .layer3-action-btn:hover{border-color:rgba(94,234,212,.22);background:rgba(94,234,212,.08)}
     .risk-drivers-card{gap:12px}
     .risk-drivers-summary{display:grid;gap:10px;padding-bottom:4px;border-bottom:1px solid rgba(148,163,184,.08)}
     .risk-drivers-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-    .summary-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-    .summary-value{font-size:24px;font-weight:800;color:var(--strong);line-height:1}
-    .summary-value.secondary{font-size:18px}
-    .summary-meta{font-size:11px;color:var(--muted);line-height:1.5}
-    .risk-summary-chip{display:grid;gap:4px;padding:10px 12px;border:1px solid rgba(148,163,184,.08);border-radius:12px;background:rgba(255,255,255,.02)}
+    .summary-label{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .summary-value{font-size:28px;font-weight:900;color:var(--strong);line-height:1}
+    .summary-value.secondary{font-size:22px}
+    .summary-meta{font-size:13px;color:var(--muted);line-height:1.6}
+    .risk-summary-chip{display:grid;gap:6px;padding:14px 16px;border:1px solid rgba(148,163,184,.1);border-radius:14px;background:rgba(255,255,255,.02)}
     .risk-driver-grid{display:grid;gap:10px}
     .risk-driver-row{display:grid;gap:6px}
     .risk-driver-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px}
@@ -319,7 +324,17 @@
     .layer3-basic .advanced-only{display:none}
     .timeline{height:170px;border:1px solid rgba(148,163,184,.08);border-radius:18px;padding:12px;background:rgba(9,17,31,.34)} .timeline canvas{width:100%;height:100%}
 
-    .docs{display:grid;gap:16px}.doc{border:1px solid rgba(148,163,184,.08);border-radius:20px;padding:18px;background:rgba(9,17,31,.32)} .doc summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--strong)} .doc p{margin:10px 0 0;color:var(--muted);font-size:13px;line-height:1.7}
+    .docs{display:grid;gap:18px}
+    .doc{border:1px solid rgba(148,163,184,.08);border-radius:22px;padding:22px;background:rgba(9,17,31,.32)}
+    .doc summary{cursor:pointer;font-size:16px;font-weight:800;color:var(--strong);line-height:1.5}
+    .doc-body{display:grid;gap:16px;padding-top:18px}
+    .doc-intro{margin:0;color:var(--text);font-size:15px;line-height:1.8}
+    .doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .doc-block{display:grid;gap:8px;padding:16px 18px;border:1px solid rgba(148,163,184,.08);border-radius:18px;background:rgba(255,255,255,.02)}
+    .doc-label{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .doc-copy{margin:0;color:var(--text);font-size:14px;line-height:1.7}
+    .doc-list{margin:0;padding-left:18px;display:grid;gap:6px;color:var(--text);font-size:14px;line-height:1.7}
+    .doc-note{margin:0;padding:14px 16px;border-radius:16px;border:1px solid rgba(148,163,184,.08);background:rgba(255,255,255,.02);color:var(--muted);font-size:13px;line-height:1.7}
 
     .right{display:grid;width:236px;min-width:0;max-width:calc(100vw - 32px);align-content:start;gap:12px;position:fixed;right:16px;top:74px;height:calc(100vh - 74px);z-index:30;overflow-x:hidden;overflow-y:auto;padding-bottom:18px}.side-card{padding:16px;display:grid;gap:8px;min-width:0;max-width:100%}.side-ttl{margin:0;color:var(--strong);font-size:16px}
     .snapshot{padding:16px;display:grid;gap:12px}
@@ -352,6 +367,76 @@
     .usage-copy{font-size:12px;color:var(--muted)}
     .quota-note{display:none;font-size:12px;line-height:1.5;color:#fecaca;border:1px solid rgba(248,113,113,.24);background:rgba(239,68,68,.12);border-radius:14px;padding:10px 12px}
     .quota-note.on{display:block}
+
+    .app-container{padding:28px 28px 56px}
+    .content-area{grid-template-columns:minmax(0,1fr)}
+    .sidebar{display:none}
+    .main{gap:28px;max-width:1320px;margin:0 auto}
+    .header{padding:6px 4px 0;background:transparent;border:none;box-shadow:none;backdrop-filter:none}
+    .header-kicker{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+    .ttl{font-size:clamp(38px,5.1vw,72px);line-height:.94;letter-spacing:-.05em;max-width:10ch}
+    .sub{font-size:clamp(16px,1.35vw,19px);line-height:1.7;max-width:52ch;color:var(--content-color, rgba(233,241,252,.82))}
+    .panel{border-radius:28px;background:rgba(255,255,255,.025);border-color:rgba(148,163,184,.08);box-shadow:0 12px 40px rgba(3,8,20,.14)}
+    .card{padding:28px}
+    #insightCard{padding:34px 36px;border:1px solid rgba(148,163,184,.08);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));box-shadow:0 22px 60px rgba(2,8,23,.18)}
+    .hero-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:28px;align-items:start}
+    .hero-copy-block{display:grid;gap:14px}
+    .hero-kicker{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+    .hero-title{margin:0;font-size:clamp(42px,5.2vw,78px);line-height:.94;letter-spacing:-.05em;color:var(--strong);max-width:11ch}
+    .hero-copy{margin:0;font-size:clamp(16px,1.3vw,18px);line-height:1.75;color:var(--muted);max-width:50ch}
+    .hero-side-block{display:grid;gap:14px}
+    .hero-risk-badge{display:inline-flex;align-items:center;justify-content:center;width:max-content;padding:10px 16px;border-radius:999px;border:1px solid rgba(148,163,184,.14);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.03);color:var(--strong)}
+    .hero-risk-badge.risk-low{border-color:rgba(52,211,153,.22);color:#bbf7d0;background:rgba(20,83,45,.18)}
+    .hero-risk-badge.risk-medium{border-color:rgba(251,191,36,.22);color:#fde68a;background:rgba(113,63,18,.18)}
+    .hero-risk-badge.risk-high{border-color:rgba(248,113,113,.22);color:#fecaca;background:rgba(127,29,29,.18)}
+    .hero-metrics{display:grid;gap:12px}
+    .hero-metric{display:grid;gap:6px;padding:18px 20px;border-radius:20px;border:1px solid rgba(148,163,184,.08);background:rgba(255,255,255,.03)}
+    .hero-metric-label{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .hero-metric-value{font-size:24px;font-weight:800;line-height:1.15;color:var(--strong);word-break:break-word}
+    .hero-note{margin-top:22px;padding-top:18px;border-top:1px solid rgba(148,163,184,.08);font-size:14px;line-height:1.7;color:var(--muted)}
+    #uploadBlock{padding:34px 36px}
+    .sec-ttl{font-size:clamp(26px,2.2vw,36px);line-height:1.05;letter-spacing:-.03em}
+    .controls{gap:22px;margin-top:22px}
+    .upload-shell{grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:24px}
+    .upload-stage{justify-items:stretch;gap:16px}
+    .drop{width:100%;max-width:none;aspect-ratio:auto;min-height:280px;padding:28px;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02));box-shadow:none}
+    .drop::before{width:58px;height:58px;border-radius:18px;background:rgba(255,255,255,.05);border-color:rgba(148,163,184,.18);font-size:28px;box-shadow:none}
+    .drop-main{max-width:none;font-size:24px;letter-spacing:-.02em}
+    .drop-sub{max-width:420px;font-size:13px;line-height:1.7}
+    .upload-note{max-width:none;text-align:left;font-size:14px}
+    .preview{min-height:280px;padding:20px;border-radius:28px}
+    .preview-stage{min-height:320px}
+    .row .muted{font-size:13px;max-width:56ch;line-height:1.6}
+    #resultPanel{padding:0;border:none;background:transparent;box-shadow:none}
+    .layer{padding:28px;border-radius:28px;background:rgba(255,255,255,.03);border-color:rgba(148,163,184,.08);gap:18px}
+    .layer-ttl{font-size:30px;letter-spacing:-.03em}
+    .layer-head{align-items:flex-start}
+    .badge{padding:8px 12px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+    .verdict{font-size:clamp(44px,4.2vw,64px)}
+    .muted,.group-desc,.chart-sub,.intel-panel-meta,.summary-meta,.distribution-copy,.event-copy,.content-summary-copy,.agent-copy{font-size:14px;line-height:1.7}
+    .content-class,.chart-grid,.strength-grid{gap:16px}
+    .content-card,.where-card,.origin-card,.chart-card,.search-assist,.result-group,.doc,.intel-panel,.key-insight-card,.risk-drivers-card{border-radius:24px}
+    .group-ttl,.origin-title,.chart-title,.intel-panel-title{font-size:22px;letter-spacing:-.02em}
+    .result-group{padding:22px}
+    .match-grid{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+    .match{background:rgba(255,255,255,.03);border-radius:18px;padding:14px}
+    .match:hover{transform:translateY(-2px) scale(1)}
+    .thumb{border-radius:16px}
+    .mt{font-size:16px}
+    .docs{gap:12px}
+    .doc{background:rgba(255,255,255,.02)}
+    .doc summary{font-size:18px}
+    .right{width:min(400px,calc(100vw - 32px));position:fixed;right:24px;bottom:92px;top:auto;height:auto;max-height:calc(100vh - 140px);padding-bottom:0;overflow-y:auto;opacity:0;transform:translateY(24px) scale(.98);pointer-events:none;transition:opacity .22s ease,transform .22s ease;z-index:85}
+    body.chat-open .right{opacity:1;transform:none;pointer-events:auto}
+    .agent-card{padding:22px;border-radius:28px;background:rgba(8,14,25,.94);box-shadow:0 26px 70px rgba(2,8,23,.35)}
+    .chat-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .chat-close{border:none;background:rgba(255,255,255,.06);color:var(--strong);padding:8px 12px;border-radius:999px;font-size:12px;font-weight:800;cursor:pointer}
+    .chat-fab{position:fixed;right:24px;bottom:24px;z-index:86;border:none;border-radius:999px;padding:14px 18px;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:13px;font-weight:800;letter-spacing:.01em;box-shadow:0 18px 36px rgba(37,99,235,.24);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease}
+    .chat-fab:hover{transform:translateY(-1px);box-shadow:0 22px 42px rgba(37,99,235,.3)}
+    body.chat-open .chat-fab{opacity:0;pointer-events:none}
+    html[data-theme="light"] .agent-card,
+    html[data-theme="blue"] .agent-card{background:rgba(255,255,255,.96)}
+
     html[data-theme="light"] .drop,
     html[data-theme="light"] .preview,
     html[data-theme="light"] .processing,
@@ -417,7 +502,30 @@
     html[data-theme="blue"] .toast{background:rgba(255,255,255,.96)}
 
     @media (max-width:1220px){.app-container{padding:12px 14px 16px 64px}.content-area{grid-template-columns:minmax(0,1fr)}.match-grid,.chart-grid,.strength-grid,.snapshot-grid,.content-class,.score-list,.layer3-intel-points,.layer3-summary-row,.layer3-grid,.distribution-wrap{grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:68px;flex-wrap:wrap;padding:10px 14px;gap:10px}.top-left,.top-right{min-width:unset}.top-meta{justify-content:flex-start}.main{gap:18px}.card,.header,.side-card,.snapshot{padding:16px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:16px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.upload-shell{grid-template-columns:260px minmax(0,1fr)}.drop{width:min(100%,260px)}.preview-stage{min-height:220px}}
-    @media (max-width:900px){.app-container{padding:14px}.sidebar{width:100%;height:auto;position:relative;left:auto;top:auto;padding:10px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:100%;padding:10px}.sidebar a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.sidebar a::after{display:none}.content-area{width:100%;grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.upload-shell{grid-template-columns:1fr}.upload-stage{padding-top:4px;justify-items:center}.upload-note{text-align:center}.drop{width:min(100%,260px);border-radius:22px;padding:18px}.drop::before{width:52px;height:52px;border-radius:18px;font-size:28px}.drop-main{font-size:15px}.preview-stage{min-height:220px}.breakdown-row{grid-template-columns:90px minmax(0,1fr) 42px}}
+    @media (max-width:900px){.app-container{padding:14px}.sidebar{width:100%;height:auto;position:relative;left:auto;top:auto;padding:10px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:100%;padding:10px}.sidebar a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.sidebar a::after{display:none}.content-area{width:100%;grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.upload-shell{grid-template-columns:1fr}.upload-stage{padding-top:4px;justify-items:center}.upload-note{text-align:center}.drop{width:min(100%,260px);border-radius:22px;padding:18px}.drop::before{width:52px;height:52px;border-radius:18px;font-size:28px}.drop-main{font-size:15px}.preview-stage{min-height:220px}.breakdown-row{grid-template-columns:90px minmax(0,1fr) 42px}.doc-grid{grid-template-columns:1fr}.doc summary{font-size:15px}.doc-intro,.doc-copy,.doc-list{font-size:13px}}
+    @media (max-width:1220px){
+      .app-container{padding:22px 18px 52px}
+      .sidebar{display:none}
+      .hero-layout,.upload-shell,.layer3-grid{grid-template-columns:1fr}
+      .hero-side-block{grid-template-columns:repeat(3,minmax(0,1fr));display:grid}
+      .right{right:18px;bottom:84px;width:min(380px,calc(100vw - 36px));position:fixed;height:auto;max-height:calc(100vh - 132px)}
+    }
+    @media (max-width:900px){
+      .top{padding:10px 14px}
+      .top-left{display:none}
+      .top-right{gap:8px}
+      .app-container{padding:18px 14px 42px}
+      .card,#uploadBlock,#insightCard,.layer{padding:22px}
+      .ttl,.hero-title{max-width:none}
+      .hero-side-block{grid-template-columns:1fr}
+      .hero-metric-value{font-size:20px}
+      .drop{min-height:220px;padding:22px}
+      .drop-main{font-size:20px}
+      .drop-sub{font-size:12px}
+      .match-grid{grid-template-columns:1fr}
+      .right{left:14px;right:14px;bottom:14px;width:auto;max-height:min(72vh,640px)}
+      .chat-fab{right:14px;bottom:14px}
+    }
   </style>
 </head>
 <body>
@@ -455,8 +563,6 @@
       </div>
     </div>
   </div>
-  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
-
   <div class="app-container">
     <aside class="panel sidebar">
       <a class="active" href="/dashboard" data-icon="◫" data-tip="Dashboard" title="Dashboard"><span class="left-label">Dashboard</span></a>
@@ -470,21 +576,50 @@
     <div class="content-area">
     <main class="main">
       <section class="panel header">
-        <h1 class="ttl">Deepfake Detection & Intelligence Console</h1>
-        <p class="sub">Upload media, run layered intelligence, and review explainable forensic insights with propagation awareness.</p>
+        <div class="header-kicker">Tracelyt Dashboard</div>
+        <h1 class="ttl">Deepfake investigations, made clear.</h1>
+        <p class="sub">Upload a file, see the main finding instantly, then explore where it appears, how it is spreading, and whether it has changed.</p>
+      </section>
+
+      <section class="panel card insight hero-insight" id="insightCard">
+        <div class="hero-layout">
+          <div class="hero-copy-block">
+            <div class="hero-kicker">Hero Insight</div>
+            <h2 class="hero-title" id="insightText">Upload content to see the main finding.</h2>
+            <p class="hero-copy" id="snapshotCopy">Tracelyt will turn the investigation into one clear statement, then show supporting details only if you need them.</p>
+          </div>
+          <div class="hero-side-block">
+            <div class="hero-risk-badge risk-low" id="snapshotRisk">Awaiting scan</div>
+            <div class="hero-metrics">
+              <article class="hero-metric">
+                <div class="hero-metric-label">Verdict</div>
+                <div class="hero-metric-value" id="snapshotVerdict">Awaiting scan</div>
+              </article>
+              <article class="hero-metric">
+                <div class="hero-metric-label">Platforms</div>
+                <div class="hero-metric-value" id="snapshotSources">0</div>
+              </article>
+              <article class="hero-metric">
+                <div class="hero-metric-label">Top source</div>
+                <div class="hero-metric-value" id="snapshotTopDomain">Not established</div>
+              </article>
+            </div>
+          </div>
+        </div>
+        <div class="hero-note" id="snapshotNote">Once analysis runs, this area will summarize the strongest signal, the current spread posture, and where attention is needed.</div>
       </section>
 
       <section class="panel card" id="uploadBlock">
-        <h2 class="sec-ttl">Upload & Analyze</h2>
+        <h2 class="sec-ttl">Upload content to analyze</h2>
         <div class="controls">
           <div class="upload-shell">
             <div class="upload-stage">
               <label class="drop" id="dropZone">
                 <input type="file" id="fileInput" accept="image/*,video/*" />
-                <div class="drop-main" id="fileName">Drag and drop image/video here, or click to upload.</div>
-                <div class="drop-sub">Supported formats: JPG, PNG, MP4, AVI, MOV, MKV, WEBM</div>
+                <div class="drop-main" id="fileName">Upload content to analyze</div>
+                <div class="drop-sub">Drop an image or video here, or click to browse. Supported formats: JPG, PNG, MP4, AVI, MOV, MKV, WEBM.</div>
               </label>
-              <div class="upload-note">Start with a single image or video to launch the full forensic pipeline. The square intake area keeps the first action clear, focused, and easier to scan.</div>
+              <div class="upload-note">One upload is enough to launch the full investigation.</div>
             </div>
 
             <div class="preview" id="previewWrap">
@@ -501,7 +636,7 @@
           </div>
 
           <div class="url-row">
-            <label for="sourceUrlInput">Source URL (optional, can run analysis without upload)</label>
+            <label for="sourceUrlInput">Or paste a source link</label>
             <input id="sourceUrlInput" class="url" type="url" placeholder="https://example.com/media.jpg or https://example.com/video.mp4" />
           </div>
 
@@ -526,7 +661,7 @@
           </div>
 
           <div class="row">
-            <div class="muted">Pipeline runs automatically in sequence (Layer 1 -> Layer 2 -> Layer 3).</div>
+            <div class="muted">The system checks the media itself, searches for other appearances, and then reviews current spread activity.</div>
             <div style="display:flex;gap:8px">
               <button class="btn secondary" id="resetBtn" type="button">Reset</button>
               <button class="btn" id="runBtn" type="button" disabled>Run Intelligence Analysis</button>
@@ -537,15 +672,10 @@
         </div>
       </section>
 
-      <section class="panel card insight" id="insightCard">
-        <h3>AI Insight</h3>
-        <p id="insightText">Run an analysis to generate a combined forensic and propagation insight.</p>
-      </section>
-
       <section class="panel card result" id="resultPanel">
         <section class="layer" id="layer1Card">
           <div class="layer-head">
-            <h3 class="layer-ttl">Layer 1: Authenticity Detection</h3>
+            <h3 class="layer-ttl">What we found</h3>
             <span class="badge b-unc" id="layer1Badge">Awaiting scan</span>
           </div>
           <div class="verdict v-unc" id="verdictVal">Awaiting analysis</div>
@@ -577,7 +707,7 @@
 
         <section class="layer" id="layer2Card">
           <div class="layer-head">
-            <h3 class="layer-ttl">Layer 2: Source Matching</h3>
+            <h3 class="layer-ttl">Where it appears</h3>
             <span class="badge" id="layer2Badge">Waiting for analysis</span>
           </div>
           <div class="investigation-note">Results aggregated from multiple search engines.</div>
@@ -605,8 +735,8 @@
               <article class="chart-card">
                 <div class="chart-head">
                   <div>
-                    <h4 class="chart-title">Domain Distribution</h4>
-                    <div class="chart-sub">Where the image appears most often, sorted by match count.</div>
+                    <h4 class="chart-title">Where it appears most</h4>
+                    <div class="chart-sub">A simple view of the sites and platforms where this content appears most often.</div>
                   </div>
                 </div>
                 <div class="chart-rows" id="domainDistributionChart"></div>
@@ -614,8 +744,8 @@
               <article class="chart-card">
                 <div class="chart-head">
                   <div>
-                    <h4 class="chart-title">Match Strength</h4>
-                    <div class="chart-sub">Average similarity across exact, visual, and related evidence.</div>
+                    <h4 class="chart-title">Are there copies?</h4>
+                    <div class="chart-sub">How closely other public versions resemble the uploaded content.</div>
                   </div>
                 </div>
                 <div class="strength-grid" id="matchStrengthChart"></div>
@@ -656,11 +786,11 @@
             </details>
             <details class="result-group fold" open>
               <summary class="group-head">
-                <h4 class="group-ttl">Domain Spread View</h4>
+                <h4 class="group-ttl">How it is spreading</h4>
                 <span class="group-count" id="domainClusterCount">0</span>
               </summary>
               <div class="fold-content">
-                <div class="group-desc">Grouped by domain so you can see where the media appears most often.</div>
+                <div class="group-desc">Grouped by source so you can quickly see where attention is building.</div>
                 <div class="spread-chart" id="domainClusterGrid"></div>
               </div>
             </details>
@@ -671,7 +801,7 @@
           <div class="layer3-dense layer3-basic" id="layer3Dense">
             <div class="layer3-head">
               <div class="layer-head" style="margin:0">
-                <h3 class="layer-ttl">Layer 3: Tracking Intelligence</h3>
+                <h3 class="layer-ttl">What is happening now</h3>
                 <span class="badge" id="layer3Badge">Tracking not started</span>
               </div>
               <button class="layer3-toggle" id="layer3Toggle" type="button">Detailed View</button>
@@ -679,55 +809,60 @@
             <section class="layer3-summary-bar">
               <div class="layer3-summary-top">
                 <div>
-                  <h4 class="layer3-summary-title">Tracking Intelligence Summary</h4>
-                  <div class="layer3-summary-meta" id="layer3IntelSummaryText">Last updated unavailable • Tracking window unavailable</div>
+                  <h4 class="layer3-summary-title">What Tracelyt is seeing right now</h4>
+                  <div class="layer3-summary-meta" id="layer3IntelSummaryText">Last updated unavailable | Tracking window unavailable</div>
                 </div>
-                <span class="layer3-status-badge low" id="layer3IntelStatus">Low confidence</span>
+                <span class="layer3-status-badge low" id="layer3IntelStatus">Low risk</span>
               </div>
               <div class="layer3-summary-row" id="layer3IntelPoints">
-                <div class="layer3-summary-item"><div class="layer3-summary-label">First Seen</div><div class="layer3-summary-value">Unknown</div></div>
-                <div class="layer3-summary-item"><div class="layer3-summary-label">Active Variants</div><div class="layer3-summary-value">0</div></div>
-                <div class="layer3-summary-item"><div class="layer3-summary-label">Spread Status</div><div class="layer3-summary-value">Stable</div></div>
-                <div class="layer3-summary-item"><div class="layer3-summary-label">Platforms Detected</div><div class="layer3-summary-value">0</div></div>
-                <div class="layer3-summary-item"><div class="layer3-summary-label">Overall Risk</div><div class="layer3-summary-value">0.0 / 10</div></div>
+                <div class="layer3-summary-item"><div class="layer3-summary-label">Seen Since</div><div class="layer3-summary-value">Unknown</div><div class="layer3-summary-note">We have not confirmed a public start point yet.</div></div>
+                <div class="layer3-summary-item"><div class="layer3-summary-label">Spread Status</div><div class="layer3-summary-value">Stable</div><div class="layer3-summary-note">No rapid change has been detected yet.</div></div>
+                <div class="layer3-summary-item"><div class="layer3-summary-label">Where It Appears</div><div class="layer3-summary-value">Seen on 0 platforms</div><div class="layer3-summary-note">Platform coverage will update after matching finishes.</div></div>
+                <div class="layer3-summary-item"><div class="layer3-summary-label">Copies Found</div><div class="layer3-summary-value">0 similar versions</div><div class="layer3-summary-note">We have not identified other versions yet.</div></div>
               </div>
             </section>
             <div class="layer3-grid">
               <div class="intel-stack">
                 <section class="key-insight-card">
-                  <div class="key-insight-kicker">Key Insight</div>
-                  <div class="key-insight-copy" id="layer3Insight">No significant propagation signals detected.</div>
+                  <div class="key-insight-kicker">Main takeaway</div>
+                  <div class="key-insight-copy" id="layer3Insight">We have not seen this content spreading in a meaningful way yet.</div>
+                  <div class="key-insight-support" id="layer3InsightSupport">Once Tracelyt finds copies across the web, this section will explain in plain language whether the content is staying contained, being reposted, or spreading quickly.</div>
+                  <div class="layer3-action-row">
+                    <button class="layer3-action-btn" id="layer3ReviewSourceBtn" type="button">Review source</button>
+                    <button class="layer3-action-btn" id="layer3TrackFurtherBtn" type="button">Track further</button>
+                    <button class="layer3-action-btn" id="layer3ReportContentBtn" type="button">Report content</button>
+                  </div>
                 </section>
                 <section class="intel-panel timeline-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Propagation Trend</h4>
-                    <div class="intel-panel-meta" id="timelineMeta">Matches over time</div>
+                    <h4 class="intel-panel-title">Spread Over Time</h4>
+                    <div class="intel-panel-meta" id="timelineMeta">This shows whether the content is being shared more often or fading out.</div>
                   </div>
-                  <div class="intel-insight low" id="timelineInsight">No recent signal</div>
+                  <div class="intel-insight low" id="timelineInsight">No clear sharing pattern yet</div>
                   <canvas class="chart-canvas" id="timelineCanvas" width="920" height="280"></canvas>
                 </section>
                 <section class="intel-panel histogram-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Variant Evolution</h4>
-                    <div class="intel-panel-meta" id="histogramMeta">Mutation pattern tracking</div>
+                    <h4 class="intel-panel-title">Has It Changed?</h4>
+                    <div class="intel-panel-meta" id="histogramMeta">This shows whether the same content is appearing with edits or small changes.</div>
                   </div>
-                  <div class="intel-insight low" id="histogramInsight">No significant mutation patterns detected</div>
+                  <div class="intel-insight low" id="histogramInsight">No major edits detected</div>
                   <canvas class="chart-canvas" id="frequencyCanvas" width="920" height="180"></canvas>
                 </section>
                 <section class="intel-panel histogram-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Similarity Evidence</h4>
-                    <div class="intel-panel-meta" id="strengthMeta">Similarity cluster analysis</div>
+                    <h4 class="intel-panel-title">Are There Copies?</h4>
+                    <div class="intel-panel-meta" id="strengthMeta">This shows whether other versions look very close to the original content.</div>
                   </div>
-                  <div class="intel-insight low" id="strengthInsight">High similarity cluster detected</div>
+                  <div class="intel-insight low" id="strengthInsight">No clear copy pattern yet</div>
                   <canvas class="chart-canvas" id="strengthCanvas" width="920" height="180"></canvas>
                 </section>
                 <section class="intel-panel propagation-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Content Spread Network</h4>
-                    <div class="intel-panel-meta" id="propagationMeta">Node inspection</div>
+                    <h4 class="intel-panel-title">How It Is Spreading</h4>
+                    <div class="intel-panel-meta" id="propagationMeta">Follow the path from the earliest appearance to later reposts.</div>
                   </div>
-                  <div class="intel-insight low" id="propagationInsight">Network unavailable</div>
+                  <div class="intel-insight low" id="propagationInsight">There is not enough spread activity to map yet</div>
                   <div class="propagation-scrubber-wrap">
                     <div class="propagation-scrubber-meta">
                       <span id="propagationScrubberMeta">Tracking window unavailable</span>
@@ -743,32 +878,32 @@
               <div class="side-split">
                 <section class="risk-drivers-card" id="riskSummaryCard">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Risk Drivers</h4>
-                    <div class="intel-panel-meta" id="riskBreakdownMeta">Current exposure assessment</div>
+                    <h4 class="intel-panel-title">Why This Matters</h4>
+                    <div class="intel-panel-meta" id="riskBreakdownMeta">A simple summary of how serious this case looks right now.</div>
                   </div>
                   <div class="risk-drivers-summary">
                     <div class="risk-drivers-head">
                       <div>
-                        <div class="summary-label">Overall Risk Score</div>
-                        <div class="summary-value" id="riskSummaryValue">0.0 / 10</div>
-                        <div class="summary-meta" id="riskSummaryMeta">Confidence unavailable</div>
+                        <div class="summary-label">Overall Risk</div>
+                        <div class="summary-value" id="riskSummaryValue">Low</div>
+                        <div class="summary-meta" id="riskSummaryMeta">There is not enough evidence yet to call this a high-spread event.</div>
                       </div>
                       <div class="risk-summary-chip">
-                        <div class="summary-label">Confidence Level</div>
-                        <div class="summary-value secondary" id="statusSummaryValue">Unknown</div>
-                        <div class="summary-meta" id="statusSummaryMeta">Last updated unavailable</div>
+                        <div class="summary-label">How sure we are</div>
+                        <div class="summary-value secondary" id="statusSummaryValue">Limited</div>
+                        <div class="summary-meta" id="statusSummaryMeta">This becomes clearer as more public examples are found.</div>
                       </div>
                     </div>
                     <div class="risk-drivers-head">
                       <div class="risk-summary-chip">
-                        <div class="summary-label">Spread Intensity</div>
+                        <div class="summary-label">Sharing activity</div>
                         <div class="summary-value secondary" id="velocitySummaryValue">Low</div>
-                        <div class="summary-meta" id="velocitySummaryMeta">Tracking window unavailable</div>
+                        <div class="summary-meta" id="velocitySummaryMeta">Very few public reposts have been found so far.</div>
                       </div>
                       <div class="risk-summary-chip">
-                        <div class="summary-label">Cluster Density</div>
-                        <div class="summary-value secondary" id="clusterSummaryValue">Sparse</div>
-                        <div class="summary-meta" id="clusterSummaryMeta">0 active variants</div>
+                        <div class="summary-label">Version count</div>
+                        <div class="summary-value secondary" id="clusterSummaryValue">Few</div>
+                        <div class="summary-meta" id="clusterSummaryMeta">Only a small number of related versions are visible.</div>
                       </div>
                     </div>
                   </div>
@@ -776,10 +911,10 @@
                 </section>
                 <section class="intel-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Source Distribution</h4>
-                    <div class="intel-panel-meta" id="distributionMeta">Ranked source clusters</div>
+                    <h4 class="intel-panel-title">Where People Are Seeing It</h4>
+                    <div class="intel-panel-meta" id="distributionMeta">A simple view of the sites and platforms where this content appears.</div>
                   </div>
-                  <div class="intel-insight low" id="distributionInsight">No cross-platform distribution detected</div>
+                  <div class="intel-insight low" id="distributionInsight">No cross-platform spread detected</div>
                   <div class="distribution-wrap">
                     <canvas class="chart-canvas" id="sourceDistributionCanvas" width="180" height="180"></canvas>
                     <div class="distribution-legend" id="sourceDistributionLegend"></div>
@@ -808,25 +943,137 @@
 
       <section class="panel card docs" id="explainabilityPanel">
         <details class="doc">
-          <summary>Layer 1 Summary (Click to know more...)</summary>
-          <p>Layer 1 combines CLIP, DINOv2, EfficientNet, and FFT frequency signals to classify media as REAL or FAKE. For videos, it samples frames and aggregates probabilities into one file-level decision.</p>
+          <summary>How Tracelyt reads the media</summary>
+          <div class="doc-body">
+            <p class="doc-intro">Layer 1 is the forensic detection stage. It evaluates the uploaded image or sampled video frames to decide whether the content behaves like authentic captured media or synthetic output. This layer is designed to produce the initial verdict, confidence level, and content-type context that the later layers build on.</p>
+            <div class="doc-grid">
+              <div class="doc-block">
+                <div class="doc-label">Primary Objective</div>
+                <p class="doc-copy">Establish a first-pass authenticity decision by combining multiple visual perspectives instead of relying on a single classifier. The goal is not only to label content as real or fake, but to quantify how strongly the detection stack leans toward synthetic generation.</p>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">Analytical Stack</div>
+                <ul class="doc-list">
+                  <li><code>CLIP</code> contributes broad semantic and representation-level signals.</li>
+                  <li><code>DINOv2</code> adds transformer-style visual structure understanding.</li>
+                  <li><code>EfficientNet</code> captures fine image texture and classification cues.</li>
+                  <li><code>FFT / frequency features</code> surface spectral irregularities often associated with synthetic generation pipelines.</li>
+                </ul>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">Processing Flow</div>
+                <ul class="doc-list">
+                  <li>Images are normalized and passed through the detection feature extractors.</li>
+                  <li>Videos are frame-sampled to avoid over-weighting any single moment.</li>
+                  <li>Feature outputs are fused into a final decision model.</li>
+                  <li>The layer returns a file-level verdict and confidence score rather than isolated per-frame noise.</li>
+                </ul>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">Outputs</div>
+                <ul class="doc-list">
+                  <li>Verdict: <code>REAL</code>, <code>FAKE</code>, or effectively uncertain when confidence is weak.</li>
+                  <li>Confidence score expressed as a percentage.</li>
+                  <li>Content classification context such as human face, scene, document, or digitally styled media.</li>
+                  <li>Reasoning context that helps explain why the system leaned one way.</li>
+                </ul>
+              </div>
+            </div>
+            <p class="doc-note">Analyst interpretation: Layer 1 answers the question “does this media itself look synthetic?” It is strongest when read as the detection foundation, not as a standalone narrative about spread, provenance, or intent.</p>
+          </div>
         </details>
         <details class="doc">
-          <summary>Layer 2 Summary (Click to know more...)</summary>
-          <p>Layer 2 extends detection with multimodal source matching, external discovery, timeline estimation, and risk scoring. It explains where similar content appears and how confidently it relates to the uploaded media.</p>
+          <summary>How Tracelyt finds matching sources</summary>
+          <div class="doc-body">
+            <p class="doc-intro">Layer 2 is the explanation and source correlation stage. Once Layer 1 has produced a detection signal, Layer 2 expands the investigation outward to determine where similar content exists, how strong those matches are, how the media may have circulated, and what supporting evidence strengthens or weakens the authenticity decision.</p>
+            <div class="doc-grid">
+              <div class="doc-block">
+                <div class="doc-label">Primary Objective</div>
+                <p class="doc-copy">Move from pure detection into evidence-backed explanation. This layer tells the investigator whether the uploaded media has exact, near-exact, visual, or related semantic matches in public or indexed sources, and whether those matches reinforce the detection finding.</p>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">Evidence Categories</div>
+                <ul class="doc-list">
+                  <li>Exact and near-exact matches using hash and structural similarity signals.</li>
+                  <li>Visual similarity matches based on learned embeddings and image features.</li>
+                  <li>Related public web sources surfaced through discovery and fallback search.</li>
+                  <li>Domain clustering and platform grouping to show where activity is concentrated.</li>
+                </ul>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">What It Explains</div>
+                <ul class="doc-list">
+                  <li>Why the content appears suspicious or consistent with the detection verdict.</li>
+                  <li>Which sources are strongest, weakest, or most likely origin candidates.</li>
+                  <li>How similarity evidence is distributed across exact, visual, and related-source buckets.</li>
+                  <li>Whether the content looks isolated, reused, reposted, or already public-facing.</li>
+                </ul>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">Outputs</div>
+                <ul class="doc-list">
+                  <li>Top matches and related web leads.</li>
+                  <li>Origin summary and top-domain indicators.</li>
+                  <li>Domain distribution, source credibility hints, and match rationale.</li>
+                  <li>An evidence layer that feeds the spread and risk logic in Layer 3.</li>
+                </ul>
+              </div>
+            </div>
+            <p class="doc-note">Analyst interpretation: Layer 2 answers the question “what external evidence supports or challenges the detection result?” It is the bridge between model output and investigation workflow, especially for provenance review, reverse search interpretation, and source clustering.</p>
+          </div>
         </details>
         <details class="doc">
-          <summary>Layer 3 Summary (Click to know more...)</summary>
-          <p>Layer 3 tracks propagation using growth rate, velocity, domain trust weighting, and risk status classification (stable, slow spread, spreading, viral). It powers alerting and long-term spread intelligence.</p>
+          <summary>How Tracelyt tracks ongoing spread</summary>
+          <div class="doc-body">
+            <p class="doc-intro">Layer 3 is the tracking intelligence and operational monitoring stage. It treats the investigated content as a live intelligence object: it stores cluster history when persistent tracking is available, measures propagation behavior, detects whether spread is accelerating, and translates those observations into a monitoring posture suitable for alerting and decision support.</p>
+            <div class="doc-grid">
+              <div class="doc-block">
+                <div class="doc-label">Primary Objective</div>
+                <p class="doc-copy">Assess whether the content is simply present online or actively propagating. Layer 3 is concerned with recurrence, spread tempo, variant density, platform concentration, and how these signals combine into a current operational risk picture.</p>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">Tracking Signals</div>
+                <ul class="doc-list">
+                  <li>Timeline points showing observed matches over time.</li>
+                  <li>Growth rate and spread velocity across the active monitoring window.</li>
+                  <li>Cluster size, mutation rate, and related-variant density.</li>
+                  <li>Platform diversity and cross-domain propagation structure.</li>
+                </ul>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">Risk Logic</div>
+                <ul class="doc-list">
+                  <li>Detection confidence from earlier layers remains part of the risk picture.</li>
+                  <li>Spread intensity increases as source count and platform count rise.</li>
+                  <li>Velocity indicates whether the content is stable, increasing, or rapidly reappearing.</li>
+                  <li>Cluster density reflects how many closely related variants are circulating at once.</li>
+                </ul>
+              </div>
+              <div class="doc-block">
+                <div class="doc-label">Operational Outputs</div>
+                <ul class="doc-list">
+                  <li>Propagation trend, variant evolution, similarity evidence, and source distribution views.</li>
+                  <li>Cluster identifiers, first-seen estimates, monitoring alerts, and event logs.</li>
+                  <li>Risk drivers and overall monitoring posture for the current case.</li>
+                  <li>Optional persistent tracking and automated alerting for authenticated users.</li>
+                </ul>
+              </div>
+            </div>
+            <p class="doc-note">Analyst interpretation: Layer 3 answers the question “how is this content behaving as it spreads?” It is the intelligence layer for escalation, monitoring, and response prioritization, especially when content is synthetic and beginning to move across platforms.</p>
+          </div>
         </details>
       </section>
     </main>
 
+    <button class="chat-fab" id="chatFab" type="button">Ask Tracelyt</button>
     <aside class="right">
       <div class="quota-note" id="quotaNote">Guest limit reached. Please log in to continue analysis.</div>
       <button class="btn small" id="loginToContinueBtn" type="button" style="display:none">Login to continue</button>
       <section class="panel agent-card">
-        <h3 class="side-ttl">Gemini Analysis Chat</h3>
+        <div class="chat-panel-head">
+          <h3 class="side-ttl">Ask Tracelyt</h3>
+          <button class="chat-close" id="chatCloseBtn" type="button" aria-label="Close assistant">Close</button>
+        </div>
         <div class="agent-copy">Ask Gemini to explain the current Tracelyt findings, likely origin, or spread risk using the active Layer 1, Layer 2, and Layer 3 context.</div>
         <div class="agent-quick">
           <button class="agent-quick-btn" data-agent-prompt="Explain result" type="button">Explain result</button>
@@ -960,6 +1207,10 @@
       layer3IntelStatus: document.getElementById("layer3IntelStatus"),
       layer3IntelPoints: document.getElementById("layer3IntelPoints"),
       layer3Insight: document.getElementById("layer3Insight"),
+      layer3InsightSupport: document.getElementById("layer3InsightSupport"),
+      layer3ReviewSourceBtn: document.getElementById("layer3ReviewSourceBtn"),
+      layer3TrackFurtherBtn: document.getElementById("layer3TrackFurtherBtn"),
+      layer3ReportContentBtn: document.getElementById("layer3ReportContentBtn"),
       alertList: document.getElementById("alertList"),
       timelineCanvas: document.getElementById("timelineCanvas"),
       frequencyCanvas: document.getElementById("frequencyCanvas"),
@@ -1008,6 +1259,8 @@
       usageInlineText: document.getElementById("usageInlineText"),
       quotaNote: document.getElementById("quotaNote"),
       loginToContinueBtn: document.getElementById("loginToContinueBtn"),
+      chatFab: document.getElementById("chatFab"),
+      chatCloseBtn: document.getElementById("chatCloseBtn"),
       toastStack: document.getElementById("toastStack"),
       snapshotCopy: document.getElementById("snapshotCopy"),
       snapshotVerdict: document.getElementById("snapshotVerdict"),
@@ -1118,36 +1371,19 @@
     function showError(message){ el.errorBox.style.display = "block"; el.errorBox.textContent = message; }
     function clearError(){ el.errorBox.style.display = "none"; el.errorBox.textContent = ""; }
     function toastNotification(item){
-      if(!el.toastStack || !item){ return; }
-      const severity = String(item.severity || "LOW").toLowerCase();
-      const toast = document.createElement("div");
-      toast.className = `toast toast-${severity}`;
-      toast.innerHTML = `
-        <div class="toast-severity">${String(item.severity || "LOW")}</div>
-        <div class="toast-title">${String(item.event_type || "notification").replaceAll("_", " ")}</div>
-        <div class="toast-copy">${String(item.message || "")}</div>
-      `;
-      el.toastStack.prepend(toast);
-      window.setTimeout(()=>{ toast.remove(); }, 7000);
+      return;
+    }
+
+    function setChatOpen(open){
+      document.body.classList.toggle("chat-open", Boolean(open));
     }
 
     async function pollNotifications(){
-      try{
-        const res = await fetch("/api/notifications?limit=8", { method:"GET", credentials:"same-origin", cache:"no-store" });
-        const data = await parseApi(res);
-        if(!res.ok){ throw new Error("notification fetch failed"); }
-        const items = Array.isArray(data.notifications) ? data.notifications : [];
-        const fresh = items.slice().reverse();
-        for(const item of fresh){
-          const id = String(item.event_id || item.timestamp || "");
-          if(!id || state.seenNotificationIds.has(id)){ continue; }
-          state.seenNotificationIds.add(id);
-          toastNotification(item);
-        }
-      }catch(_){
-      }finally{
-        state.notificationTimer = window.setTimeout(pollNotifications, 12000);
+      if(state.notificationTimer){
+        clearTimeout(state.notificationTimer);
+        state.notificationTimer = null;
       }
+      if(el.toastStack){ el.toastStack.innerHTML = ""; }
     }
 
     function setRunEnabled(){
@@ -2641,17 +2877,194 @@
       `).join("") : `<div class="event-item"><div class="event-top"><span class="event-type sev-low">Waiting</span><span class="event-time">now</span></div><div class="event-copy">No Layer 3 events yet. Run analysis to start monitoring.</div></div>`;
     }
 
+    function renderLayer3(payload){
+      const l2 = payload.layer2 || {}, l3 = payload.layer3 || {};
+      const analysisKey = String(payload.analysis_id || payload.upload_id || "current");
+      const visuals = l3.visualizations && typeof l3.visualizations === "object" ? l3.visualizations : {};
+      state.layer3VizCache[analysisKey] = visuals;
+      const srcCount = Number(l3.similar_count || 0) || layer2TotalCount(l2);
+      const growth = Number((l3.growth && l3.growth.rate_percent) || l3.growth_rate || 0);
+      const risk = Number(l3.risk_score || (l3.risk && l3.risk.risk_score) || 0);
+      const spread = l3.spread_indicators || {};
+      const timeline = Array.isArray(visuals.spread_timeline) && visuals.spread_timeline.length ? visuals.spread_timeline : (Array.isArray(l3.timeline) ? l3.timeline : []);
+      const clusterGrowth = Array.isArray(visuals.cluster_growth) ? visuals.cluster_growth : [];
+      const strengthDistribution = Array.isArray(visuals.match_strength_distribution) ? visuals.match_strength_distribution : [];
+      const sourceDistribution = Array.isArray(visuals.source_distribution) ? visuals.source_distribution : [];
+      const riskBreakdown = visuals.risk_metrics && typeof visuals.risk_metrics === "object" ? visuals.risk_metrics : {};
+      const propagationGraph = normalizePropagationGraph(l3.propagation_graph || {});
+      const clusterSize = Number(spread.cluster_size || srcCount || 0);
+      const velocity = Number(spread.spread_velocity || 0);
+      const lvl = classifyGrowth(growth, risk, srcCount);
+      const riskScoreOutOfTen = risk <= 1 ? risk * 10 : risk;
+      const fakeProb = Number(payload.layer1 && payload.layer1.confidence ? payload.layer1.confidence/100 : 0);
+      const platformDiversity = Number(spread.platform_diversity || 0);
+      const fallbackDistribution = Array.isArray(l2.domain_distribution) ? l2.domain_distribution : [];
+      const totalPlatforms = Math.max(platformDiversity, sourceDistribution.length, fallbackDistribution.length);
+      const summary = l3.timeline_summary || {};
+      const firstSeen = summary.first_seen ? safeDate(summary.first_seen) : "Unknown";
+      const trackingWindow = trackingWindowLabel(timeline);
+      const lastUpdated = summary.last_seen ? relativeTimeLabel(summary.last_seen) : "Unavailable";
+      const spreadStatus = spreadStatusLabel(growth, velocity);
+      const confidenceLevel = riskConfidenceLabel(srcCount, platformDiversity, timeline.length, clusterSize);
+      const temporaryMode = String(l3.persistence_mode || "") === "temporary";
+      const provisionalMode = String(l3.persistence_mode || "") === "provisional" || String(l3.refinement_status || "").toLowerCase() === "pending";
+      const expiresAt = l3.expires_at ? safeDate(l3.expires_at) : "";
+      const humanRisk = riskScoreOutOfTen >= 7 ? "High" : riskScoreOutOfTen >= 4 ? "Medium" : "Low";
+      const humanConfidence = confidenceLevel.startsWith("High") ? "Strong" : confidenceLevel.startsWith("Moderate") ? "Moderate" : "Limited";
+      const humanVersions = clusterSize >= 10 ? "Many" : clusterSize >= 4 ? "Several" : clusterSize >= 1 ? "Few" : "None yet";
+      const spreadTrendLine = spreadStatus === "Increasing" ? "Spreading faster" : spreadStatus === "Declining" ? "Slowing down" : "Stable";
+      const latestSpike = timeline.length ? Math.max(...timeline.map((point)=>Number(point.mentions || 0))) : 0;
+      const latestCluster = clusterGrowth.length ? Number(clusterGrowth[clusterGrowth.length - 1].cluster_size || 0) : clusterSize;
+      const strongestBand = strengthDistribution.reduce((best, item)=>Number(item.count || 0) > Number(best.count || 0) ? item : best, strengthDistribution[0] || { label:"0.0-0.2", count:0 });
+      const strongestBandLabel = String(strongestBand.label || "0.0-0.2");
+      const weakDominance = strongestBandLabel.startsWith("0.0") || strongestBandLabel.startsWith("0.2") || strongestBandLabel.startsWith("0.4");
+
+      const heroMessage = temporaryMode
+        ? `This content is being watched in this session only. ${srcCount > 0 ? `We already found ${srcCount} related result${srcCount === 1 ? "" : "s"}.` : "We have not found public spread yet."}`
+        : provisionalMode
+          ? `Tracelyt has started tracking this content. Early signs suggest ${srcCount > 0 ? "it is already appearing in more than one place" : "public spread may still be limited"}.`
+          : humanRisk === "High"
+            ? "This content is spreading quickly across multiple places and is likely to need attention."
+            : humanRisk === "Medium"
+              ? "This content is being shared beyond its original source and should be watched closely."
+              : srcCount > 0
+                ? "This content has appeared in a few places, but broad spread has not been confirmed yet."
+                : "We have not seen this content spreading in a meaningful way yet.";
+      const heroSupport = temporaryMode
+        ? `Tracking will stay available until ${expiresAt || "this session expires"}. Log in if you want saved history, alerts, and longer monitoring.`
+        : provisionalMode
+          ? "Tracelyt is still collecting more public evidence, so this view may become clearer as more matches arrive."
+          : spreadStatus === "Increasing"
+            ? "This means the content is being reshared rapidly and may keep reaching new audiences if the pattern continues."
+            : spreadStatus === "Declining"
+              ? "This means sharing appears to be slowing, although older copies may still remain online."
+              : srcCount > 0
+                ? "This means there are public traces of the content, but the pace of sharing does not currently suggest a fast-moving event."
+                : "This means we do not yet have enough public evidence to say the content is circulating widely.";
+
+      el.layer3Insight.textContent = heroMessage;
+      if(el.layer3InsightSupport){ el.layer3InsightSupport.textContent = heroSupport; }
+
+      el.layer3Badge.textContent = temporaryMode ? "Session-only insights" : provisionalMode ? "Refining in background" : (l3.tracking_enabled ? (lvl === "viral" ? "High-priority monitoring" : "Active monitoring") : "Passive indexing");
+      if(el.layer3IntelSummaryText){
+        el.layer3IntelSummaryText.textContent = `Last updated ${lastUpdated} | ${trackingWindow}`;
+      }
+      if(el.layer3IntelStatus){
+        const intelStatusClass = humanRisk === "High" ? "high" : humanRisk === "Medium" ? "medium" : "low";
+        el.layer3IntelStatus.className = `layer3-status-badge ${intelStatusClass}`;
+        el.layer3IntelStatus.textContent = `${humanRisk} risk`;
+      }
+      if(el.layer3IntelPoints){
+        const summaryPoints = [
+          ["Seen Since", firstSeen, summary.first_seen ? "This is the earliest public appearance we can currently see." : "We have not confirmed a public start point yet."],
+          ["Spread Status", spreadTrendLine, spreadStatus === "Increasing" ? "This means the content is being shared more often over time." : spreadStatus === "Declining" ? "This means the pace of sharing is slowing down." : "This means sharing is not changing dramatically right now."],
+          ["Where It Appears", `Seen on ${totalPlatforms} platform${totalPlatforms === 1 ? "" : "s"}`, totalPlatforms > 0 ? "This counts the distinct places where related copies have been detected." : "Platform coverage will update after matching finishes."],
+          ["Copies Found", `${clusterSize} similar version${clusterSize === 1 ? "" : "s"}`, clusterSize > 0 ? "This means other uploads or reposts that look closely related have been found." : "We have not identified other versions yet."],
+        ];
+        el.layer3IntelPoints.innerHTML = summaryPoints.map(([label, value, note])=>`<div class="layer3-summary-item"><div class="layer3-summary-label">${escapeHtml(label)}</div><div class="layer3-summary-value">${escapeHtml(value)}</div><div class="layer3-summary-note">${escapeHtml(note)}</div></div>`).join("");
+      }
+      el.riskSummaryValue.textContent = humanRisk;
+      el.riskSummaryMeta.textContent = temporaryMode ? "This is a temporary session view." : humanRisk === "High" ? "This case shows strong signs of harmful spread." : humanRisk === "Medium" ? "This case is active enough to need continued watching." : "This case does not currently show broad public spread.";
+      if(el.riskSummaryCard){
+        el.riskSummaryCard.style.borderColor = risk >= 0.75 ? "rgba(148,163,184,.18)" : risk >= 0.45 ? "rgba(94,234,212,.18)" : "rgba(148,163,184,.08)";
+      }
+      el.velocitySummaryValue.textContent = spreadTrendLine;
+      el.velocitySummaryMeta.textContent = spreadStatus === "Increasing" ? "This means sharing is picking up speed." : spreadStatus === "Declining" ? "This means sharing is slowing down." : "This means the pace of sharing is steady.";
+      el.clusterSummaryValue.textContent = humanVersions;
+      el.clusterSummaryMeta.textContent = clusterSize > 0 ? `${clusterSize} related version${clusterSize === 1 ? "" : "s"} are visible right now.` : "We have not found clearly related versions yet.";
+      el.statusSummaryValue.textContent = humanConfidence;
+      el.statusSummaryMeta.textContent = temporaryMode ? "Login for saved tracking and alerts." : provisionalMode ? "This view is still being refined in the background." : `This reading is based on the current public evidence as of ${lastUpdated}.`;
+      el.timelineMeta.textContent = "This shows whether the content is being shared more often or fading out.";
+      el.histogramMeta.textContent = "This shows whether the same content is appearing with edits or small changes.";
+      el.strengthMeta.textContent = "This shows whether other versions look very close to the original content.";
+      el.propagationMeta.textContent = propagationGraph.nodes.length > 0 ? `${propagationGraph.nodes.length} step${propagationGraph.nodes.length === 1 ? "" : "s"} in the visible spread path.` : "Follow the path from the earliest appearance to later reposts.";
+      el.riskBreakdownMeta.textContent = humanRisk === "High" ? "This case may need quick attention." : humanRisk === "Medium" ? "This case deserves continued monitoring." : "This case appears limited right now.";
+      el.distributionMeta.textContent = "A simple view of the sites and platforms where this content appears.";
+      setInsight(
+        el.timelineInsight,
+        latestSpike >= 5 ? "high" : timeline.length > 1 ? "medium" : "low",
+        latestSpike >= 5 ? "Spreading faster" : timeline.length > 1 ? "Sharing is continuing over time" : "No clear sharing pattern yet"
+      );
+      setInsight(
+        el.histogramInsight,
+        latestCluster > clusterSize * 0.75 && latestCluster > 2 ? "medium" : "low",
+        latestCluster > 2 ? "Some reposts appear with small edits" : "No major edits detected"
+      );
+      setInsight(
+        el.strengthInsight,
+        weakDominance ? "medium" : "high",
+        weakDominance ? "Some possible copies are present, but they are not all close matches" : "Many versions look like close copies"
+      );
+      setInsight(
+        el.propagationInsight,
+        propagationGraph.nodes.length > 4 ? "high" : propagationGraph.nodes.length > 2 ? "medium" : "low",
+        propagationGraph.nodes.length > 4
+          ? "The content is moving through several connected reposts"
+          : propagationGraph.nodes.length > 2
+            ? "We can see a small spread path forming"
+            : "There is not enough spread activity to map yet"
+      );
+      setInsight(
+        el.distributionInsight,
+        totalPlatforms >= 5 ? "high" : totalPlatforms >= 2 ? "medium" : "low",
+        totalPlatforms >= 5 ? "People are seeing this across several platforms" : totalPlatforms >= 2 ? "This has spread beyond a single platform" : "No cross-platform spread detected"
+      );
+
+      const alerts = Array.isArray(l3.alerts) ? l3.alerts : [];
+      if(alerts.length){
+        el.alertList.innerHTML = alerts.map((a)=>{
+          const sev = String(a.severity || "low").toUpperCase();
+          return `<div class="alert"><strong>${sev}</strong> | ${escapeHtml(a.title || "Update")}: ${escapeHtml(a.message || "")}</div>`;
+        }).join("");
+      }else{
+        const fallback = humanRisk === "High" ? "Sharing appears active enough that this content should be reviewed and monitored closely." : srcCount > 0 ? "Related copies have been found, but the spread does not yet look severe." : "No spread detected yet. Tracelyt will keep watching for new public appearances.";
+        el.alertList.innerHTML = `<div class="alert">${escapeHtml(fallback)}</div>`;
+      }
+      setPropagationGraph(l3.propagation_graph || {}, analysisKey);
+      if(state.layer3Visible){
+        drawTimeline(timeline);
+        drawClusterGrowth(clusterGrowth);
+        drawStrengthDistribution(strengthDistribution);
+        drawRiskBreakdown({
+          detection: Number(riskBreakdown.detection || fakeProb),
+          spread: Number(riskBreakdown.spread || Math.max(0, Math.min(1, growth / 120))),
+          cluster: Number(riskBreakdown.cluster || Math.max(0, Math.min(1, clusterSize / 20))),
+          velocity: Number(riskBreakdown.velocity || Math.max(0, Math.min(1, velocity / 1.0)))
+        });
+        const distribution = sourceDistribution.length
+          ? sourceDistribution
+          : (Array.isArray(l2.domain_distribution) && l2.domain_distribution.length
+            ? l2.domain_distribution
+            : Object.entries(l2.domain_clusters || {}).map(([domain, items])=>({ domain, count: Array.isArray(items) ? items.length : 0 })));
+        drawSourceDistribution(distribution);
+      }
+      const events = buildLayer3Events(l3, alerts);
+      el.eventFeedMeta.textContent = `${events.length} recent update${events.length !== 1 ? "s" : ""}`;
+      el.eventFeed.innerHTML = events.length ? events.map((event)=>`
+        <div class="event-item">
+          <div class="event-top">
+            <span class="event-type sev-${escapeHtml(event.severity)}">${escapeHtml(event.type)}</span>
+            <span class="event-time">${escapeHtml(event.time)}</span>
+          </div>
+          <div class="event-copy">${escapeHtml(event.copy)}</div>
+        </div>
+      `).join("") : `<div class="event-item"><div class="event-top"><span class="event-type sev-low">Waiting</span><span class="event-time">now</span></div><div class="event-copy">No Layer 3 events yet. Run analysis to start monitoring.</div></div>`;
+    }
+
     function generateInsight(payload){
       const l1 = payload.layer1 || {}, l2 = payload.layer2 || {}, l3 = payload.layer3 || {};
       const verdict = String(l1.result || "UNKNOWN");
-      const conf = Number(l1.confidence || 0);
       const matches = layer2TotalCount(l2);
       const risk = Number(l3.risk_score || (l3.risk && l3.risk.risk_score) || 0);
       const growth = Number((l3.growth && l3.growth.rate_percent) || l3.growth_rate || 0);
       const lvl = classifyGrowth(growth, risk, matches);
-      const originSummary = String(l2.origin_summary || "").trim();
-      const spread = matches > 0 ? `It appears in ${matches} tracked source(s).` : "No confirmed external source matches yet.";
-      return `${originSummary || `This media is likely ${verdict} with ${conf.toFixed(2)}% confidence. ${spread}` } Current spread level is ${lvl}, with composite risk ${(risk*100).toFixed(1)}%.`;
+      if(verdict === "FAKE"){
+        return lvl === "viral" || risk >= 0.7 ? "This content is likely manipulated and spreading rapidly." : "This content is likely manipulated and already appearing in multiple places.";
+      }
+      if(verdict === "REAL"){
+        return matches > 0 ? "This content appears authentic, and current spread does not suggest broad manipulation." : "This content appears authentic based on the current investigation.";
+      }
+      return matches > 0 ? "This content needs closer review before it can be trusted." : "Upload content to see the main finding.";
     }
 
     function showSkeleton(){
@@ -2725,12 +3138,13 @@
         return;
       }
       if(!state.analysis){
-        el.snapshotCopy.textContent = "Run an analysis to populate the current verdict, source footprint, and risk indicators.";
+        el.snapshotCopy.textContent = "Tracelyt will summarize the result in plain language, then surface only the details that matter.";
         el.snapshotVerdict.textContent = "Awaiting scan";
-        el.snapshotRisk.textContent = "0%";
+        el.snapshotRisk.textContent = "Awaiting scan";
+        el.snapshotRisk.className = "hero-risk-badge risk-low";
         el.snapshotSources.textContent = "0";
         el.snapshotTopDomain.textContent = "Not established";
-        el.snapshotNote.textContent = "Once analysis runs, this panel will summarize the strongest match signal, spread footprint, and current monitoring posture.";
+        el.snapshotNote.textContent = "Once analysis runs, this area will show the strongest signal, where the content is appearing, and how serious the spread looks right now.";
         return;
       }
       const layer1 = state.analysis.layer1 || {};
@@ -2740,18 +3154,23 @@
       const risk = Number(layer3.risk_score || (layer3.risk && layer3.risk.risk_score) || 0);
       const growth = Number((layer3.growth && layer3.growth.rate_percent) || layer3.growth_rate || 0);
       const totalSources = Number(layer3.similar_count || 0) || layer2TotalCount(layer2);
+      const platforms = Number(layer3.platform_count || 0) || Math.max(0, new Set((Array.isArray(layer2.top_domains) ? layer2.top_domains : []).map((item)=>String(item || "").trim()).filter(Boolean)).size);
       const topDomain = Array.isArray(layer2.top_domains) && layer2.top_domains.length ? String(layer2.top_domains[0]) : "";
       const bestLead = [...rankMatches([...(layer2Buckets(layer2).exact || []), ...(layer2Buckets(layer2).visual || []), ...(layer2Buckets(layer2).embedding || [])])][0];
       const bestLeadScore = bestLead ? `${(layer2Similarity(bestLead) * 100).toFixed(1)}%` : "No strong lead";
       const temporaryMode = String(layer3.persistence_mode || "") === "temporary";
-      el.snapshotCopy.textContent = `Current investigation shows a ${verdict.toLowerCase()} leaning verdict with ${totalSources} related instance${totalSources !== 1 ? "s" : ""}${temporaryMode ? " in a temporary session view" : layer3.tracking_enabled ? " under active tracking" : " under passive indexing"}.`;
+      const riskLabel = risk >= 0.7 ? "High risk" : risk >= 0.4 ? "Medium risk" : "Low risk";
+      el.snapshotCopy.textContent = temporaryMode
+        ? `Seen on ${platforms} platform${platforms === 1 ? "" : "s"} with ${totalSources} related version${totalSources === 1 ? "" : "s"} in this session view.`
+        : `Seen on ${platforms} platform${platforms === 1 ? "" : "s"} with ${totalSources} related version${totalSources === 1 ? "" : "s"} found so far.`;
       el.snapshotVerdict.textContent = verdict;
-      el.snapshotRisk.textContent = `${(risk * 100).toFixed(1)}%`;
-      el.snapshotSources.textContent = String(totalSources);
+      el.snapshotRisk.textContent = riskLabel;
+      el.snapshotRisk.className = `hero-risk-badge ${risk >= 0.7 ? "risk-high" : risk >= 0.4 ? "risk-medium" : "risk-low"}`;
+      el.snapshotSources.textContent = String(platforms);
       el.snapshotTopDomain.textContent = topDomain || "Not established";
       el.snapshotNote.textContent = temporaryMode
-        ? `Strongest match: ${bestLeadScore}. Growth signal: ${growth.toFixed(1)}%. Login to save this content, enable alerts, and keep monitoring beyond the session TTL.`
-        : `Strongest match: ${bestLeadScore}. Growth signal: ${growth.toFixed(1)}%. Monitoring remains ${classifyGrowth(growth, risk, totalSources)}.${layer3.cluster_id ? ` Cluster ${String(layer3.cluster_id).slice(0, 8)}.` : ""}`;
+        ? `Strongest match: ${bestLeadScore}. Spread status: ${classifyGrowth(growth, risk, totalSources)}. Login to save this case and keep monitoring after the temporary session ends.`
+        : `Strongest match: ${bestLeadScore}. Spread status: ${classifyGrowth(growth, risk, totalSources)}.${layer3.cluster_id ? ` Tracking cluster ${String(layer3.cluster_id).slice(0, 8)}.` : ""}`;
     }
 
     function setupLayer2ChartObserver(){
@@ -2949,7 +3368,7 @@
         clearSkeleton();
         stopProcessing(false, err instanceof Error ? err.message : "Analysis failed unexpectedly.");
         showError(err instanceof Error ? err.message : "Analysis failed unexpectedly.");
-        el.insightText.textContent = "Analysis could not complete. Check media format, network, and authentication session.";
+        el.insightText.textContent = "Analysis could not complete. Check the media format, network, and account session, then try again.";
         document.body.classList.remove("processing-active");
         el.progressOverlay.classList.remove("on");
       }
@@ -2973,7 +3392,7 @@
       if(state.pollTimer){ clearTimeout(state.pollTimer); state.pollTimer = null; }
       stopBackgroundLayer3Refresh();
       el.fileInput.value = "";
-      el.fileName.textContent = "Drag and drop image/video here, or click to upload.";
+      el.fileName.textContent = "Upload content to analyze";
       el.previewName.textContent = "Nothing uploaded yet";
       el.sourceUrlInput.value = "";
       if(el.agentInput){ el.agentInput.value = ""; }
@@ -2984,7 +3403,7 @@
       syncTrackingPrompt();
       revokePreview(); showPreview(null);
       clearError();
-      el.insightText.textContent = "Run an analysis to generate a combined forensic and propagation insight.";
+      el.insightText.textContent = "Upload content to see the main finding.";
       el.layer1Badge.className = "badge b-unc"; el.layer1Badge.textContent = "Awaiting scan";
       el.verdictVal.className = "verdict v-unc"; el.verdictVal.textContent = "Awaiting analysis";
       el.confidenceBar.style.width = "0%";
@@ -3018,40 +3437,40 @@
       el.embeddingGrid.innerHTML = "";
       el.domainClusterGrid.innerHTML = "";
       el.layer3Badge.textContent = "Tracking not started";
-      if(el.layer3IntelSummaryText){ el.layer3IntelSummaryText.textContent = "Last updated unavailable • Tracking window unavailable"; }
+      if(el.layer3IntelSummaryText){ el.layer3IntelSummaryText.textContent = "Last updated unavailable | Tracking window unavailable"; }
       if(el.layer3IntelStatus){
         el.layer3IntelStatus.className = "layer3-status-badge low";
-        el.layer3IntelStatus.textContent = "Low confidence";
+        el.layer3IntelStatus.textContent = "Low risk";
       }
       if(el.layer3IntelPoints){
         el.layer3IntelPoints.innerHTML = [
-          ["First Seen", "Unknown"],
-          ["Active Variants", "0"],
-          ["Spread Status", "Stable"],
-          ["Platforms Detected", "0"],
-          ["Overall Risk", "0.0 / 10"],
-        ].map(([label, value])=>`<div class="layer3-summary-item"><div class="layer3-summary-label">${escapeHtml(label)}</div><div class="layer3-summary-value">${escapeHtml(value)}</div></div>`).join("");
+          ["Seen Since", "Unknown", "We have not confirmed a public start point yet."],
+          ["Spread Status", "Stable", "No rapid change has been detected yet."],
+          ["Where It Appears", "Seen on 0 platforms", "Platform coverage will update after matching finishes."],
+          ["Copies Found", "0 similar versions", "We have not identified other versions yet."],
+        ].map(([label, value, note])=>`<div class="layer3-summary-item"><div class="layer3-summary-label">${escapeHtml(label)}</div><div class="layer3-summary-value">${escapeHtml(value)}</div><div class="layer3-summary-note">${escapeHtml(note)}</div></div>`).join("");
       }
-      el.layer3Insight.textContent = "No spread detected yet. Monitoring will continue over time.";
-      setInsight(el.timelineInsight, "low", "Not enough data to generate meaningful trend yet");
-      setInsight(el.histogramInsight, "low", "No significant mutation patterns detected");
-      setInsight(el.strengthInsight, "low", "High similarity cluster detected");
-      setInsight(el.propagationInsight, "low", "Not enough data to map propagation yet");
-      setInsight(el.distributionInsight, "low", "No cross-platform distribution detected");
-      el.alertList.innerHTML = '<div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>';
-      el.riskSummaryValue.textContent = "0.0 / 10";
-      el.riskSummaryMeta.textContent = "Confidence unavailable";
+      el.layer3Insight.textContent = "We have not seen this content spreading in a meaningful way yet.";
+      if(el.layer3InsightSupport){ el.layer3InsightSupport.textContent = "Once Tracelyt finds copies across the web, this section will explain in plain language whether the content is staying contained, being reposted, or spreading quickly."; }
+      setInsight(el.timelineInsight, "low", "No clear sharing pattern yet");
+      setInsight(el.histogramInsight, "low", "No major edits detected");
+      setInsight(el.strengthInsight, "low", "No clear copy pattern yet");
+      setInsight(el.propagationInsight, "low", "There is not enough spread activity to map yet");
+      setInsight(el.distributionInsight, "low", "No cross-platform spread detected");
+      el.alertList.innerHTML = '<div class="alert">No spread detected yet. Tracelyt will keep watching for new public appearances.</div>';
+      el.riskSummaryValue.textContent = "Low";
+      el.riskSummaryMeta.textContent = "There is not enough evidence yet to call this a high-spread event.";
       if(el.riskSummaryCard){ el.riskSummaryCard.style.borderColor = "rgba(148,163,184,.08)"; }
-      el.velocitySummaryValue.textContent = "Low";
-      el.velocitySummaryMeta.textContent = "Tracking window unavailable";
-      el.clusterSummaryValue.textContent = "Sparse";
-      el.clusterSummaryMeta.textContent = "0 active variants";
-      el.statusSummaryValue.textContent = "Unknown";
-      el.statusSummaryMeta.textContent = "Last updated unavailable";
-      el.timelineMeta.textContent = "Matches over time";
-      el.histogramMeta.textContent = "Mutation pattern tracking";
-      el.strengthMeta.textContent = "Similarity cluster analysis";
-      el.propagationMeta.textContent = "Node inspection";
+      el.velocitySummaryValue.textContent = "Stable";
+      el.velocitySummaryMeta.textContent = "Very few public reposts have been found so far.";
+      el.clusterSummaryValue.textContent = "Few";
+      el.clusterSummaryMeta.textContent = "Only a small number of related versions are visible.";
+      el.statusSummaryValue.textContent = "Limited";
+      el.statusSummaryMeta.textContent = "This becomes clearer as more public examples are found.";
+      el.timelineMeta.textContent = "This shows whether the content is being shared more often or fading out.";
+      el.histogramMeta.textContent = "This shows whether the same content is appearing with edits or small changes.";
+      el.strengthMeta.textContent = "This shows whether other versions look very close to the original content.";
+      el.propagationMeta.textContent = "Follow the path from the earliest appearance to later reposts.";
       el.propagationStatus.textContent = "Waiting for graph data";
       if(el.propagationScrubberMeta){ el.propagationScrubberMeta.textContent = "Tracking window unavailable"; }
       if(el.propagationScrubber){
@@ -3059,8 +3478,8 @@
         el.propagationScrubber.value = "0";
         el.propagationScrubber.disabled = true;
       }
-      el.riskBreakdownMeta.textContent = "Current exposure assessment";
-      el.distributionMeta.textContent = "Ranked source clusters";
+      el.riskBreakdownMeta.textContent = "A simple summary of how serious this case looks right now.";
+      el.distributionMeta.textContent = "A simple view of the sites and platforms where this content appears.";
       el.riskBreakdownList.innerHTML = "";
       el.sourceDistributionLegend.innerHTML = `<div class="distribution-item"><div class="distribution-rank">No distribution data</div><div class="distribution-title">No external platform clusters detected</div><div class="distribution-copy">Current tracking window does not contain enough source data.</div></div>`;
       el.eventFeedMeta.textContent = "Recent monitoring updates";
@@ -3083,6 +3502,23 @@
     el.fileInput.addEventListener("change", (e)=>setFile(e.target.files && e.target.files[0]));
     el.sourceUrlInput.addEventListener("input", setRunEnabled);
     el.trackingToggle.addEventListener("change", syncTrackingPrompt);
+    if(el.layer3ReviewSourceBtn){
+      el.layer3ReviewSourceBtn.addEventListener("click", ()=>{
+        document.getElementById("layer2Card")?.scrollIntoView({ behavior:"smooth", block:"start" });
+      });
+    }
+    if(el.layer3TrackFurtherBtn){
+      el.layer3TrackFurtherBtn.addEventListener("click", ()=>{
+        el.trackingToggle.checked = true;
+        syncTrackingPrompt();
+        document.getElementById("trackingToggle")?.scrollIntoView({ behavior:"smooth", block:"center" });
+      });
+    }
+    if(el.layer3ReportContentBtn){
+      el.layer3ReportContentBtn.addEventListener("click", ()=>{
+        document.getElementById("alertList")?.scrollIntoView({ behavior:"smooth", block:"center" });
+      });
+    }
     el.clearDomainFilterBtn.addEventListener("click", ()=>{
       state.activeDomainFilter = "";
       if(state.analysis){ renderLayer2(state.analysis); }
@@ -3093,6 +3529,15 @@
     el.runBtn.addEventListener("click", runAnalysis);
     el.resetBtn.addEventListener("click", resetAll);
     el.loginToContinueBtn.addEventListener("click", ()=>{ window.location.href = "/"; });
+    if(el.chatFab){
+      el.chatFab.addEventListener("click", ()=>{
+        setChatOpen(true);
+        if(el.agentInput){ el.agentInput.focus(); }
+      });
+    }
+    if(el.chatCloseBtn){
+      el.chatCloseBtn.addEventListener("click", ()=>setChatOpen(false));
+    }
     if(el.agentSendBtn){
       el.agentSendBtn.addEventListener("click", ()=>submitAgentPrompt(el.agentInput ? el.agentInput.value : ""));
     }
@@ -3106,6 +3551,7 @@
     }
     Array.from(document.querySelectorAll("[data-agent-prompt]")).forEach((button)=>{
       button.addEventListener("click", ()=>{
+        setChatOpen(true);
         submitAgentPrompt(String(button.getAttribute("data-agent-prompt") || ""));
       });
     });
@@ -3116,7 +3562,6 @@
     setupLayer2ChartObserver();
     setupLayer3ChartObserver();
     loadSession();
-    pollNotifications();
     resetAll();
   </script>
 </body>
