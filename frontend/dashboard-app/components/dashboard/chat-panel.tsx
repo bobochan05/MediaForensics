@@ -22,7 +22,7 @@ export function ChatPanel() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Ask about authenticity, source matches, spread growth, or risk.",
+      content: "Ask about authenticity, detection results, risk meaning, or source tracing.",
     },
   ]);
 
@@ -76,7 +76,7 @@ export function ChatPanel() {
               <MessageCircle className="h-4 w-4 text-[#83beff]" />
               Intelligence Chat
             </CardTitle>
-            <CardDescription>Context-aware assistant connected to `/api/chat`.</CardDescription>
+            <CardDescription>Assistant for media authenticity analysis and tracing results.</CardDescription>
           </div>
           <Button variant="outline" onClick={() => setOpen((v) => !v)}>
             {open ? "Hide" : "Open"}
@@ -99,7 +99,7 @@ export function ChatPanel() {
             <input
               type="text"
               className="h-10 w-full rounded-xl border border-white/15 bg-black/25 px-3 text-sm text-[#e5edff] outline-none placeholder:text-[#7f95ba] focus:border-[#5ca7ff]"
-              placeholder="Ask about the current analysis..."
+              placeholder="Ask about this media analysis..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {

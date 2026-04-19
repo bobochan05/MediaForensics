@@ -38,7 +38,14 @@ from backend.config import load_backend_config
 from backend.auth_system import init_auth_system
 from backend.auth_system.middleware import jwt_required
 from backend.routes import parse_analyze_request, parse_chat_request
-from backend.services import build_alerts, build_growth_indicator, build_layer1_payload, build_risk_insight
+from backend.services import (
+    build_alerts,
+    build_growth_indicator,
+    build_layer1_payload,
+    build_risk_insight,
+    handle_layer3_result,
+    send_alert_email,
+)
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
@@ -107,6 +114,21 @@ INTERNAL_EMBEDDING_MIN_SCORE = 0.55
 INTERNAL_EMBEDDING_MAX_VISUAL_SIMILARITY = 0.82
 DISCOVERY_SECTION_LIMIT = 10
 INTERNAL_EMBEDDING_SEARCH_LIMIT = 100
+AGENT_OUT_OF_SCOPE_REPLY = "I can only assist with analysis related to this media."
+AGENT_INSUFFICIENT_EVIDENCE_REPLY = "Insufficient evidence to provide a reliable answer"
+AGENT_SCOPE_PATTERN = re.compile(
+    r"\b(authentic(?:ity)?|synthetic|deepfake|manipulat(?:ed|ion)|detect(?:ion|ed|or)?|"
+    r"result(?:s)?|confidence|verdict|fake|real|risk|source|origin|trace|tracing|"
+    r"spread|spreading|propagat(?:ion|e|ed)|timeline|match(?:es)?|similar(?:ity)?|analysis|"
+    r"flag(?:ged)?|indicator(?:s)?|artifact(?:s)?|anomal(?:y|ies)|velocity|cluster|layer ?[1234])\b"
+)
+AGENT_CONTEXTUAL_SCOPE_PATTERN = re.compile(
+    r"\b(this|that|it|current|uploaded|media|content|file|analysis|result|findings?)\b"
+)
+AGENT_INTENT_PATTERN = re.compile(
+    r"\b(explain|meaning|mean|why|how|summari[sz]e|summary|details?|show|tell|clarify|"
+    r"understand|trust|safe)\b"
+)
 
 app = Flask(__name__, template_folder=str(APP_DIR / "templates"))
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -1695,8 +1717,76 @@ def _summarize_match_for_agent(item: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _agent_indicator_list(
+    layer1: dict[str, object],
+    normalized_layer2: dict[str, object],
+    layer3: dict[str, object],
+) -> list[str]:
+    indicators: list[str] = []
+
+    classification = dict(layer1.get("content_classification") or {})
+    raw_label = str(classification.get("raw_label") or classification.get("content_type") or "").strip()
+    if raw_label and raw_label.lower() != "unknown":
+        indicators.append(f"content_type:{raw_label}")
+
+    consistency_warning = dict(normalized_layer2.get("consistency_warning") or {})
+    warning_message = str(consistency_warning.get("message") or "").strip()
+    if warning_message:
+        indicators.append(warning_message)
+
+    insights = dict(normalized_layer2.get("layer2_insights") or {})
+    cross_modal = dict(insights.get("cross_modal_consistency") or {})
+    cross_modal_status = str(cross_modal.get("status") or "").strip()
+    if cross_modal_status:
+        indicators.append(f"cross_modal:{cross_modal_status}")
+
+    for match in list(normalized_layer2.get("exact_matches") or [])[:3]:
+        explanation = str(match.get("explanation") or match.get("note") or match.get("match_reason") or "").strip()
+        if explanation:
+            indicators.append(explanation)
+
+    for alert in list(layer3.get("alerts") or [])[:3]:
+        if not isinstance(alert, dict):
+            continue
+        title = str(alert.get("title") or alert.get("message") or "").strip()
+        if title:
+            indicators.append(title)
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for item in indicators:
+        cleaned = _truncate_text(item, 120)
+        key = cleaned.lower()
+        if not cleaned or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(cleaned)
+    return deduped[:6]
+
+
+def _agent_platforms(normalized_layer2: dict[str, object]) -> list[str]:
+    platforms: list[str] = []
+    for item in list(normalized_layer2.get("important_domains") or [])[:AGENT_DOMAIN_LIMIT]:
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get("label") or item.get("domain") or "").strip()
+        if label:
+            platforms.append(label)
+    if platforms:
+        return platforms[:AGENT_DOMAIN_LIMIT]
+
+    for item in list(normalized_layer2.get("domain_distribution") or [])[:AGENT_DOMAIN_LIMIT]:
+        if not isinstance(item, dict):
+            continue
+        domain = str(item.get("domain") or "").strip()
+        if domain:
+            platforms.append(domain)
+    return platforms[:AGENT_DOMAIN_LIMIT]
+
+
 def _build_agent_context(layer1: dict[str, object], layer2: dict[str, object], layer3: dict[str, object]) -> dict[str, object]:
     normalized_layer2 = build_layer2_response(layer2 if isinstance(layer2, dict) else None)
+    classification = dict(layer1.get("content_classification") or {})
     exact_matches = [_summarize_match_for_agent(item) for item in list(normalized_layer2.get("exact_matches") or [])[:AGENT_MATCH_LIMIT]]
     visual_matches = [_summarize_match_for_agent(item) for item in list(normalized_layer2.get("visual_matches_top10") or [])[:AGENT_MATCH_LIMIT]]
     related_matches = [_summarize_match_for_agent(item) for item in list(normalized_layer2.get("related_web_sources") or normalized_layer2.get("embedding_matches_top10") or [])[:AGENT_MATCH_LIMIT]]
@@ -1722,15 +1812,19 @@ def _build_agent_context(layer1: dict[str, object], layer2: dict[str, object], l
             "result": str(layer1.get("result") or "UNKNOWN"),
             "confidence": round(_safe_float(layer1.get("confidence")), 2),
             "heatmap_available": bool(layer1.get("heatmap")),
+            "content_type": str(classification.get("content_type") or "unknown"),
+            "raw_label": str(classification.get("raw_label") or "unknown"),
         },
         "layer2": {
             "origin_summary": _truncate_text(normalized_layer2.get("origin_summary") or "", 260),
             "top_domains": list(normalized_layer2.get("top_domains") or [])[:AGENT_DOMAIN_LIMIT],
+            "platforms": _agent_platforms(normalized_layer2),
             "first_seen_estimate": str(normalized_layer2.get("first_seen_estimate") or ""),
             "counts": dict(normalized_layer2.get("counts") or {}),
             "consistency_warning": dict(normalized_layer2.get("consistency_warning") or {}),
             "important_domains": list(normalized_layer2.get("important_domains") or [])[:AGENT_DOMAIN_LIMIT],
             "domain_distribution": list(normalized_layer2.get("domain_distribution") or [])[:AGENT_DOMAIN_LIMIT],
+            "indicators": _agent_indicator_list(layer1, normalized_layer2, layer3),
             "matches": {
                 "exact": exact_matches,
                 "visual": visual_matches,
@@ -1739,10 +1833,13 @@ def _build_agent_context(layer1: dict[str, object], layer2: dict[str, object], l
         },
         "layer3": {
             "risk_score": round(_safe_float(layer3.get("risk_score")), 4),
+            "risk_level": str(layer3.get("risk_level") or ""),
             "growth": dict(layer3.get("growth") or {}),
             "growth_rate_percent": round(_safe_float((layer3.get("growth") or {}).get("rate_percent"), _safe_float(layer3.get("growth_rate"))), 2),
             "spread_level": str(layer3.get("spread_level") or layer3.get("status") or ""),
             "source_count": int(float(layer3.get("source_count") or (layer3.get("risk") or {}).get("source_count") or 0)),
+            "cluster_size": int(float((layer3.get("spread_indicators") or {}).get("cluster_size") or layer3.get("similar_count") or 0)),
+            "strong_match_similarity": round(_safe_float((layer3.get("spread_indicators") or {}).get("strong_match_similarity")), 4),
             "alerts": alerts,
             "timeline": timeline,
         },
@@ -1753,7 +1850,8 @@ def _agent_context_ready(context: dict[str, object]) -> bool:
     layer1 = dict(context.get("layer1") or {})
     layer2 = dict(context.get("layer2") or {})
     layer3 = dict(context.get("layer3") or {})
-    if str(layer1.get("result") or "").strip():
+    layer1_result = str(layer1.get("result") or "").strip().upper()
+    if layer1_result and layer1_result != "UNKNOWN":
         return True
     counts = dict(layer2.get("counts") or {})
     if any(_safe_float(value) > 0 for value in counts.values()):
@@ -1763,12 +1861,47 @@ def _agent_context_ready(context: dict[str, object]) -> bool:
     return False
 
 
+def _agent_query_in_scope(message: str, context: dict[str, object]) -> bool:
+    cleaned = str(message or "").strip().lower()
+    if not cleaned:
+        return False
+    if AGENT_SCOPE_PATTERN.search(cleaned):
+        return True
+    if (
+        _agent_context_ready(context)
+        and AGENT_CONTEXTUAL_SCOPE_PATTERN.search(cleaned)
+        and AGENT_INTENT_PATTERN.search(cleaned)
+    ):
+        return True
+    return False
+
+
+def _agent_policy_reply(message: str, context: dict[str, object]) -> str | None:
+    if not _agent_query_in_scope(message, context):
+        return AGENT_OUT_OF_SCOPE_REPLY
+    if not _agent_context_ready(context):
+        return AGENT_INSUFFICIENT_EVIDENCE_REPLY
+    return None
+
+
 def _agent_system_prompt() -> str:
     return (
-        "You are a digital media forensics assistant. You analyze AI-generated content, explain detection results, "
-        "and help users understand risks and propagation. Base every answer only on the provided Layer 1, Layer 2, "
-        "and Layer 3 context. Be concise, analytical, and specific. Reference layers clearly when useful. "
-        "Do not hallucinate missing facts. If evidence is missing, say it is unavailable."
+        "You are an AI assistant for Tracelyt, an advanced digital media forensics platform. "
+        "You are not a general chatbot. You are a specialized assistant trained only on Tracelyt system outputs and analysis. "
+        "Use the provided analysis context as the only source of truth. "
+        "Tracelyt context: Layer 1 determines if content is real or AI-generated and provides confidence and artifact indicators. "
+        "Layer 2 explains reasons for detection and identifies anomalies. "
+        "Layer 3 tracks similar content, spread across platforms, re-uploads, and modifications. "
+        "Layer 4 risk assessment uses detection confidence, spread intensity, velocity, and cluster density, and may be summarized as a 1-10 style decision score when such system data is explicitly present. "
+        "Definitions: detection confidence means the probability content is synthetic. "
+        "Spread intensity means how widely content appears across platforms. "
+        "Velocity means speed of spread over time. "
+        "Cluster density means how many similar variants exist. "
+        "Allowed questions are limited to why content was flagged, what the risk score means, how the content is spreading, what the indicators suggest, and what the confidence score implies. "
+        f'If a request is outside that scope, reply exactly with: "{AGENT_OUT_OF_SCOPE_REPLY}" '
+        f'If information is missing, unclear, incomplete, or insufficient, reply exactly with: "{AGENT_INSUFFICIENT_EVIDENCE_REPLY}" '
+        "Do not invent facts, do not speculate, do not answer unrelated questions, do not provide opinions, and do not behave like a general assistant. "
+        "Output style must be clear, concise, analytical, and without fluff or storytelling."
     )
 
 
@@ -1782,32 +1915,84 @@ def _agent_cache_key(message: str, context: dict[str, object], history: list[dic
 
 
 def _agent_fallback_reply(message: str, context: dict[str, object]) -> str:
-    if not _agent_context_ready(context):
-        return "No analysis data available. Please upload media first."
+    policy_reply = _agent_policy_reply(message, context)
+    if policy_reply:
+        return policy_reply
     layer1 = dict(context.get("layer1") or {})
     layer2 = dict(context.get("layer2") or {})
     layer3 = dict(context.get("layer3") or {})
     result = str(layer1.get("result") or "UNKNOWN").upper()
     confidence = round(_safe_float(layer1.get("confidence")), 2)
+    content_type = str(layer1.get("content_type") or layer1.get("raw_label") or "unknown").strip()
     counts = dict(layer2.get("counts") or {})
     exact_count = int(_safe_float(counts.get("exact")))
     visual_count = int(_safe_float(counts.get("visual")))
     related_count = int(_safe_float(counts.get("related")))
+    indicators = [str(item).strip() for item in list(layer2.get("indicators") or []) if str(item).strip()]
+    platforms = [str(item).strip() for item in list(layer2.get("platforms") or []) if str(item).strip()]
     risk_percent = round(_safe_float(layer3.get("risk_score")) * 100, 1)
+    risk_level = str(layer3.get("risk_level") or "").strip()
     growth_rate = round(_safe_float(layer3.get("growth_rate_percent")), 1)
+    cluster_size = int(_safe_float(layer3.get("cluster_size")))
+    strong_match_similarity = round(_safe_float(layer3.get("strong_match_similarity")) * 100, 1)
+    source_count = int(_safe_float(layer3.get("source_count")))
     origin_summary = str(layer2.get("origin_summary") or "").strip()
     lowered = str(message or "").lower()
+    total_matches = exact_count + visual_count + related_count
+    spread_instances = max(total_matches, source_count)
+
+    if "indicator" in lowered or "artifact" in lowered or "anomal" in lowered:
+        if not indicators:
+            return AGENT_INSUFFICIENT_EVIDENCE_REPLY
+        return f"Indicators: {', '.join(indicators[:4])}."
     if "where" in lowered or "come from" in lowered or "source" in lowered:
         if origin_summary:
             return origin_summary
-        return f"Layer 2 found {exact_count + visual_count + related_count} relevant discovery results, but the likely origin is still uncertain."
+        return AGENT_INSUFFICIENT_EVIDENCE_REPLY
     if "risk" in lowered or "danger" in lowered or "safe" in lowered or "share" in lowered:
-        return f"Layer 3 currently scores the spread risk at {risk_percent}%. Growth is {growth_rate}%, so sharing should wait until the source trail is reviewed."
-    if "fake" in lowered or "real" in lowered or "why" in lowered or "explain" in lowered:
-        return f"Layer 1 currently labels this as {result} at {confidence}% confidence. Layer 2 adds {exact_count} exact, {visual_count} visual, and {related_count} related source leads, which should be used to validate the verdict."
+        if risk_percent <= 0 and growth_rate <= 0 and cluster_size <= 0:
+            return AGENT_INSUFFICIENT_EVIDENCE_REPLY
+        components: list[str] = [f"Risk score: {risk_percent}%"]
+        if risk_level:
+            components.append(f"level: {risk_level}")
+        if growth_rate > 0:
+            components.append(f"growth: {growth_rate}%")
+        if cluster_size > 0:
+            components.append(f"cluster size: {cluster_size}")
+        return ". ".join(components) + "."
+    if "confidence" in lowered:
+        if confidence <= 0:
+            return AGENT_INSUFFICIENT_EVIDENCE_REPLY
+        suffix = f" Content type: {content_type}." if content_type and content_type.lower() != "unknown" else ""
+        return f"Detection confidence is {confidence}%. This is the system probability that the content is synthetic.{suffix}"
+    if "spread" in lowered or "spreading" in lowered or "velocity" in lowered or "cluster" in lowered or "variant" in lowered:
+        if spread_instances <= 0 and growth_rate <= 0 and cluster_size <= 0:
+            return AGENT_INSUFFICIENT_EVIDENCE_REPLY
+        parts: list[str] = []
+        if platforms:
+            parts.append(f"Platforms: {', '.join(platforms[:4])}")
+        if spread_instances > 0:
+            parts.append(f"instances: {spread_instances}")
+        if growth_rate > 0:
+            parts.append(f"growth: {growth_rate}%")
+        if cluster_size > 0:
+            parts.append(f"variants: {cluster_size}")
+        if strong_match_similarity > 0:
+            parts.append(f"strong match similarity: {strong_match_similarity}%")
+        return ". ".join(parts) + "."
+    if "flag" in lowered or "fake" in lowered or "real" in lowered or "why" in lowered or "explain" in lowered:
+        if result == "UNKNOWN" and confidence <= 0:
+            return AGENT_INSUFFICIENT_EVIDENCE_REPLY
+        parts = [f"Layer 1 result: {result}", f"detection confidence: {confidence}%"]
+        if content_type and content_type.lower() != "unknown":
+            parts.append(f"content type: {content_type}")
+        if indicators:
+            parts.append(f"indicators: {', '.join(indicators[:3])}")
+        elif total_matches > 0:
+            parts.append(f"supporting matches: {exact_count} exact, {visual_count} visual, {related_count} related")
+        return ". ".join(parts) + "."
     return (
-        f"Layer 1 reports {result} at {confidence}% confidence. Layer 2 found {exact_count} exact, {visual_count} visual, "
-        f"and {related_count} related source leads. Layer 3 risk is {risk_percent}% with {growth_rate}% growth."
+        f"Current analysis: {result} at {confidence}% confidence, {spread_instances} tracked instances, and {risk_percent}% risk."
     )
 
 
@@ -1856,8 +2041,9 @@ def _build_gemini_payload(message: str, context: dict[str, object], history: lis
 
 
 def _generate_agent_reply(message: str, context: dict[str, object], history: list[dict[str, str]]) -> tuple[str, str]:
-    if not _agent_context_ready(context):
-        return "No analysis data available. Please upload media first.", "fallback"
+    policy_reply = _agent_policy_reply(message, context)
+    if policy_reply:
+        return policy_reply, "policy"
     if not GEMINI_API_KEY:
         return _agent_fallback_reply(message, context), "fallback"
     try:
@@ -1877,10 +2063,11 @@ def _generate_agent_reply(message: str, context: dict[str, object], history: lis
 
 
 def _stream_agent_reply(message: str, context: dict[str, object], history: list[dict[str, str]]):
-    if not _agent_context_ready(context):
-        fallback = "No analysis data available. Please upload media first."
+    policy_reply = _agent_policy_reply(message, context)
+    if policy_reply:
+        fallback = policy_reply
         yield fallback
-        return fallback, "fallback"
+        return fallback, "policy"
     if not GEMINI_API_KEY:
         fallback = _agent_fallback_reply(message, context)
         yield fallback
@@ -2753,13 +2940,17 @@ def _embedding_similarity_value(item) -> float:
     metadata = dict(payload.get("metadata") or {})
     return _safe_float(
         payload.get("embedding_score"),
-        payload.get("embedding_similarity"),
         _safe_float(
-            metadata.get("embedding_score"),
-            metadata.get("embedding_similarity"),
+            payload.get("embedding_similarity"),
             _safe_float(
-                metadata.get("embedding_rank_score"),
-                _safe_float(payload.get("fused_similarity")),
+                metadata.get("embedding_score"),
+                _safe_float(
+                    metadata.get("embedding_similarity"),
+                    _safe_float(
+                        metadata.get("embedding_rank_score"),
+                        _safe_float(payload.get("fused_similarity")),
+                    ),
+                ),
             ),
         ),
     )
@@ -3687,6 +3878,124 @@ def _layer2_needs_enrichment(layer2_payload: dict[str, object]) -> bool:
     return bool(layer2_payload.get("image_url"))
 
 
+def _build_layer3_email_result(
+    *,
+    upload_id: str,
+    confidence: float,
+    is_fake: bool,
+    layer2_payload: dict[str, object],
+    layer3_payload: dict[str, object],
+) -> dict[str, object]:
+    spread_indicators = dict(layer3_payload.get("spread_indicators") or {})
+    timeline_summary = dict(layer3_payload.get("timeline_summary") or {})
+    classification = dict(layer2_payload.get("content_classification") or {})
+    signals: list[str] = []
+
+    content_type = str(
+        classification.get("raw_label")
+        or classification.get("content_type")
+        or ""
+    ).strip()
+    if content_type and content_type.lower() != "unknown":
+        signals.append(f"Content profile: {content_type.replace('_', ' ')}")
+
+    risk_insight = str(layer3_payload.get("risk_insight") or "").strip()
+    if risk_insight:
+        signals.append(risk_insight)
+
+    consistency_warning = dict(layer2_payload.get("consistency_warning") or {})
+    consistency_message = str(consistency_warning.get("message") or "").strip()
+    if consistency_message:
+        signals.append(consistency_message)
+
+    if float(spread_indicators.get("strong_match_similarity") or 0.0) > 0.0:
+        signals.append(
+            f"Strong similarity cluster: {float(spread_indicators.get('strong_match_similarity') or 0.0) * 100:.1f}%"
+        )
+    if bool(spread_indicators.get("rapid_reappearance")):
+        signals.append("Rapid reappearance detected in the current tracking window.")
+    if float(spread_indicators.get("mutation_rate") or 0.0) > 0.0:
+        signals.append(
+            f"Variant mutation rate: {float(spread_indicators.get('mutation_rate') or 0.0) * 100:.1f}%"
+        )
+
+    for alert in list(layer3_payload.get("alerts") or [])[:2]:
+        title = str(alert.get("title") or "").strip()
+        message = str(alert.get("message") or "").strip()
+        combined = f"{title}: {message}".strip(": ")
+        if combined:
+            signals.append(combined)
+
+    deduped_signals: list[str] = []
+    for item in signals:
+        cleaned = str(item).strip()
+        if cleaned and cleaned not in deduped_signals:
+            deduped_signals.append(cleaned)
+
+    spread_velocity = float(spread_indicators.get("spread_velocity") or 0.0)
+    recent_activity = int(timeline_summary.get("observations") or 0)
+    spread_status = _spread_trend_label(
+        spread_velocity=spread_velocity,
+        recent_activity=recent_activity,
+    )
+
+    return {
+        "upload_id": upload_id,
+        "content_id": layer3_payload.get("content_id"),
+        "cluster_id": layer3_payload.get("cluster_id"),
+        "detection": "AI_GENERATED" if is_fake else "REAL",
+        "confidence": round(float(confidence), 4),
+        "risk_score": round(float(layer3_payload.get("risk_score") or 0.0) * 10.0, 2),
+        "velocity": spread_status.lower(),
+        "spread_status": spread_status,
+        "signals": deduped_signals[:6],
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+    }
+
+
+def _maybe_send_layer3_email_alert(
+    *,
+    upload_id: str,
+    user_email: str | None,
+    confidence: float,
+    is_fake: bool,
+    layer2_payload: dict[str, object],
+    layer3_payload: dict[str, object],
+) -> None:
+    email = str(user_email or "").strip()
+    if not email:
+        return
+    result = _build_layer3_email_result(
+        upload_id=upload_id,
+        confidence=confidence,
+        is_fake=is_fake,
+        layer2_payload=layer2_payload,
+        layer3_payload=layer3_payload,
+    )
+    try:
+        delivery = handle_layer3_result(result, email)
+        LOGGER.info(
+            "layer3_email_alert upload_id=%s sent=%s reason=%s",
+            upload_id,
+            delivery.get("sent"),
+            delivery.get("reason"),
+        )
+    except Exception as exc:  # pragma: no cover - network dependent
+        LOGGER.exception("Layer 3 email alert dispatch failed for %s", upload_id)
+        get_alert_service().trigger_alert(
+            AlertEvent(
+                event_type="layer3_email_alert_failure",
+                severity="HIGH",
+                message="Layer 3 email alert delivery failed.",
+                content_id=str(layer3_payload.get("content_id") or "") or None,
+                cluster_id=str(layer3_payload.get("cluster_id") or "") or None,
+                error_type=type(exc).__name__,
+                explanation=str(exc),
+                metadata={"upload_id": upload_id, "user_email": email},
+            )
+        )
+
+
 def _build_layer3_payload(
     *,
     stored_path: Path,
@@ -3932,6 +4241,14 @@ def _build_layer3_payload(
                 "severity": "medium",
             }
         ]
+    _maybe_send_layer3_email_alert(
+        upload_id=upload_id,
+        user_email=user_email,
+        confidence=confidence,
+        is_fake=is_fake,
+        layer2_payload=layer2_payload,
+        layer3_payload=payload,
+    )
     return payload
 
 
@@ -4496,6 +4813,8 @@ def dashboard():
         **_template_context(service_entry=True),
         **_dashboard_page_context("dashboard"),
         dashboard_frontend_url=DASHBOARD_FRONTEND_URL,
+        llm_provider="Gemini" if GEMINI_API_KEY else "Unavailable",
+        llm_model=GEMINI_MODEL if GEMINI_API_KEY else "Not configured",
     )
 
 
@@ -4507,6 +4826,8 @@ def _render_dashboard_page(page_key: str):
         **_template_context(service_entry=True),
         **_dashboard_page_context(page_key),
         dashboard_frontend_url=DASHBOARD_FRONTEND_URL,
+        llm_provider="Gemini" if GEMINI_API_KEY else "Unavailable",
+        llm_model=GEMINI_MODEL if GEMINI_API_KEY else "Not configured",
     )
 
 
@@ -4616,6 +4937,57 @@ def health():
             "services": _health_service_statuses(),
             "build": APP_BUILD,
             "missing_models": _missing_models(),
+        }
+    )
+
+
+@app.post("/test-alert")
+@jwt_required(AUTH_SERVICE, allow_guest=False)
+def test_alert():
+    principal = dict(getattr(g, "auth_principal", {}) or {})
+    user_email = str(principal.get("email") or "").strip()
+    if not user_email:
+        return jsonify({"error": "Authenticated user does not have an email address on file."}), 400
+
+    payload = request.get_json(silent=True) or {}
+    mock_result = {
+        "detection": "AI_GENERATED",
+        "confidence": 0.82,
+        "risk_score": 8.4,
+        "velocity": "increasing",
+        "spread_status": "Increasing",
+        "signals": {
+            "facial_inconsistency": "high",
+            "texture_artifacts": "medium",
+            "eye_reflection_mismatch": "medium",
+        },
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+    }
+    result_override = payload.get("result")
+    if isinstance(result_override, dict):
+        mock_result.update(result_override)
+
+    try:
+        delivery = send_alert_email(user_email, mock_result)
+    except Exception as exc:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Email alert test failed.",
+                    "error": str(exc),
+                    "to_email": user_email,
+                }
+            ),
+            500,
+        )
+
+    return jsonify(
+        {
+            "status": "ok",
+            "message": "Test alert sent.",
+            "to_email": user_email,
+            "delivery": delivery,
         }
     )
 

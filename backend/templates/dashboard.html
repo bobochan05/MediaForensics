@@ -242,70 +242,73 @@
 
     .tags{display:flex;gap:10px;flex-wrap:wrap}.tag{border:1px solid rgba(148,163,184,.12);border-radius:999px;padding:8px 12px;font-size:12px;background:rgba(255,255,255,.03)}.low{border-color:rgba(52,211,153,.24);color:var(--ok)}.med{border-color:rgba(251,191,36,.24);color:var(--warn)}.viral{border-color:rgba(251,113,133,.24);color:var(--bad)}
     .alerts{display:grid;gap:8px;max-height:220px;overflow:auto;padding-right:2px}.alert{border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:10px 12px;font-size:12px;background:rgba(9,17,31,.3);line-height:1.5}
-    .layer3-dense{display:grid;gap:14px}
+    .layer3-dense{display:grid;gap:16px}
     .layer3-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .layer3-toggle{padding:8px 12px;border-radius:999px;border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.03);color:var(--text);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
-    .layer3-toggle.on{border-color:rgba(56,189,248,.28);color:var(--strong);background:rgba(56,189,248,.1)}
-    .layer3-intel-summary{display:grid;gap:12px;padding:14px 16px;border:1px solid rgba(148,163,184,.08);border-radius:16px;background:rgba(9,17,31,.34)}
-    .layer3-intel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-    .layer3-intel-title{margin:0;font-size:14px;font-weight:800;color:var(--strong)}
-    .layer3-intel-copy{margin:0;font-size:13px;line-height:1.6;color:var(--text)}
-    .layer3-intel-tag{display:inline-flex;align-items:center;justify-content:center;padding:7px 12px;border-radius:999px;border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.03);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--strong);white-space:nowrap}
-    .layer3-intel-tag.normal{border-color:rgba(52,211,153,.22);color:#86efac}
-    .layer3-intel-tag.emerging{border-color:rgba(251,191,36,.24);color:#fde68a}
-    .layer3-intel-tag.viral,.layer3-intel-tag.critical{border-color:rgba(248,113,113,.24);color:#fda4af}
-    .layer3-intel-points{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .layer3-intel-point{display:grid;gap:4px;padding:10px 12px;border-radius:12px;border:1px solid rgba(148,163,184,.08);background:rgba(255,255,255,.02);min-width:0}
-    .layer3-intel-point-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-    .layer3-intel-point-value{font-size:13px;font-weight:700;color:var(--strong);line-height:1.45}
-    .layer3-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .summary-card{border:1px solid rgba(148,163,184,.08);border-radius:14px;padding:12px;background:rgba(9,17,31,.28);display:grid;gap:6px;min-width:0}
-    .summary-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-    .summary-value{font-size:22px;font-weight:800;color:var(--strong);line-height:1}
-    .summary-meta{font-size:11px;color:var(--muted);line-height:1.45}
-    .summary-card.risk-high{border-color:rgba(251,113,133,.26)}
-    .summary-card.risk-medium{border-color:rgba(251,191,36,.24)}
-    .summary-card.risk-low{border-color:rgba(52,211,153,.22)}
-    .summary-bar{height:8px;border-radius:999px;background:rgba(148,163,184,.15);overflow:hidden}
-    .summary-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#34d399,#fbbf24,#fb7185)}
-    .layer3-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:12px}
-    .intel-stack{display:grid;gap:12px}
-    .intel-panel{border:1px solid rgba(148,163,184,.08);border-radius:14px;padding:12px;background:rgba(9,17,31,.28);display:grid;gap:10px;min-width:0}
+    .layer3-toggle{padding:8px 12px;border-radius:999px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.02);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+    .layer3-toggle.on{border-color:rgba(148,163,184,.24);color:var(--strong);background:rgba(148,163,184,.08)}
+    .layer3-summary-bar{display:grid;gap:12px;padding:14px 16px;border:1px solid rgba(148,163,184,.1);border-radius:16px;background:rgba(9,17,31,.32)}
+    .layer3-summary-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .layer3-summary-title{margin:0;font-size:14px;font-weight:800;color:var(--strong)}
+    .layer3-summary-meta{margin-top:4px;font-size:11px;color:var(--muted);line-height:1.5}
+    .layer3-status-badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;border:1px solid rgba(148,163,184,.16);background:rgba(255,255,255,.02);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--strong);white-space:nowrap}
+    .layer3-status-badge.low{border-color:rgba(148,163,184,.16);color:#cbd5e1}
+    .layer3-status-badge.medium{border-color:rgba(234,179,8,.22);color:#fde68a}
+    .layer3-status-badge.high{border-color:rgba(14,165,233,.24);color:#bae6fd}
+    .layer3-summary-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+    .layer3-summary-item{display:grid;gap:4px;padding:10px 12px;border:1px solid rgba(148,163,184,.08);border-radius:12px;background:rgba(255,255,255,.02);min-width:0}
+    .layer3-summary-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .layer3-summary-value{font-size:13px;font-weight:700;color:var(--strong);line-height:1.35;word-break:break-word}
+    .layer3-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,0.95fr);gap:12px}
+    .intel-stack,.side-split{display:grid;gap:12px}
+    .intel-panel,.key-insight-card,.risk-drivers-card{border:1px solid rgba(148,163,184,.08);border-radius:14px;padding:14px;background:rgba(9,17,31,.28);display:grid;gap:10px;min-width:0}
     .intel-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .intel-panel-title{margin:0;font-size:13px;font-weight:800;color:var(--strong)}
     .intel-panel-meta{font-size:11px;color:var(--muted)}
-    .intel-panel-copy{font-size:12px;line-height:1.55;color:var(--muted)}
-    .intel-insight{display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:100%;padding:6px 10px;border-radius:999px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.03);font-size:11px;font-weight:700;color:var(--strong)}
+    .intel-insight{display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:100%;padding:5px 9px;border-radius:999px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.02);font-size:11px;font-weight:700;color:var(--strong)}
     .intel-insight.low{border-color:rgba(148,163,184,.14);color:#cbd5e1}
-    .intel-insight.medium{border-color:rgba(251,191,36,.22);color:#fcd34d}
-    .intel-insight.high{border-color:rgba(248,113,113,.24);color:#fda4af}
-    .axis-note{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+    .intel-insight.medium{border-color:rgba(14,165,233,.18);color:#bfdbfe}
+    .intel-insight.high{border-color:rgba(251,191,36,.2);color:#fde68a}
     .chart-tooltip{position:fixed;z-index:120;display:none;max-width:260px;padding:10px 12px;border-radius:12px;border:1px solid rgba(148,163,184,.12);background:rgba(2,6,23,.96);box-shadow:0 18px 40px rgba(2,6,23,.45);font-size:12px;line-height:1.5;color:#e2e8f0;pointer-events:none}
     .chart-tooltip.on{display:block}
     .chart-tooltip strong{display:block;color:#f8fafc;font-size:12px;margin-bottom:4px}
     .chart-canvas{width:100%;height:100%;display:block}
-    .timeline-panel{min-height:240px}
-    .histogram-panel{min-height:170px}
-    .side-split{display:grid;gap:12px}
-    .breakdown-list{display:grid;gap:8px}
-    .breakdown-row{display:grid;grid-template-columns:120px minmax(0,1fr) 48px;gap:10px;align-items:center;font-size:11px;color:var(--muted)}
-    .breakdown-track{height:8px;border-radius:999px;background:rgba(148,163,184,.14);overflow:hidden}
-    .breakdown-fill{height:100%;border-radius:999px;background:var(--a)}
-    .breakdown-fill.spread{background:#fbbf24}
-    .breakdown-fill.cluster{background:#a78bfa}
-    .breakdown-fill.detect{background:#34d399}
-    .distribution-wrap{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center}
-    .distribution-legend{display:grid;gap:7px}
-    .legend-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:var(--muted)}
-    .legend-dot{width:10px;height:10px;border-radius:999px}
+    .timeline-panel{min-height:236px}
+    .histogram-panel{min-height:168px}
+    .key-insight-card{border-color:rgba(148,163,184,.14);background:rgba(10,16,27,.48);box-shadow:inset 0 1px 0 rgba(255,255,255,.02)}
+    .key-insight-kicker{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .key-insight-copy{font-size:14px;line-height:1.65;color:var(--strong)}
+    .risk-drivers-card{gap:12px}
+    .risk-drivers-summary{display:grid;gap:10px;padding-bottom:4px;border-bottom:1px solid rgba(148,163,184,.08)}
+    .risk-drivers-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .summary-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .summary-value{font-size:24px;font-weight:800;color:var(--strong);line-height:1}
+    .summary-value.secondary{font-size:18px}
+    .summary-meta{font-size:11px;color:var(--muted);line-height:1.5}
+    .risk-summary-chip{display:grid;gap:4px;padding:10px 12px;border:1px solid rgba(148,163,184,.08);border-radius:12px;background:rgba(255,255,255,.02)}
+    .risk-driver-grid{display:grid;gap:10px}
+    .risk-driver-row{display:grid;gap:6px}
+    .risk-driver-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px}
+    .risk-driver-name{color:var(--strong);font-weight:700}
+    .risk-driver-value{color:var(--muted)}
+    .breakdown-track{height:7px;border-radius:999px;background:rgba(148,163,184,.14);overflow:hidden}
+    .breakdown-fill{height:100%;border-radius:999px;background:#64748b}
+    .breakdown-fill.detect{background:#64748b}
+    .breakdown-fill.spread{background:#475569}
+    .breakdown-fill.cluster{background:#334155}
+    .risk-driver-note{font-size:11px;color:var(--muted)}
+    .distribution-wrap{display:block}
+    .distribution-wrap canvas{display:none}
+    .distribution-legend{display:grid;gap:10px}
+    .distribution-item{display:grid;gap:4px;padding:10px 12px;border:1px solid rgba(148,163,184,.08);border-radius:12px;background:rgba(255,255,255,.02)}
+    .distribution-rank{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .distribution-title{font-size:13px;font-weight:700;color:var(--strong)}
+    .distribution-copy{font-size:11px;color:var(--muted);line-height:1.5}
     .propagation-panel{display:grid;gap:10px}
-    .propagation-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .propagation-btn{padding:7px 11px;border-radius:999px;border:1px solid rgba(148,163,184,.14);background:rgba(255,255,255,.03);color:var(--text);font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:background .18s ease,border-color .18s ease,color .18s ease}
-    .propagation-btn:hover{border-color:rgba(96,165,250,.24);background:rgba(59,130,246,.08);color:var(--strong)}
-    .propagation-btn.on{border-color:rgba(96,165,250,.3);background:rgba(59,130,246,.12);color:#bfdbfe}
-    .propagation-btn:disabled{opacity:.45;cursor:not-allowed}
-    .propagation-status{margin-left:auto;font-size:11px;color:var(--muted);text-align:right}
-    .propagation-wrap{height:220px}
+    .propagation-scrubber-wrap{display:grid;gap:6px}
+    .propagation-scrubber-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;color:var(--muted)}
+    .propagation-scrubber{width:100%;accent-color:#64748b}
+    .propagation-status{font-size:11px;color:var(--muted);text-align:right}
+    .propagation-wrap{height:230px;border:1px solid rgba(148,163,184,.08);border-radius:12px;background:rgba(3,8,18,.2);padding:8px}
     .event-feed{display:grid;gap:8px;max-height:220px;overflow:auto;padding-right:2px}
     .event-item{border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:10px 12px;background:rgba(9,17,31,.28);display:grid;gap:4px}
     .event-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -318,7 +321,7 @@
 
     .docs{display:grid;gap:16px}.doc{border:1px solid rgba(148,163,184,.08);border-radius:20px;padding:18px;background:rgba(9,17,31,.32)} .doc summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--strong)} .doc p{margin:10px 0 0;color:var(--muted);font-size:13px;line-height:1.7}
 
-    .right{display:grid;width:236px;min-width:0;max-width:calc(100vw - 32px);align-content:start;gap:12px;position:fixed;right:16px;top:74px;height:calc(100vh - 74px);z-index:30;overflow:hidden}.side-card{padding:16px;display:grid;gap:8px;min-width:0;max-width:100%}.side-ttl{margin:0;color:var(--strong);font-size:16px}
+    .right{display:grid;width:236px;min-width:0;max-width:calc(100vw - 32px);align-content:start;gap:12px;position:fixed;right:16px;top:74px;height:calc(100vh - 74px);z-index:30;overflow-x:hidden;overflow-y:auto;padding-bottom:18px}.side-card{padding:16px;display:grid;gap:8px;min-width:0;max-width:100%}.side-ttl{margin:0;color:var(--strong);font-size:16px}
     .snapshot{padding:16px;display:grid;gap:12px}
     .snapshot-copy{font-size:12px;color:var(--muted);line-height:1.55}
     .snapshot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -326,6 +329,23 @@
     .snapshot-label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
     .snapshot-value{font-size:16px;font-weight:800;color:var(--strong);line-height:1.25;overflow-wrap:anywhere;word-break:break-word}
     .snapshot-note{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:12px;background:rgba(9,17,31,.24);font-size:12px;color:var(--text);line-height:1.55;overflow-wrap:anywhere;word-break:break-word}
+    .agent-card{padding:16px;display:grid;gap:12px}
+    .agent-copy{font-size:12px;color:var(--muted);line-height:1.55}
+    .agent-quick{display:flex;flex-wrap:wrap;gap:8px}
+    .agent-quick-btn{border:1px solid rgba(148,163,184,.12);border-radius:999px;background:rgba(255,255,255,.03);color:var(--text);padding:8px 10px;font-size:11px;font-weight:800;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease}
+    .agent-quick-btn:hover{transform:translateY(-1px);border-color:rgba(56,189,248,.28);background:rgba(56,189,248,.1)}
+    .agent-thread{display:grid;gap:8px;max-height:260px;overflow:auto;padding-right:2px}
+    .agent-msg{border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:12px;background:rgba(9,17,31,.24);display:grid;gap:6px}
+    .agent-msg.user{background:rgba(37,99,235,.18);border-color:rgba(96,165,250,.18)}
+    .agent-msg-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .agent-role{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .agent-msg.user .agent-role{color:#bfdbfe}
+    .agent-msg-body{font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+    .agent-status{font-size:11px;color:var(--muted)}
+    .agent-compose{display:grid;gap:8px}
+    .agent-input{width:100%;min-height:84px;resize:vertical;border:1px solid rgba(148,163,184,.12);border-radius:16px;background:var(--surface-soft);color:var(--text);padding:12px 14px;font-size:13px;line-height:1.5;outline:none;transition:border-color .2s ease, box-shadow .2s ease}
+    .agent-input:focus{border-color:rgba(56,189,248,.4);box-shadow:0 0 0 4px rgba(56,189,248,.08)}
+    .agent-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .usage-wrap{display:grid;gap:8px;margin-top:4px}
     .usage-track{height:10px;border-radius:999px;background:rgba(148,163,184,.18);overflow:hidden}
     .usage-fill{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .25s ease}
@@ -396,7 +416,7 @@
     html[data-theme="light"] .toast,
     html[data-theme="blue"] .toast{background:rgba(255,255,255,.96)}
 
-    @media (max-width:1220px){.app-container{padding:12px 14px 16px 64px}.content-area{grid-template-columns:minmax(0,1fr)}.match-grid,.chart-grid,.strength-grid,.snapshot-grid,.content-class,.score-list,.layer3-intel-points,.layer3-summary,.layer3-grid,.distribution-wrap{grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:68px;flex-wrap:wrap;padding:10px 14px;gap:10px}.top-left,.top-right{min-width:unset}.top-meta{justify-content:flex-start}.main{gap:18px}.card,.header,.side-card,.snapshot{padding:16px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:16px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.upload-shell{grid-template-columns:260px minmax(0,1fr)}.drop{width:min(100%,260px)}.preview-stage{min-height:220px}}
+    @media (max-width:1220px){.app-container{padding:12px 14px 16px 64px}.content-area{grid-template-columns:minmax(0,1fr)}.match-grid,.chart-grid,.strength-grid,.snapshot-grid,.content-class,.score-list,.layer3-intel-points,.layer3-summary-row,.layer3-grid,.distribution-wrap{grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.top-center{position:static;transform:none;pointer-events:auto}.top{height:auto;min-height:68px;flex-wrap:wrap;padding:10px 14px;gap:10px}.top-left,.top-right{min-width:unset}.top-meta{justify-content:flex-start}.main{gap:18px}.card,.header,.side-card,.snapshot{padding:16px}.result,.layer,.origin-card,.where-card,.chart-card,.search-assist,.result-group,.doc{padding:16px}.chart-row{grid-template-columns:100px minmax(0,1fr) auto}.upload-shell{grid-template-columns:260px minmax(0,1fr)}.drop{width:min(100%,260px)}.preview-stage{min-height:220px}}
     @media (max-width:900px){.app-container{padding:14px}.sidebar{width:100%;height:auto;position:relative;left:auto;top:auto;padding:10px;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);overflow-x:auto}.sidebar:hover,.sidebar:focus-within,.sidebar.expanded{width:100%;padding:10px}.sidebar a{justify-content:center;padding:10px;min-width:56px}.left-label{display:none}.sidebar a::after{display:none}.content-area{width:100%;grid-template-columns:1fr}.right{width:100%;min-width:0;position:relative;right:auto;top:auto;height:auto}.upload-shell{grid-template-columns:1fr}.upload-stage{padding-top:4px;justify-items:center}.upload-note{text-align:center}.drop{width:min(100%,260px);border-radius:22px;padding:18px}.drop::before{width:52px;height:52px;border-radius:18px;font-size:28px}.drop-main{font-size:15px}.preview-stage{min-height:220px}.breakdown-row{grid-template-columns:90px minmax(0,1fr) 42px}}
   </style>
 </head>
@@ -654,90 +674,66 @@
                 <h3 class="layer-ttl">Layer 3: Tracking Intelligence</h3>
                 <span class="badge" id="layer3Badge">Tracking not started</span>
               </div>
-              <button class="layer3-toggle" id="layer3Toggle" type="button">Advanced View</button>
+              <button class="layer3-toggle" id="layer3Toggle" type="button">Detailed View</button>
             </div>
-            <section class="layer3-intel-summary">
-              <div class="layer3-intel-head">
+            <section class="layer3-summary-bar">
+              <div class="layer3-summary-top">
                 <div>
-                  <h4 class="layer3-intel-title">Content Intelligence Summary</h4>
-                  <p class="layer3-intel-copy" id="layer3IntelSummaryText">No Layer 3 intelligence is available yet.</p>
+                  <h4 class="layer3-summary-title">Tracking Intelligence Summary</h4>
+                  <div class="layer3-summary-meta" id="layer3IntelSummaryText">Last updated unavailable • Tracking window unavailable</div>
                 </div>
-                <span class="layer3-intel-tag normal" id="layer3IntelStatus">NORMAL</span>
+                <span class="layer3-status-badge low" id="layer3IntelStatus">Low confidence</span>
               </div>
-              <div class="layer3-intel-points" id="layer3IntelPoints">
-                <div class="layer3-intel-point"><div class="layer3-intel-point-label">First seen</div><div class="layer3-intel-point-value">Not available</div></div>
-                <div class="layer3-intel-point"><div class="layer3-intel-point-label">Cluster size</div><div class="layer3-intel-point-value">0 variants</div></div>
-                <div class="layer3-intel-point"><div class="layer3-intel-point-label">Spread trend</div><div class="layer3-intel-point-value">Stable</div></div>
-                <div class="layer3-intel-point"><div class="layer3-intel-point-label">Risk level</div><div class="layer3-intel-point-value">Low</div></div>
+              <div class="layer3-summary-row" id="layer3IntelPoints">
+                <div class="layer3-summary-item"><div class="layer3-summary-label">First Seen</div><div class="layer3-summary-value">Unknown</div></div>
+                <div class="layer3-summary-item"><div class="layer3-summary-label">Active Variants</div><div class="layer3-summary-value">0</div></div>
+                <div class="layer3-summary-item"><div class="layer3-summary-label">Spread Status</div><div class="layer3-summary-value">Stable</div></div>
+                <div class="layer3-summary-item"><div class="layer3-summary-label">Platforms Detected</div><div class="layer3-summary-value">0</div></div>
+                <div class="layer3-summary-item"><div class="layer3-summary-label">Overall Risk</div><div class="layer3-summary-value">0.0 / 10</div></div>
               </div>
             </section>
-            <div class="layer3-summary">
-              <article class="summary-card risk-low" id="riskSummaryCard">
-                <div class="summary-label">Risk Score</div>
-                <div class="summary-value" id="riskSummaryValue">0%</div>
-                <div class="summary-bar"><div class="summary-bar-fill" id="riskSummaryFill" style="width:0%"></div></div>
-                <div class="summary-meta" id="riskSummaryMeta">No active risk signal.</div>
-              </article>
-              <article class="summary-card">
-                <div class="summary-label">Spread Velocity</div>
-                <div class="summary-value" id="velocitySummaryValue">0.00</div>
-                <div class="summary-meta" id="velocitySummaryMeta">Matches per observation window.</div>
-              </article>
-              <article class="summary-card">
-                <div class="summary-label">Cluster Size</div>
-                <div class="summary-value" id="clusterSummaryValue">0</div>
-                <div class="summary-meta" id="clusterSummaryMeta">Tracked related instances.</div>
-              </article>
-              <article class="summary-card">
-                <div class="summary-label">Status</div>
-                <div class="summary-value" id="statusSummaryValue">Normal</div>
-                <div class="summary-meta" id="statusSummaryMeta">Passive indexing.</div>
-              </article>
-            </div>
             <div class="layer3-grid">
               <div class="intel-stack">
+                <section class="key-insight-card">
+                  <div class="key-insight-kicker">Key Insight</div>
+                  <div class="key-insight-copy" id="layer3Insight">No significant propagation signals detected.</div>
+                </section>
                 <section class="intel-panel timeline-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Spread Timeline (Number of Matches Over Time)</h4>
-                    <div class="intel-panel-meta" id="timelineMeta">Waiting for observations</div>
+                    <h4 class="intel-panel-title">Propagation Trend</h4>
+                    <div class="intel-panel-meta" id="timelineMeta">Matches over time</div>
                   </div>
-                  <div class="intel-panel-copy">Shows how often similar content has been detected over time. A rising trend indicates increasing spread.</div>
-                  <div class="intel-insight low" id="timelineInsight">⚠ Not enough data to generate meaningful trend yet</div>
+                  <div class="intel-insight low" id="timelineInsight">No recent signal</div>
                   <canvas class="chart-canvas" id="timelineCanvas" width="920" height="280"></canvas>
-                  <div class="axis-note"><span>X-axis: Time</span><span>Y-axis: Number of detected matches</span></div>
                 </section>
                 <section class="intel-panel histogram-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Cluster Growth (Cluster Size Over Time)</h4>
-                    <div class="intel-panel-meta" id="histogramMeta">How the cluster is expanding over time</div>
+                    <h4 class="intel-panel-title">Variant Evolution</h4>
+                    <div class="intel-panel-meta" id="histogramMeta">Mutation pattern tracking</div>
                   </div>
-                  <div class="intel-panel-copy">Represents how the number of related content variants is growing. Flat growth means no new variants detected.</div>
-                  <div class="intel-insight low" id="histogramInsight">⚠ Not enough data to generate meaningful trend yet</div>
+                  <div class="intel-insight low" id="histogramInsight">No significant mutation patterns detected</div>
                   <canvas class="chart-canvas" id="frequencyCanvas" width="920" height="180"></canvas>
-                  <div class="axis-note"><span>X-axis: Time</span><span>Y-axis: Cluster size (number of similar items)</span></div>
                 </section>
                 <section class="intel-panel histogram-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Match Strength Distribution (Similarity Score Range vs Count)</h4>
-                    <div class="intel-panel-meta" id="strengthMeta">Similarity score distribution across current evidence</div>
+                    <h4 class="intel-panel-title">Similarity Evidence</h4>
+                    <div class="intel-panel-meta" id="strengthMeta">Similarity cluster analysis</div>
                   </div>
-                  <div class="intel-panel-copy">Displays how closely matched the detected content is to known variants. Higher values indicate stronger similarity.</div>
-                  <div class="intel-insight low" id="strengthInsight">⚠ Not enough data to generate meaningful trend yet</div>
+                  <div class="intel-insight low" id="strengthInsight">High similarity cluster detected</div>
                   <canvas class="chart-canvas" id="strengthCanvas" width="920" height="180"></canvas>
-                  <div class="axis-note"><span>X-axis: Similarity score range (0 → 1)</span><span>Y-axis: Number of matches</span></div>
                 </section>
                 <section class="intel-panel propagation-panel">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Propagation View</h4>
-                    <div class="intel-panel-meta" id="propagationMeta">Variant connectivity</div>
+                    <h4 class="intel-panel-title">Content Spread Network</h4>
+                    <div class="intel-panel-meta" id="propagationMeta">Node inspection</div>
                   </div>
-                  <div class="intel-panel-copy">Shows how content variants relate to one another. More connected nodes suggest stronger transformation or re-upload patterns.</div>
-                  <div class="intel-insight low" id="propagationInsight">⚠ Not enough data to map propagation yet</div>
-                  <div class="propagation-controls">
-                    <button class="propagation-btn" id="propagationPlayBtn" type="button">Auto-play</button>
-                    <button class="propagation-btn" id="propagationPrevBtn" type="button">Step Back</button>
-                    <button class="propagation-btn" id="propagationNextBtn" type="button">Step Forward</button>
-                    <div class="propagation-status" id="propagationStatus">Waiting for graph data</div>
+                  <div class="intel-insight low" id="propagationInsight">Network unavailable</div>
+                  <div class="propagation-scrubber-wrap">
+                    <div class="propagation-scrubber-meta">
+                      <span id="propagationScrubberMeta">Tracking window unavailable</span>
+                      <span class="propagation-status" id="propagationStatus">No node data</span>
+                    </div>
+                    <input type="range" min="0" max="0" value="0" step="1" id="propagationScrubber" class="propagation-scrubber" />
                   </div>
                   <div class="propagation-wrap">
                     <canvas class="chart-canvas" id="propagationCanvas" width="920" height="220"></canvas>
@@ -745,20 +741,45 @@
                 </section>
               </div>
               <div class="side-split">
-                <section class="intel-panel">
+                <section class="risk-drivers-card" id="riskSummaryCard">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Risk Breakdown</h4>
-                    <div class="intel-panel-meta" id="riskBreakdownMeta">How Layer 3 is scoring this case</div>
+                    <h4 class="intel-panel-title">Risk Drivers</h4>
+                    <div class="intel-panel-meta" id="riskBreakdownMeta">Current exposure assessment</div>
+                  </div>
+                  <div class="risk-drivers-summary">
+                    <div class="risk-drivers-head">
+                      <div>
+                        <div class="summary-label">Overall Risk Score</div>
+                        <div class="summary-value" id="riskSummaryValue">0.0 / 10</div>
+                        <div class="summary-meta" id="riskSummaryMeta">Confidence unavailable</div>
+                      </div>
+                      <div class="risk-summary-chip">
+                        <div class="summary-label">Confidence Level</div>
+                        <div class="summary-value secondary" id="statusSummaryValue">Unknown</div>
+                        <div class="summary-meta" id="statusSummaryMeta">Last updated unavailable</div>
+                      </div>
+                    </div>
+                    <div class="risk-drivers-head">
+                      <div class="risk-summary-chip">
+                        <div class="summary-label">Spread Intensity</div>
+                        <div class="summary-value secondary" id="velocitySummaryValue">Low</div>
+                        <div class="summary-meta" id="velocitySummaryMeta">Tracking window unavailable</div>
+                      </div>
+                      <div class="risk-summary-chip">
+                        <div class="summary-label">Cluster Density</div>
+                        <div class="summary-value secondary" id="clusterSummaryValue">Sparse</div>
+                        <div class="summary-meta" id="clusterSummaryMeta">0 active variants</div>
+                      </div>
+                    </div>
                   </div>
                   <div class="breakdown-list" id="riskBreakdownList"></div>
                 </section>
                 <section class="intel-panel">
                   <div class="intel-panel-head">
                     <h4 class="intel-panel-title">Source Distribution</h4>
-                    <div class="intel-panel-meta" id="distributionMeta">Active public domains</div>
+                    <div class="intel-panel-meta" id="distributionMeta">Ranked source clusters</div>
                   </div>
-                  <div class="intel-panel-copy">Shows which domains contribute most to the current spread footprint. Larger slices indicate higher source concentration.</div>
-                  <div class="intel-insight low" id="distributionInsight">⚠ Not enough domain data yet</div>
+                  <div class="intel-insight low" id="distributionInsight">No cross-platform distribution detected</div>
                   <div class="distribution-wrap">
                     <canvas class="chart-canvas" id="sourceDistributionCanvas" width="180" height="180"></canvas>
                     <div class="distribution-legend" id="sourceDistributionLegend"></div>
@@ -766,8 +787,8 @@
                 </section>
                 <section class="intel-panel advanced-only">
                   <div class="intel-panel-head">
-                    <h4 class="intel-panel-title">Event Feed</h4>
-                    <div class="intel-panel-meta" id="eventFeedMeta">Real-time investigation signals</div>
+                    <h4 class="intel-panel-title">Activity Log</h4>
+                    <div class="intel-panel-meta" id="eventFeedMeta">Recent monitoring updates</div>
                   </div>
                   <div class="event-feed" id="eventFeed">
                     <div class="event-item">
@@ -778,9 +799,8 @@
                 </section>
               </div>
             </div>
-            <div class="muted" id="layer3Insight">No spread detected yet. Monitoring will continue over time.</div>
-            <div class="alerts" id="alertList">
-              <div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>
+                        <div class="alerts" id="alertList">
+              <div class="alert">No monitoring alerts in the current tracking window.</div>
             </div>
           </div>
         </section>
@@ -805,28 +825,30 @@
     <aside class="right">
       <div class="quota-note" id="quotaNote">Guest limit reached. Please log in to continue analysis.</div>
       <button class="btn small" id="loginToContinueBtn" type="button" style="display:none">Login to continue</button>
-      <section class="panel snapshot">
-        <h3 class="side-ttl">Investigation Snapshot</h3>
-        <div class="snapshot-copy" id="snapshotCopy">Run an analysis to populate the current verdict, source footprint, and risk indicators.</div>
-        <div class="snapshot-grid">
-          <article class="snapshot-metric">
-            <div class="snapshot-label">Verdict</div>
-            <div class="snapshot-value" id="snapshotVerdict">Awaiting scan</div>
-          </article>
-          <article class="snapshot-metric">
-            <div class="snapshot-label">Risk</div>
-            <div class="snapshot-value" id="snapshotRisk">0%</div>
-          </article>
-          <article class="snapshot-metric">
-            <div class="snapshot-label">Source Leads</div>
-            <div class="snapshot-value" id="snapshotSources">0</div>
-          </article>
-          <article class="snapshot-metric">
-            <div class="snapshot-label">Top Domain</div>
-            <div class="snapshot-value" id="snapshotTopDomain">Not established</div>
-          </article>
+      <section class="panel agent-card">
+        <h3 class="side-ttl">Gemini Analysis Chat</h3>
+        <div class="agent-copy">Ask Gemini to explain the current Tracelyt findings, likely origin, or spread risk using the active Layer 1, Layer 2, and Layer 3 context.</div>
+        <div class="agent-quick">
+          <button class="agent-quick-btn" data-agent-prompt="Explain result" type="button">Explain result</button>
+          <button class="agent-quick-btn" data-agent-prompt="Why is this fake?" type="button">Why is this fake?</button>
+          <button class="agent-quick-btn" data-agent-prompt="Where did this come from?" type="button">Where did this come from?</button>
+          <button class="agent-quick-btn" data-agent-prompt="Explain risk" type="button">Explain risk</button>
         </div>
-        <div class="snapshot-note" id="snapshotNote">Once analysis runs, this panel will summarize the strongest match signal, spread footprint, and current monitoring posture.</div>
+        <div class="agent-thread" id="agentThread">
+          <div class="agent-msg assistant">
+            <div class="agent-msg-head">
+              <span class="agent-role">Gemini</span>
+            </div>
+            <div class="agent-msg-body">Ask about authenticity, strongest evidence, source tracing, or current spread posture.</div>
+          </div>
+        </div>
+        <div class="agent-compose">
+          <textarea class="agent-input" id="agentInput" placeholder="Ask Gemini about this investigation..."></textarea>
+          <div class="agent-actions">
+            <span class="agent-status" id="agentStatus">Ready. Responses are scoped to this investigation.</span>
+            <button class="btn small" id="agentSendBtn" type="button">Send</button>
+          </div>
+        </div>
       </section>
     </aside>
     </div>
@@ -860,6 +882,13 @@
       guestUsed: 0,
       guestLimit: 5,
       authState: "anonymous",
+      agentMessages: [
+        {
+          role: "assistant",
+          content: "Ask about authenticity, strongest evidence, source tracing, or current spread posture."
+        }
+      ],
+      agentSending: false,
       notificationTimer: null,
       seenNotificationIds: new Set()
     };
@@ -927,6 +956,9 @@
       layer3Dense: document.getElementById("layer3Dense"),
       layer3Badge: document.getElementById("layer3Badge"),
       layer3Toggle: document.getElementById("layer3Toggle"),
+      layer3IntelSummaryText: document.getElementById("layer3IntelSummaryText"),
+      layer3IntelStatus: document.getElementById("layer3IntelStatus"),
+      layer3IntelPoints: document.getElementById("layer3IntelPoints"),
       layer3Insight: document.getElementById("layer3Insight"),
       alertList: document.getElementById("alertList"),
       timelineCanvas: document.getElementById("timelineCanvas"),
@@ -940,7 +972,6 @@
       propagationMeta: document.getElementById("propagationMeta"),
       riskSummaryCard: document.getElementById("riskSummaryCard"),
       riskSummaryValue: document.getElementById("riskSummaryValue"),
-      riskSummaryFill: document.getElementById("riskSummaryFill"),
       riskSummaryMeta: document.getElementById("riskSummaryMeta"),
       velocitySummaryValue: document.getElementById("velocitySummaryValue"),
       velocitySummaryMeta: document.getElementById("velocitySummaryMeta"),
@@ -958,9 +989,8 @@
       histogramInsight: document.getElementById("histogramInsight"),
       strengthInsight: document.getElementById("strengthInsight"),
       propagationInsight: document.getElementById("propagationInsight"),
-      propagationPlayBtn: document.getElementById("propagationPlayBtn"),
-      propagationPrevBtn: document.getElementById("propagationPrevBtn"),
-      propagationNextBtn: document.getElementById("propagationNextBtn"),
+      propagationScrubber: document.getElementById("propagationScrubber"),
+      propagationScrubberMeta: document.getElementById("propagationScrubberMeta"),
       propagationStatus: document.getElementById("propagationStatus"),
       distributionInsight: document.getElementById("distributionInsight"),
       sessionUser: document.getElementById("sessionUser"),
@@ -985,6 +1015,10 @@
       snapshotSources: document.getElementById("snapshotSources"),
       snapshotTopDomain: document.getElementById("snapshotTopDomain"),
       snapshotNote: document.getElementById("snapshotNote"),
+      agentThread: document.getElementById("agentThread"),
+      agentInput: document.getElementById("agentInput"),
+      agentSendBtn: document.getElementById("agentSendBtn"),
+      agentStatus: document.getElementById("agentStatus"),
       chartTooltip: document.getElementById("chartTooltip")
     };
 
@@ -1000,27 +1034,86 @@
       el.layer3Toggle.addEventListener("click", ()=>{
         const advanced = el.layer3Dense.classList.toggle("layer3-basic");
         el.layer3Toggle.classList.toggle("on", !advanced);
-        el.layer3Toggle.textContent = advanced ? "Advanced View" : "Basic View";
+        el.layer3Toggle.textContent = advanced ? "Detailed View" : "Summary View";
       });
     }
-    if(el.propagationPlayBtn){
-      el.propagationPlayBtn.addEventListener("click", ()=>{
-        togglePropagationAutoplay();
-      });
-    }
-    if(el.propagationPrevBtn){
-      el.propagationPrevBtn.addEventListener("click", ()=>{
+    if(el.propagationScrubber){
+      el.propagationScrubber.addEventListener("input", (event)=>{
         stopPropagationPlayback();
-        setPropagationFrame((state.propagationStep || 0) - 1);
-      });
-    }
-    if(el.propagationNextBtn){
-      el.propagationNextBtn.addEventListener("click", ()=>{
-        stopPropagationPlayback();
-        setPropagationFrame((state.propagationStep || 0) + 1);
+        setPropagationFrame(Number(event.target.value || 0));
       });
     }
     bindPropagationCanvas();
+
+    function renderAgentMessages(){
+      if(!el.agentThread){ return; }
+      el.agentThread.innerHTML = state.agentMessages.map((item)=>{
+        const role = String(item.role || "assistant") === "user" ? "user" : "assistant";
+        const label = role === "user" ? "You" : "Gemini";
+        return `<div class="agent-msg ${role}"><div class="agent-msg-head"><span class="agent-role">${escapeHtml(label)}</span></div><div class="agent-msg-body">${escapeHtml(String(item.content || ""))}</div></div>`;
+      }).join("");
+      el.agentThread.scrollTop = el.agentThread.scrollHeight;
+    }
+
+    function setAgentStatus(message){
+      if(el.agentStatus){
+        el.agentStatus.textContent = String(message || "");
+      }
+    }
+
+    function setAgentSending(isSending){
+      state.agentSending = Boolean(isSending);
+      if(el.agentSendBtn){ el.agentSendBtn.disabled = state.agentSending; }
+      if(el.agentInput){ el.agentInput.disabled = state.agentSending; }
+    }
+
+    async function submitAgentPrompt(message){
+      const prompt = String(message || "").trim();
+      if(!prompt || state.agentSending){ return; }
+
+      state.agentMessages.push({ role: "user", content: prompt });
+      renderAgentMessages();
+      if(el.agentInput){ el.agentInput.value = ""; }
+      setAgentSending(true);
+      setAgentStatus(state.analysis ? "Gemini is reviewing the active investigation..." : "Gemini is answering with limited context until analysis is available.");
+
+      try{
+        const history = state.agentMessages.slice(-10, -1).map((item)=>({
+          role: String(item.role || "assistant"),
+          content: String(item.content || "")
+        }));
+        const res = await fetch("/api/agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            message: prompt,
+            context: state.analysis ? {
+              layer1: state.analysis.layer1 || {},
+              layer2: state.analysis.layer2 || {},
+              layer3: state.analysis.layer3 || {}
+            } : {},
+            history
+          })
+        });
+        const data = await parseApi(res);
+        if(!res.ok){
+          throw new Error(String(data.error || data.message || "Gemini could not answer right now."));
+        }
+        const reply = String(data.reply || "No response returned.");
+        const provider = String(data.provider || "assistant");
+        state.agentMessages.push({ role: "assistant", content: reply });
+        renderAgentMessages();
+        setAgentStatus(provider === "gemini" ? "Connected to Gemini for this reply." : "Fallback assistant reply returned for this question.");
+      }catch(error){
+        const messageText = error instanceof Error ? error.message : "Gemini could not answer right now.";
+        state.agentMessages.push({ role: "assistant", content: messageText });
+        renderAgentMessages();
+        setAgentStatus("Chat request failed. Check Gemini API key, model config, and network reachability.");
+      }finally{
+        setAgentSending(false);
+      }
+    }
 
     function showError(message){ el.errorBox.style.display = "block"; el.errorBox.textContent = message; }
     function clearError(){ el.errorBox.style.display = "none"; el.errorBox.textContent = ""; }
@@ -1243,65 +1336,62 @@
       const ctx = el.timelineCanvas.getContext("2d"); if(!ctx){ return; }
       const w = el.timelineCanvas.width, h = el.timelineCanvas.height;
       const raw = Array.isArray(points) ? points : [];
-      const meaningful = raw.length >= 2 && raw.some((point)=>Number(point.mentions || 0) > 0);
+      const meaningful = raw.length >= 2 && raw.some((x)=>Number(x.mentions || 0) > 0);
       if(!meaningful){
-        drawCanvasEmpty(ctx, el.timelineCanvas, "Not enough data to generate meaningful trend yet");
+        drawCanvasEmpty(ctx, el.timelineCanvas, "No trend available");
         attachCanvasTooltips(el.timelineCanvas);
         return;
       }
       ctx.clearRect(0,0,w,h);
       const p = raw;
-      const padX = 58, padY = 28, chartW = w - padX * 2, chartH = h - padY * 2 - 24;
-      const maxY = Math.max(...p.map((x)=>Number(x.mentions||0)),1);
-      ctx.strokeStyle = "rgba(148,163,184,.12)";
+      const maxY = Math.max(...p.map((x)=>Number(x.mentions || 0)), 1);
+      const padX = 44, padY = 18;
+      const chartW = w - padX * 2;
+      const chartH = h - padY * 2 - 10;
+      const coords = p.map((x,i)=>(
+        {
+          x: padX + (chartW * i / Math.max(1, p.length - 1)),
+          y: h - padY - (chartH * Number(x.mentions || 0) / maxY),
+          mentions: Number(x.mentions || 0),
+          timestamp: x.timestamp,
+        }
+      ));
+      ctx.strokeStyle = "rgba(148,163,184,.1)";
       ctx.lineWidth = 1;
-      for(let i=0;i<4;i+=1){
-        const y = padY + (chartH * i / 3);
-        ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w - padX, y); ctx.stroke();
+      for(let i = 0; i < 4; i += 1){
+        const y = padY + ((h - padY * 2) * i / 3);
+        ctx.beginPath();
+        ctx.moveTo(padX, y);
+        ctx.lineTo(w - padX, y);
+        ctx.stroke();
       }
-      const coords = p.map((x,i)=>({
-        x: padX + (chartW * i / Math.max(1, p.length - 1)),
-        y: h - padY - 18 - (chartH * Number(x.mentions || 0) / maxY),
-        mentions: Number(x.mentions || 0),
-        timestamp: x.timestamp
-      }));
-      const gradient = ctx.createLinearGradient(0, padY, 0, h - padY);
-      gradient.addColorStop(0, "rgba(251,113,133,.18)");
-      gradient.addColorStop(1, "rgba(56,189,248,.02)");
+      ctx.strokeStyle = "rgba(125,211,252,.72)";
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
-      coords.forEach((point, index)=>{ if(index===0){ ctx.moveTo(point.x, point.y); } else { ctx.lineTo(point.x, point.y); } });
-      ctx.lineTo(coords[coords.length - 1].x, h - padY);
-      ctx.lineTo(coords[0].x, h - padY);
-      ctx.closePath();
-      ctx.fillStyle = gradient;
-      ctx.fill();
-      ctx.strokeStyle = "rgba(96,165,250,.95)";
-      ctx.lineWidth = 2.4;
-      ctx.beginPath();
-      coords.forEach((point, index)=>{ if(index===0){ ctx.moveTo(point.x, point.y); } else { ctx.lineTo(point.x, point.y); } });
+      coords.forEach((point, index)=>{ if(index === 0){ ctx.moveTo(point.x, point.y); } else { ctx.lineTo(point.x, point.y); } });
       ctx.stroke();
-      const maxPoint = coords.reduce((best, point)=>point.mentions > best.mentions ? point : best, coords[0]);
-      coords.forEach((point)=>{
-        ctx.fillStyle = point === maxPoint ? "#fb7185" : "#93c5fd";
-        ctx.beginPath(); ctx.arc(point.x, point.y, point === maxPoint ? 4.5 : 3, 0, Math.PI * 2); ctx.fill();
+      coords.forEach((point, index)=>{
+        ctx.fillStyle = index === coords.length - 1 ? "rgba(226,232,240,.92)" : "rgba(148,163,184,.72)";
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
       });
-      ctx.fillStyle = "rgba(226,232,240,.74)";
-      ctx.font = "11px sans-serif";
-      ctx.fillText("first seen", coords[0].x - 18, h - 6);
-      ctx.fillText("latest spike", Math.max(8, maxPoint.x - 26), Math.max(12, maxPoint.y - 10));
-      ctx.save();
-      ctx.translate(14, h / 2);
-      ctx.rotate(-Math.PI / 2);
-      ctx.fillText("Detected matches (count)", 0, 0);
-      ctx.restore();
-      ctx.fillText("Time", w / 2 - 10, h - 6);
-      el.timelineCanvas._tooltipPoints = coords.map((point)=>({
-        x: point.x,
-        y: point.y,
-        radius: 18,
-        title: safeDate(point.timestamp),
-        body: `${point.mentions} detected matches. Rising values indicate broader spread over time.`
-      }));
+      const previousAverage = coords.length > 1 ? coords.slice(0, -1).reduce((sum, point)=>sum + point.mentions, 0) / Math.max(1, coords.length - 1) : 0;
+      const latest = coords[coords.length - 1];
+      if(latest && latest.mentions > previousAverage * 1.2){
+        ctx.fillStyle = "rgba(226,232,240,.78)";
+        ctx.font = "11px sans-serif";
+        ctx.fillText("Recent spike", Math.max(12, latest.x - 28), Math.max(16, latest.y - 10));
+      }
+      el.timelineCanvas._tooltipPoints = coords.map((point)=>(
+        {
+          x: point.x,
+          y: point.y,
+          radius: 16,
+          title: safeDate(point.timestamp),
+          body: `${point.mentions} matches`,
+        }
+      ));
       attachCanvasTooltips(el.timelineCanvas);
     }
 
@@ -1330,49 +1420,43 @@
       const raw = Array.isArray(series) ? series : [];
       const meaningful = raw.length >= 2 && raw.some((x)=>Number(x.cluster_size || 0) > 0);
       if(!meaningful){
-        drawCanvasEmpty(ctx, el.frequencyCanvas, "Not enough data to generate meaningful trend yet");
+        drawCanvasEmpty(ctx, el.frequencyCanvas, "No significant mutation patterns detected");
         attachCanvasTooltips(el.frequencyCanvas);
         return;
       }
       ctx.clearRect(0,0,w,h);
-      const p = raw;
-      const maxY = Math.max(...p.map((x)=>Number(x.cluster_size||0)), 1);
-      const padX = 50, padY = 18, step = (w - padX * 2) / Math.max(1, p.length - 1);
-      ctx.strokeStyle = "rgba(148,163,184,.12)";
+      const maxY = Math.max(...raw.map((x)=>Number(x.cluster_size || 0)), 1);
+      const padX = 44, padY = 18;
+      const step = (w - padX * 2) / Math.max(1, raw.length - 1);
+      ctx.strokeStyle = "rgba(148,163,184,.1)";
       ctx.lineWidth = 1;
-      for(let i=0;i<4;i+=1){
+      for(let i = 0; i < 4; i += 1){
         const y = padY + ((h - padY * 2) * i / 3);
-        ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w - padX, y); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(padX, y);
+        ctx.lineTo(w - padX, y);
+        ctx.stroke();
       }
-      ctx.strokeStyle = "rgba(34,197,94,.9)";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(94,234,212,.64)";
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
-      p.forEach((item, index)=>{
+      raw.forEach((item, index)=>{
         const x = padX + step * index;
-        const y = h - padY - 18 - ((h - padY * 2 - 18) * Number(item.cluster_size || 0) / maxY);
-        if(index===0){ ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+        const y = h - padY - ((h - padY * 2 - 10) * Number(item.cluster_size || 0) / maxY);
+        if(index === 0){ ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
       });
       ctx.stroke();
-      const tooltipPoints = [];
-      p.forEach((item, index)=>{
+      const tooltipPoints = raw.map((item, index)=>{
         const x = padX + step * index;
-        const y = h - padY - 18 - ((h - padY * 2 - 18) * Number(item.cluster_size || 0) / maxY);
-        ctx.fillStyle = index === p.length - 1 ? "#34d399" : "rgba(74,222,128,.7)";
-        ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
-        tooltipPoints.push({
-          x, y, radius: 18,
+        const y = h - padY - ((h - padY * 2 - 10) * Number(item.cluster_size || 0) / maxY);
+        return {
+          x,
+          y,
+          radius: 16,
           title: safeDate(item.timestamp || item.time || ""),
-          body: `Cluster size: ${Number(item.cluster_size || 0)} related items. Flat growth means no new variants were detected.`
-        });
+          body: `${Number(item.cluster_size || 0)} variants`,
+        };
       });
-      ctx.save();
-      ctx.translate(14, h / 2);
-      ctx.rotate(-Math.PI / 2);
-      ctx.fillStyle = "rgba(226,232,240,.74)";
-      ctx.font = "11px sans-serif";
-      ctx.fillText("Cluster size (count)", 0, 0);
-      ctx.restore();
-      ctx.fillText("Time", w / 2 - 10, h - 6);
       el.frequencyCanvas._tooltipPoints = tooltipPoints;
       attachCanvasTooltips(el.frequencyCanvas);
     }
@@ -1381,126 +1465,106 @@
       const ctx = el.strengthCanvas.getContext("2d"); if(!ctx){ return; }
       const w = el.strengthCanvas.width, h = el.strengthCanvas.height;
       ctx.clearRect(0,0,w,h);
-      const data = Array.isArray(bins) && bins.length ? bins : [
-        {label:"0.0-0.2", count:0},
-        {label:"0.2-0.4", count:0},
-        {label:"0.4-0.6", count:0},
-        {label:"0.6-0.8", count:0},
-        {label:"0.8-1.0", count:0}
-      ];
+      const data = Array.isArray(bins) && bins.length ? bins : [];
       const meaningful = data.some((item)=>Number(item.count || 0) > 0);
       if(!meaningful){
-        drawCanvasEmpty(ctx, el.strengthCanvas, "Not enough data to generate meaningful trend yet");
+        drawCanvasEmpty(ctx, el.strengthCanvas, "No similarity evidence available");
         attachCanvasTooltips(el.strengthCanvas);
         return;
       }
-      const maxY = Math.max(...data.map((item)=>Number(item.count||0)), 1);
-      const padX = 44, padY = 18, gap = 14;
+      const maxY = Math.max(...data.map((item)=>Number(item.count || 0)), 1);
+      const padX = 42, padY = 18, gap = 14;
       const barW = Math.max(24, (w - padX * 2 - gap * (data.length - 1)) / Math.max(1, data.length));
       const tooltipPoints = [];
       data.forEach((item, index)=>{
-        const height = ((h - padY * 2 - 18) * Number(item.count || 0) / maxY);
+        const height = ((h - padY * 2 - 12) * Number(item.count || 0) / maxY);
         const x = padX + index * (barW + gap);
-        const y = h - padY - height - 18;
-        ctx.fillStyle = index >= data.length - 2 ? "rgba(248,113,113,.9)" : "rgba(96,165,250,.72)";
+        const y = h - padY - height;
+        ctx.fillStyle = index >= data.length - 2 ? "rgba(94,234,212,.58)" : "rgba(100,116,139,.72)";
         ctx.fillRect(x, y, barW, height);
-        ctx.fillStyle = "rgba(226,232,240,.7)";
-        ctx.font = "11px sans-serif";
+        ctx.fillStyle = "rgba(148,163,184,.72)";
+        ctx.font = "10px sans-serif";
         ctx.fillText(String(item.label || ""), x, h - 6);
         tooltipPoints.push({
           x: x + (barW / 2),
           y: y + (height / 2),
-          radius: Math.max(18, barW / 2),
+          radius: Math.max(16, barW / 2),
           title: `Similarity ${String(item.label || "0.0-0.2")}`,
-          body: `${Number(item.count || 0)} matches in this similarity band. Higher score ranges indicate stronger similarity.`
+          body: `${Number(item.count || 0)} matches`,
         });
       });
-      ctx.save();
-      ctx.translate(14, h / 2);
-      ctx.rotate(-Math.PI / 2);
-      ctx.fillText("Matches (count)", 0, 0);
-      ctx.restore();
-      ctx.fillText("Similarity score range", w / 2 - 40, h - 6);
       el.strengthCanvas._tooltipPoints = tooltipPoints;
       attachCanvasTooltips(el.strengthCanvas);
     }
 
     function drawRiskBreakdown(metrics){
       const rows = [
-        { label:"Detection", value: Number(metrics.detection || 0), cls:"detect" },
-        { label:"Spread", value: Number(metrics.spread || 0), cls:"spread" },
-        { label:"Cluster", value: Number(metrics.cluster || 0), cls:"cluster" },
-        { label:"Velocity", value: Number(metrics.velocity || 0), cls:"spread" }
+        { label:"Detection Confidence", value: Number(metrics.detection || 0), display: mutedMetric(metrics.detection), note:"Probability content is synthetic", cls:"detect" },
+        { label:"Spread Intensity", value: Number(metrics.spread || 0), display: spreadIntensityLabel(Math.round(Number(metrics.spread || 0) * 6), Math.round(Number(metrics.spread || 0) * 3)), note: spreadIntensityLabel(Math.round(Number(metrics.spread || 0) * 6), Math.round(Number(metrics.spread || 0) * 3)), cls:"spread" },
+        { label:"Propagation Velocity", value: Number(metrics.velocity || 0), display: Number(metrics.velocity || 0) >= 0.45 ? "Increasing" : "Stable", note:"Observed trend across the current window", cls:"spread" },
+        { label:"Cluster Density", value: Number(metrics.cluster || 0), display: clusterDensityLabel(Math.round(Number(metrics.cluster || 0) * 10)), note:"Variant concentration within the active cluster", cls:"cluster" },
       ];
-      el.riskBreakdownList.innerHTML = rows.map((row)=>`
-        <div class="breakdown-row">
-          <div>${escapeHtml(row.label)}</div>
-          <div class="breakdown-track"><div class="breakdown-fill ${row.cls}" style="width:${Math.max(0, Math.min(100, row.value * 100))}%"></div></div>
-          <div>${row.value.toFixed(2)}</div>
+      el.riskBreakdownList.innerHTML = `<div class="risk-driver-grid">${rows.map((row)=>`
+        <div class="risk-driver-row">
+          <div class="risk-driver-head"><span class="risk-driver-name">${escapeHtml(row.label)}</span><span class="risk-driver-value">${escapeHtml(String(row.display))}</span></div>
+          <div class="breakdown-track"><div class="breakdown-fill ${row.cls}" style="width:${Math.max(4, Math.min(98, row.value * 100))}%"></div></div>
+          <div class="risk-driver-note">${escapeHtml(row.note)}</div>
         </div>
-      `).join("");
+      `).join("")}</div>`;
     }
 
     function drawSourceDistribution(distribution){
-      const ctx = el.sourceDistributionCanvas.getContext("2d"); if(!ctx){ return; }
-      const w = el.sourceDistributionCanvas.width, h = el.sourceDistributionCanvas.height;
-      ctx.clearRect(0,0,w,h);
-      const items = Array.isArray(distribution) && distribution.length ? distribution.slice(0,5) : [];
-      if(!items.length){
-        el.sourceDistributionLegend.innerHTML = `<div class="legend-row"><span class="legend-dot" style="background:#475569"></span><span>No domain data yet</span><span>0</span></div>`;
-        setInsight(el.distributionInsight, "low", "⚠ Not enough domain data yet");
+      const items = Array.isArray(distribution) ? distribution.slice().sort((left, right)=>Number(right.count || 0) - Number(left.count || 0)).slice(0, 5) : [];
+      if(el.sourceDistributionCanvas){
         el.sourceDistributionCanvas._tooltipPoints = [];
-        attachCanvasTooltips(el.sourceDistributionCanvas);
+      }
+      if(!items.length){
+        el.sourceDistributionLegend.innerHTML = `<div class="distribution-item"><div class="distribution-rank">No distribution data</div><div class="distribution-title">No external platform clusters detected</div><div class="distribution-copy">Current tracking window does not contain enough source data.</div></div>`;
+        setInsight(el.distributionInsight, "low", "No cross-platform distribution detected");
+        if(el.sourceDistributionCanvas){ attachCanvasTooltips(el.sourceDistributionCanvas); }
         return;
       }
-      const total = items.reduce((sum, item)=>sum + Number(item.count || 0), 0) || 1;
-      const colors = ["#60a5fa","#34d399","#fbbf24","#f97316","#a78bfa"];
-      let start = -Math.PI / 2;
-      const tooltipPoints = [];
-      items.forEach((item, index)=>{
-        const slice = (Number(item.count || 0) / total) * Math.PI * 2;
-        ctx.beginPath();
-        ctx.moveTo(w/2, h/2);
-        ctx.arc(w/2, h/2, Math.min(w,h)/2 - 8, start, start + slice);
-        ctx.closePath();
-        ctx.fillStyle = colors[index % colors.length];
-        ctx.fill();
-        const mid = start + (slice / 2);
-        const radius = Math.min(w, h) / 2 - 22;
-        tooltipPoints.push({
-          x: (w / 2) + Math.cos(mid) * radius,
-          y: (h / 2) + Math.sin(mid) * radius,
-          radius: 28,
-          title: String(item.domain || "unknown"),
-          body: `${Number(item.count || 0)} appearances from this domain. Larger slices indicate a stronger contribution to spread.`
+      const primary = items[0];
+      const secondary = items.slice(1, 3).map((item)=>String(item.domain || "unknown"));
+      const totalPlatforms = items.length;
+      const cards = [
+        {
+          rank: "Primary Source Cluster",
+          title: `${String(primary.domain || "Unknown")} (${Number(primary.count || 0)} instance${Number(primary.count || 0) === 1 ? "" : "s"})`,
+          copy: "Highest concentration in the current tracking window.",
+        },
+      ];
+      if(secondary.length){
+        cards.push({
+          rank: "Secondary Propagation",
+          title: secondary.join(" and "),
+          copy: "Additional platform activity detected beyond the primary cluster.",
         });
-        start += slice;
+      }
+      cards.push({
+        rank: "Cross-platform Distribution",
+        title: totalPlatforms > 1 ? "Cross-platform distribution detected" : "Single-platform concentration",
+        copy: `${totalPlatforms} platform cluster${totalPlatforms === 1 ? "" : "s"} observed in the ranked set.`,
       });
-      ctx.beginPath();
-      ctx.arc(w/2, h/2, Math.min(w,h)/2 - 40, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(15,23,42,.96)";
-      ctx.fill();
-      el.sourceDistributionLegend.innerHTML = items.map((item, index)=>`
-        <div class="legend-row">
-          <span class="legend-dot" style="background:${colors[index % colors.length]}"></span>
-          <span>${escapeHtml(String(item.domain || "unknown"))}</span>
-          <span>${Number(item.count || 0)}</span>
+      el.sourceDistributionLegend.innerHTML = cards.map((item)=>`
+        <div class="distribution-item">
+          <div class="distribution-rank">${escapeHtml(item.rank)}</div>
+          <div class="distribution-title">${escapeHtml(item.title)}</div>
+          <div class="distribution-copy">${escapeHtml(item.copy)}</div>
         </div>
       `).join("");
-      const top = items[0];
-      setInsight(el.distributionInsight, items.length > 1 ? "medium" : "low", `🌐 ${String(top.domain || "Top domain")} leads current spread with ${Number(top.count || 0)} appearances`);
-      el.sourceDistributionCanvas._tooltipPoints = tooltipPoints;
-      attachCanvasTooltips(el.sourceDistributionCanvas);
+      setInsight(el.distributionInsight, totalPlatforms > 1 ? "medium" : "low", totalPlatforms > 1 ? "Cross-platform distribution detected" : "Primary source cluster isolated to one platform");
+      if(el.sourceDistributionCanvas){ attachCanvasTooltips(el.sourceDistributionCanvas); }
     }
 
     function propagationRiskColor(level, newest){
       const normalized = String(level || "").toLowerCase();
-      let color = "#93c5fd";
-      if(normalized === "critical"){ color = "#fb7185"; }
-      else if(normalized === "high"){ color = "#fb923c"; }
-      else if(normalized === "medium"){ color = "#fbbf24"; }
-      else if(normalized === "low"){ color = "#34d399"; }
-      return newest ? "#e2e8f0" : color;
+      let color = "rgba(100,116,139,.82)";
+      if(normalized === "critical"){ color = "rgba(148,163,184,.9)"; }
+      else if(normalized === "high"){ color = "rgba(94,234,212,.82)"; }
+      else if(normalized === "medium"){ color = "rgba(71,85,105,.88)"; }
+      else if(normalized === "low"){ color = "rgba(100,116,139,.82)"; }
+      return newest ? "rgba(226,232,240,.94)" : color;
     }
 
     function normalizePropagationGraph(graph){
@@ -1552,22 +1616,22 @@
 
     function updatePropagationControls(graph){
       const total = graph && Array.isArray(graph.nodes) ? graph.nodes.length : 0;
-      const step = Math.max(0, Math.min(total - 1, Number(state.propagationStep || 0)));
-      const isPlayable = total > 1;
-      if(el.propagationPlayBtn){
-        el.propagationPlayBtn.disabled = !isPlayable;
-        el.propagationPlayBtn.classList.toggle("on", Boolean(state.propagationAutoplay && isPlayable));
-        el.propagationPlayBtn.textContent = state.propagationAutoplay && isPlayable ? "Pause" : "Auto-play";
+      const step = Math.max(0, Math.min(Math.max(0, total - 1), Number(state.propagationStep || 0)));
+      if(el.propagationScrubber){
+        el.propagationScrubber.max = String(Math.max(0, total - 1));
+        el.propagationScrubber.value = String(step);
+        el.propagationScrubber.disabled = total <= 1;
       }
-      if(el.propagationPrevBtn){ el.propagationPrevBtn.disabled = !isPlayable || step <= 0; }
-      if(el.propagationNextBtn){ el.propagationNextBtn.disabled = !isPlayable || step >= total - 1; }
+      if(el.propagationScrubberMeta){
+        el.propagationScrubberMeta.textContent = total ? `Network window ${step + 1} of ${total}` : "Tracking window unavailable";
+      }
       if(el.propagationStatus){
         if(!total){
-          el.propagationStatus.textContent = "Waiting for graph data";
+          el.propagationStatus.textContent = "No node data";
+        }else if(state.propagationSelectedNodeId){
+          el.propagationStatus.textContent = `Inspecting ${state.propagationSelectedNodeId}`;
         }else{
-          const selected = state.propagationSelectedNodeId ? " • node selected" : "";
-          const sampled = graph.sampled ? " • sampled" : "";
-          el.propagationStatus.textContent = `Showing ${Math.min(total, step + 1)} of ${total} nodes${state.propagationAutoplay && isPlayable ? " • autoplay" : ""}${selected}${sampled}`;
+          el.propagationStatus.textContent = `${Math.min(total, step + 1)} nodes in view`;
         }
       }
     }
@@ -1656,16 +1720,10 @@
       state.propagationGraphData = normalized;
       if(changed){
         state.propagationSelectedNodeId = "";
-        state.propagationStep = normalized.nodes.length > 1 ? 0 : Math.max(0, normalized.nodes.length - 1);
+        state.propagationStep = normalized.nodes.length > 1 ? Math.max(0, normalized.nodes.length - 1) : 0;
         stopPropagationPlayback();
-        if(normalized.nodes.length > 1 && state.layer3Visible){
-          togglePropagationAutoplay(true);
-        }else{
-          updatePropagationControls(normalized);
-        }
-      }else{
-        updatePropagationControls(normalized);
       }
+      updatePropagationControls(normalized);
       if(state.layer3Visible){
         drawPropagationGraph(normalized);
       }
@@ -1820,6 +1878,59 @@
       if(growthRate >= 120 || riskScore >= 0.75 || sourceCount >= 8){ return "viral"; }
       if(growthRate >= 40 || riskScore >= 0.45 || sourceCount >= 3){ return "medium"; }
       return "low";
+    }
+
+    function relativeTimeLabel(value){
+      const stamp = new Date(value || "");
+      if(Number.isNaN(stamp.getTime())){ return "Unavailable"; }
+      const minutes = Math.max(0, Math.round((Date.now() - stamp.getTime()) / 60000));
+      if(minutes < 1){ return "Just now"; }
+      if(minutes < 60){ return `${minutes} min ago`; }
+      const hours = Math.round(minutes / 60);
+      if(hours < 24){ return `${hours}h ago`; }
+      const days = Math.round(hours / 24);
+      return `${days}d ago`;
+    }
+
+    function trackingWindowLabel(timeline){
+      const points = Array.isArray(timeline) ? timeline.filter((item)=>item && item.timestamp) : [];
+      if(points.length < 2){ return "Tracking window unavailable"; }
+      const start = new Date(points[0].timestamp).getTime();
+      const end = new Date(points[points.length - 1].timestamp).getTime();
+      if(Number.isNaN(start) || Number.isNaN(end) || end <= start){ return "Tracking window unavailable"; }
+      const hours = Math.max(1, Math.round((end - start) / 3600000));
+      return `Tracking window: last ${hours}h`;
+    }
+
+    function riskConfidenceLabel(sourceCount, platformCount, timelineCount, clusterSize){
+      const richness = Number(sourceCount || 0) + Number(platformCount || 0) + Number(timelineCount || 0) + Number(clusterSize || 0);
+      if(richness >= 16){ return "High confidence"; }
+      if(richness >= 8){ return "Moderate confidence"; }
+      return "Low confidence";
+    }
+
+    function spreadStatusLabel(growthRate, velocity){
+      if(Number(growthRate || 0) > 12 || Number(velocity || 0) > 0.35){ return "Increasing"; }
+      if(Number(growthRate || 0) < -5){ return "Declining"; }
+      return "Stable";
+    }
+
+    function spreadIntensityLabel(sourceCount, platformCount){
+      const signal = Number(sourceCount || 0) + Number(platformCount || 0);
+      if(signal >= 9){ return "High"; }
+      if(signal >= 4){ return "Moderate"; }
+      return "Low";
+    }
+
+    function clusterDensityLabel(clusterSize){
+      if(Number(clusterSize || 0) >= 8){ return "Dense"; }
+      if(Number(clusterSize || 0) >= 3){ return "Moderate"; }
+      return "Sparse";
+    }
+
+    function mutedMetric(value){
+      const numeric = Math.max(0, Math.min(0.98, Number(value || 0)));
+      return numeric.toFixed(2);
     }
 
     function verdictMeta(result, confidence){
@@ -1998,6 +2109,30 @@
         visual: Array.isArray(l2.visual_matches_top10) ? l2.visual_matches_top10 : (Array.isArray(l2.visual_matches) ? l2.visual_matches : []),
         embedding: Array.isArray(l2.related_web_sources) ? l2.related_web_sources : (Array.isArray(l2.embedding_matches_top10) ? l2.embedding_matches_top10 : (Array.isArray(l2.embedding_matches) ? l2.embedding_matches : []))
       };
+    }
+
+    function dedupeMatches(items){
+      const seen = new Set();
+      const output = [];
+      items.forEach((item, index)=>{
+        const sourceUrl = layer2SourceUrl(item);
+        const previewUrl = layer2PreviewUrl(item);
+        const key = String(sourceUrl || previewUrl || item.id || item.entry_id || `match-${index}`);
+        if(!key || seen.has(key)){ return; }
+        seen.add(key);
+        output.push(item);
+      });
+      return output;
+    }
+
+    function buildRelatedSourceItems(sections, combinedTopMatches, visibleTopMatches){
+      const topMatchKeys = new Set((visibleTopMatches || []).map((item, index)=>String(layer2SourceUrl(item) || layer2PreviewUrl(item) || item.id || item.entry_id || `top-${index}`)));
+      const overflowTopMatches = (combinedTopMatches || []).filter((item, index)=>index >= 5);
+      const related = [...(sections.embedding || []), ...overflowTopMatches].filter((item, index)=>{
+        const key = String(layer2SourceUrl(item) || layer2PreviewUrl(item) || item.id || item.entry_id || `related-${index}`);
+        return !topMatchKeys.has(key);
+      });
+      return dedupeMatches(related);
     }
 
     function layer2TotalCount(l2){
@@ -2312,9 +2447,10 @@
       const l2 = payload.layer2 || {};
       const sections = layer2Buckets(l2);
       const combinedTopMatches = rankMatches([...(sections.exact || []), ...(sections.visual || [])]);
+      const visibleTopMatches = combinedTopMatches.slice(0, 5);
       const filteredSections = {
         visual: filteredItems(combinedTopMatches),
-        embedding: filteredItems(sections.embedding)
+        embedding: filteredItems(buildRelatedSourceItems(sections, combinedTopMatches, visibleTopMatches))
       };
       const total = layer2TotalCount(l2);
       const filteredTotal = filteredSections.visual.length + filteredSections.embedding.length;
@@ -2374,12 +2510,21 @@
       const velocity = Number(spread.spread_velocity || 0);
       const lvl = classifyGrowth(growth, risk, srcCount);
       const lvlText = String(l3.risk_level || (lvl === "viral" ? "Critical" : lvl === "medium" ? "Medium" : "Low"));
+      const riskScoreOutOfTen = risk <= 1 ? risk * 10 : risk;
 
       const fakeProb = Number(payload.layer1 && payload.layer1.confidence ? payload.layer1.confidence/100 : 0);
       const clusterId = String(l3.cluster_id || "").trim();
       const platformDiversity = Number(spread.platform_diversity || 0);
+      const fallbackDistribution = Array.isArray(l2.domain_distribution) ? l2.domain_distribution : [];
+      const totalPlatforms = Math.max(platformDiversity, sourceDistribution.length, fallbackDistribution.length);
       const summary = l3.timeline_summary || {};
       const firstSeen = summary.first_seen ? safeDate(summary.first_seen) : "unknown";
+      const trackingWindow = trackingWindowLabel(timeline);
+      const lastUpdated = summary.last_seen ? relativeTimeLabel(summary.last_seen) : "Unavailable";
+      const spreadStatus = spreadStatusLabel(growth, velocity);
+      const spreadIntensity = spreadIntensityLabel(srcCount, platformDiversity);
+      const clusterDensity = clusterDensityLabel(clusterSize);
+      const confidenceLevel = riskConfidenceLabel(srcCount, platformDiversity, timeline.length, clusterSize);
       const temporaryMode = String(l3.persistence_mode || "") === "temporary";
       const provisionalMode = String(l3.persistence_mode || "") === "provisional" || String(l3.refinement_status || "").toLowerCase() === "pending";
       const expiresAt = l3.expires_at ? safeDate(l3.expires_at) : "";
@@ -2387,53 +2532,72 @@
         ? `Session-only Layer 3 insight tracks ${srcCount} related item(s) until ${expiresAt || "the temporary TTL expires"}. Login to enable persistent tracking, saved history, and alerts.`
         : provisionalMode
           ? `Initial Layer 3 insight is ready with ${srcCount} related item(s). Persistent clustering, propagation mapping, and refined risk are still processing in the background.`
-          : `Cluster ${clusterId ? clusterId.slice(0, 8) : "pending"} tracks ${srcCount} similar item(s), spread velocity ${velocity.toFixed(2)}, and platform diversity ${platformDiversity}. First seen: ${firstSeen}.`;
+          : `Cluster ${clusterId ? clusterId.slice(0, 8) : "pending"} tracks ${srcCount} similar item(s) across ${totalPlatforms} platform cluster${totalPlatforms === 1 ? "" : "s"}. Spread status is ${spreadStatus.toLowerCase()}${summary.first_seen ? ` since ${firstSeen}` : ""}.`;
 
       el.layer3Badge.textContent = temporaryMode ? "Session-only insights" : provisionalMode ? "Refining in background" : (l3.tracking_enabled ? (lvl === "viral" ? "High-priority monitoring" : "Active monitoring") : "Passive indexing");
-      el.riskSummaryValue.textContent = `${(risk * 100).toFixed(1)}%`;
-      el.riskSummaryFill.style.width = `${Math.max(0, Math.min(100, risk * 100))}%`;
+      if(el.layer3IntelSummaryText){
+        el.layer3IntelSummaryText.textContent = `Last updated ${lastUpdated} • ${trackingWindow}`;
+      }
+      if(el.layer3IntelStatus){
+        const intelStatusClass = confidenceLevel.startsWith("High") ? "high" : confidenceLevel.startsWith("Moderate") ? "medium" : "low";
+        el.layer3IntelStatus.className = `layer3-status-badge ${intelStatusClass}`;
+        el.layer3IntelStatus.textContent = confidenceLevel;
+      }
+      if(el.layer3IntelPoints){
+        const summaryPoints = [
+          ["First Seen", summary.first_seen ? firstSeen : "Unknown"],
+          ["Active Variants", String(clusterSize)],
+          ["Spread Status", spreadStatus],
+          ["Platforms Detected", String(totalPlatforms)],
+          ["Overall Risk", `${riskScoreOutOfTen.toFixed(1)} / 10`],
+        ];
+        el.layer3IntelPoints.innerHTML = summaryPoints.map(([label, value])=>`<div class="layer3-summary-item"><div class="layer3-summary-label">${escapeHtml(label)}</div><div class="layer3-summary-value">${escapeHtml(value)}</div></div>`).join("");
+      }
+      el.riskSummaryValue.textContent = `${riskScoreOutOfTen.toFixed(1)} / 10`;
       el.riskSummaryMeta.textContent = temporaryMode ? "Temporary session posture" : `${lvlText} monitoring posture`;
-      el.riskSummaryCard.className = `summary-card ${risk >= 0.75 ? "risk-high" : risk >= 0.45 ? "risk-medium" : "risk-low"}`;
-      el.velocitySummaryValue.textContent = velocity.toFixed(2);
-      el.velocitySummaryMeta.textContent = `${platformDiversity} active domains`;
-      el.clusterSummaryValue.textContent = String(clusterSize);
-      el.clusterSummaryMeta.textContent = temporaryMode ? `${srcCount} related instances in this session` : `${srcCount} related instances indexed`;
-      el.statusSummaryValue.textContent = lvlText;
-      el.statusSummaryMeta.textContent = temporaryMode ? "Temporary only. Login for long-term tracking." : provisionalMode ? "Background refinement in progress" : (l3.tracking_enabled ? "Active tracking enabled" : "Passive persistence only");
-      el.timelineMeta.textContent = temporaryMode ? `Expires ${expiresAt || "soon"}` : provisionalMode ? "Initial trend only" : `First seen ${firstSeen}`;
+      if(el.riskSummaryCard){
+        el.riskSummaryCard.style.borderColor = risk >= 0.75 ? "rgba(148,163,184,.18)" : risk >= 0.45 ? "rgba(94,234,212,.18)" : "rgba(148,163,184,.08)";
+      }
+      el.velocitySummaryValue.textContent = spreadIntensity;
+      el.velocitySummaryMeta.textContent = trackingWindow;
+      el.clusterSummaryValue.textContent = clusterDensity;
+      el.clusterSummaryMeta.textContent = `${clusterSize} active variant${clusterSize === 1 ? "" : "s"}`;
+      el.statusSummaryValue.textContent = confidenceLevel;
+      el.statusSummaryMeta.textContent = temporaryMode ? "Temporary only. Login for long-term tracking." : provisionalMode ? "Background refinement in progress" : `Last updated ${lastUpdated}`;
+      el.timelineMeta.textContent = "Matches over time";
       const latestSpike = timeline.length ? Math.max(...timeline.map((point)=>Number(point.mentions || 0))) : 0;
       const latestCluster = clusterGrowth.length ? Number(clusterGrowth[clusterGrowth.length - 1].cluster_size || 0) : clusterSize;
       const strongestBand = strengthDistribution.reduce((best, item)=>Number(item.count || 0) > Number(best.count || 0) ? item : best, strengthDistribution[0] || { label:"0.0-0.2", count:0 });
       el.histogramMeta.textContent = `Latest cluster size ${latestCluster}`;
-      el.strengthMeta.textContent = `Most evidence falls in ${String(strongestBand.label || "0.0-0.2")}`;
+      el.strengthMeta.textContent = "Similarity cluster analysis";
       el.propagationMeta.textContent = `${propagationGraph.nodes.length} nodes · ${propagationGraph.edges.length} edges`;
       el.riskBreakdownMeta.textContent = `Risk level ${lvlText}`;
-      el.distributionMeta.textContent = `${platformDiversity} domain${platformDiversity !== 1 ? "s" : ""} observed`;
+      el.distributionMeta.textContent = "Ranked source clusters";
       setInsight(
         el.timelineInsight,
         latestSpike >= 5 ? "high" : timeline.length > 1 ? "medium" : "low",
-        latestSpike >= 5 ? "📈 Rapid increase detected" : timeline.length > 1 ? "↗ Spread is being observed over time" : "⚠ Not enough data to generate meaningful trend yet"
+        latestSpike >= 5 ? "Recent spike detected" : timeline.length > 1 ? "Matches are accumulating across the tracking window" : "Not enough data to generate meaningful trend yet"
       );
       setInsight(
         el.histogramInsight,
         latestCluster > clusterSize * 0.75 && latestCluster > 2 ? "medium" : "low",
-        latestCluster > 2 ? `🧩 Cluster now contains ${latestCluster} related items` : "⚠ No new variants observed yet"
+        latestCluster > 2 ? `${latestCluster} related variants are active in the current window` : "No significant mutation patterns detected"
       );
       const strongestBandLabel = String(strongestBand.label || "0.0-0.2");
       const weakDominance = strongestBandLabel.startsWith("0.0") || strongestBandLabel.startsWith("0.2") || strongestBandLabel.startsWith("0.4");
       setInsight(
         el.strengthInsight,
         weakDominance ? "medium" : "high",
-        weakDominance ? `🔍 Most matches are weak to moderate (${strongestBandLabel})` : `✅ Most matches are strong (${strongestBandLabel})`
+        weakDominance ? `Similarity evidence is concentrated in the ${strongestBandLabel} band` : "High similarity cluster detected"
       );
       setInsight(
         el.propagationInsight,
         propagationGraph.nodes.length > 4 ? "high" : propagationGraph.nodes.length > 2 ? "medium" : "low",
         propagationGraph.nodes.length > 4
-          ? "🕸 Spread is evolving across multiple connected detections"
+          ? "Spread network shows multiple connected detections"
           : propagationGraph.nodes.length > 2
-            ? "🕸 Relationships between variants are now visible over time"
-            : "⚠ Not enough data to map propagation yet"
+            ? "Relationships between variants are visible across the timeline"
+            : "Not enough data to map propagation yet"
       );
 
       const alerts = Array.isArray(l3.alerts) ? l3.alerts : [];
@@ -2557,6 +2721,9 @@
     }
 
     function renderSnapshotCard(){
+      if(!el.snapshotCopy || !el.snapshotVerdict || !el.snapshotRisk || !el.snapshotSources || !el.snapshotTopDomain || !el.snapshotNote){
+        return;
+      }
       if(!state.analysis){
         el.snapshotCopy.textContent = "Run an analysis to populate the current verdict, source footprint, and risk indicators.";
         el.snapshotVerdict.textContent = "Awaiting scan";
@@ -2612,9 +2779,6 @@
         if(!visible){ return; }
         state.layer3Visible = true;
         if(state.analysis){ renderLayer3(state.analysis); }
-        if(state.propagationGraphData && Array.isArray(state.propagationGraphData.nodes) && state.propagationGraphData.nodes.length > 1 && !state.propagationAutoplay && state.propagationStep === 0){
-          togglePropagationAutoplay(true);
-        }
         observer.disconnect();
       }, { rootMargin: "140px 0px" });
       observer.observe(document.getElementById("layer3Card"));
@@ -2799,12 +2963,23 @@
       state.propagationStep = 0;
       state.propagationSelectedNodeId = "";
       state.file = null; state.analysis = null; state.activeDomainFilter = ""; state.activeJobId = "";
+      state.agentMessages = [
+        {
+          role: "assistant",
+          content: "Ask about authenticity, strongest evidence, source tracing, or current spread posture."
+        }
+      ];
+      state.agentSending = false;
       if(state.pollTimer){ clearTimeout(state.pollTimer); state.pollTimer = null; }
       stopBackgroundLayer3Refresh();
       el.fileInput.value = "";
       el.fileName.textContent = "Drag and drop image/video here, or click to upload.";
       el.previewName.textContent = "Nothing uploaded yet";
       el.sourceUrlInput.value = "";
+      if(el.agentInput){ el.agentInput.value = ""; }
+      renderAgentMessages();
+      setAgentSending(false);
+      setAgentStatus("Ready. Responses are scoped to this investigation.");
       if(el.trackingToggle){ el.trackingToggle.checked = false; }
       syncTrackingPrompt();
       revokePreview(); showPreview(null);
@@ -2843,33 +3018,52 @@
       el.embeddingGrid.innerHTML = "";
       el.domainClusterGrid.innerHTML = "";
       el.layer3Badge.textContent = "Tracking not started";
+      if(el.layer3IntelSummaryText){ el.layer3IntelSummaryText.textContent = "Last updated unavailable • Tracking window unavailable"; }
+      if(el.layer3IntelStatus){
+        el.layer3IntelStatus.className = "layer3-status-badge low";
+        el.layer3IntelStatus.textContent = "Low confidence";
+      }
+      if(el.layer3IntelPoints){
+        el.layer3IntelPoints.innerHTML = [
+          ["First Seen", "Unknown"],
+          ["Active Variants", "0"],
+          ["Spread Status", "Stable"],
+          ["Platforms Detected", "0"],
+          ["Overall Risk", "0.0 / 10"],
+        ].map(([label, value])=>`<div class="layer3-summary-item"><div class="layer3-summary-label">${escapeHtml(label)}</div><div class="layer3-summary-value">${escapeHtml(value)}</div></div>`).join("");
+      }
       el.layer3Insight.textContent = "No spread detected yet. Monitoring will continue over time.";
-      setInsight(el.timelineInsight, "low", "⚠ Not enough data to generate meaningful trend yet");
-      setInsight(el.histogramInsight, "low", "⚠ Not enough data to generate meaningful trend yet");
-      setInsight(el.strengthInsight, "low", "⚠ Not enough data to generate meaningful trend yet");
-      setInsight(el.propagationInsight, "low", "⚠ Not enough data to map propagation yet");
-      setInsight(el.distributionInsight, "low", "⚠ Not enough domain data yet");
+      setInsight(el.timelineInsight, "low", "Not enough data to generate meaningful trend yet");
+      setInsight(el.histogramInsight, "low", "No significant mutation patterns detected");
+      setInsight(el.strengthInsight, "low", "High similarity cluster detected");
+      setInsight(el.propagationInsight, "low", "Not enough data to map propagation yet");
+      setInsight(el.distributionInsight, "low", "No cross-platform distribution detected");
       el.alertList.innerHTML = '<div class="alert">No alerts yet. The system will notify you if spread accelerates or new sources appear.</div>';
-      el.riskSummaryValue.textContent = "0%";
-      el.riskSummaryFill.style.width = "0%";
-      el.riskSummaryMeta.textContent = "No active risk signal.";
-      el.riskSummaryCard.className = "summary-card risk-low";
-      el.velocitySummaryValue.textContent = "0.00";
-      el.velocitySummaryMeta.textContent = "Matches per observation window.";
-      el.clusterSummaryValue.textContent = "0";
-      el.clusterSummaryMeta.textContent = "Tracked related instances.";
-      el.statusSummaryValue.textContent = "Normal";
-      el.statusSummaryMeta.textContent = "Passive indexing.";
-      el.timelineMeta.textContent = "Waiting for observations";
-      el.histogramMeta.textContent = "How the cluster is expanding over time";
-      el.strengthMeta.textContent = "Similarity score distribution across current evidence";
-      el.propagationMeta.textContent = "Variant connectivity";
+      el.riskSummaryValue.textContent = "0.0 / 10";
+      el.riskSummaryMeta.textContent = "Confidence unavailable";
+      if(el.riskSummaryCard){ el.riskSummaryCard.style.borderColor = "rgba(148,163,184,.08)"; }
+      el.velocitySummaryValue.textContent = "Low";
+      el.velocitySummaryMeta.textContent = "Tracking window unavailable";
+      el.clusterSummaryValue.textContent = "Sparse";
+      el.clusterSummaryMeta.textContent = "0 active variants";
+      el.statusSummaryValue.textContent = "Unknown";
+      el.statusSummaryMeta.textContent = "Last updated unavailable";
+      el.timelineMeta.textContent = "Matches over time";
+      el.histogramMeta.textContent = "Mutation pattern tracking";
+      el.strengthMeta.textContent = "Similarity cluster analysis";
+      el.propagationMeta.textContent = "Node inspection";
       el.propagationStatus.textContent = "Waiting for graph data";
-      el.riskBreakdownMeta.textContent = "How Layer 3 is scoring this case";
-      el.distributionMeta.textContent = "Active public domains";
+      if(el.propagationScrubberMeta){ el.propagationScrubberMeta.textContent = "Tracking window unavailable"; }
+      if(el.propagationScrubber){
+        el.propagationScrubber.max = "0";
+        el.propagationScrubber.value = "0";
+        el.propagationScrubber.disabled = true;
+      }
+      el.riskBreakdownMeta.textContent = "Current exposure assessment";
+      el.distributionMeta.textContent = "Ranked source clusters";
       el.riskBreakdownList.innerHTML = "";
-      el.sourceDistributionLegend.innerHTML = `<div class="legend-row"><span class="legend-dot" style="background:#475569"></span><span>No domain data yet</span><span>0</span></div>`;
-      el.eventFeedMeta.textContent = "Real-time investigation signals";
+      el.sourceDistributionLegend.innerHTML = `<div class="distribution-item"><div class="distribution-rank">No distribution data</div><div class="distribution-title">No external platform clusters detected</div><div class="distribution-copy">Current tracking window does not contain enough source data.</div></div>`;
+      el.eventFeedMeta.textContent = "Recent monitoring updates";
       el.eventFeed.innerHTML = `<div class="event-item"><div class="event-top"><span class="event-type sev-low">Waiting</span><span class="event-time">now</span></div><div class="event-copy">No Layer 3 events yet. Run analysis to start monitoring.</div></div>`;
       drawTimeline([]);
       drawClusterGrowth([]);
@@ -2899,8 +3093,25 @@
     el.runBtn.addEventListener("click", runAnalysis);
     el.resetBtn.addEventListener("click", resetAll);
     el.loginToContinueBtn.addEventListener("click", ()=>{ window.location.href = "/"; });
+    if(el.agentSendBtn){
+      el.agentSendBtn.addEventListener("click", ()=>submitAgentPrompt(el.agentInput ? el.agentInput.value : ""));
+    }
+    if(el.agentInput){
+      el.agentInput.addEventListener("keydown", (event)=>{
+        if(event.key === "Enter" && !event.shiftKey){
+          event.preventDefault();
+          submitAgentPrompt(el.agentInput.value);
+        }
+      });
+    }
+    Array.from(document.querySelectorAll("[data-agent-prompt]")).forEach((button)=>{
+      button.addEventListener("click", ()=>{
+        submitAgentPrompt(String(button.getAttribute("data-agent-prompt") || ""));
+      });
+    });
 
     setTheme(localStorage.getItem("dg_theme") || "dark");
+    renderAgentMessages();
     renderProgress(0, "queued", "Preparing the upload and starting the investigation pipeline.", false);
     setupLayer2ChartObserver();
     setupLayer3ChartObserver();
