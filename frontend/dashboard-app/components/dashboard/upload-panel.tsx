@@ -57,7 +57,7 @@ export function UploadPanel() {
   };
 
   return (
-    <Card className="border-white/10">
+    <Card>
       <CardHeader>
         <CardTitle>Upload & Analyze</CardTitle>
         <CardDescription>
@@ -68,7 +68,7 @@ export function UploadPanel() {
       <CardContent>
         <label
           htmlFor="media-input"
-          className="group relative flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/[0.03] p-6 text-center transition hover:border-[#5ca7ff]/70 hover:bg-white/[0.05]"
+          className="group relative flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-[28px] border border-dashed border-[var(--app-line-strong)] bg-[var(--app-panel-soft)] p-6 text-center transition hover:border-white/40 hover:bg-white/[0.06]"
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -82,11 +82,11 @@ export function UploadPanel() {
             }
           }}
         >
-          <UploadCloud className="mb-3 h-8 w-8 text-[#7eb7ff]" />
-          <p className="text-sm font-medium text-[#e5edff]">
+          <UploadCloud className="mb-3 h-8 w-8 text-[var(--app-text-strong)]" />
+          <p className="text-sm font-medium text-[var(--app-text-strong)]">
             {selectedFile ? selectedFile.name : "Drag & drop image/video or click to browse"}
           </p>
-          <p className="mt-1 text-xs text-[#8ca5c9]">Supported: JPG, PNG, MP4, MOV, WEBM</p>
+          <p className="mt-1 text-xs text-[var(--app-text-muted)]">Supported: JPG, PNG, MP4, MOV, WEBM</p>
           <input
             id="media-input"
             type="file"
@@ -103,7 +103,7 @@ export function UploadPanel() {
           />
         </label>
 
-        <div className="mt-4 grid gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4 md:grid-cols-3">
+        <div className="mt-4 grid gap-3 rounded-[28px] border border-[var(--app-line)] bg-[var(--app-panel-soft)] p-4 md:grid-cols-3">
           <ToggleRow label="Enable Layer 1" enabled={toggles.layer1} onChange={(v) => updateToggle("layer1", v)} icon={<ImageIcon className="h-4 w-4" />} />
           <ToggleRow label="Enable Layer 2" enabled={toggles.layer2} onChange={(v) => updateToggle("layer2", v)} icon={<UploadCloud className="h-4 w-4" />} />
           <ToggleRow label="Enable Layer 3" enabled={toggles.layer3} onChange={(v) => updateToggle("layer3", v)} icon={<Video className="h-4 w-4" />} />
@@ -114,7 +114,7 @@ export function UploadPanel() {
             key={processMessage}
             initial={{ opacity: 0.3, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-sm text-[#9cb0cf]"
+            className="text-sm text-[var(--app-text-muted)]"
           >
             {isProcessing ? processMessage : "Pipeline standing by"}
           </motion.p>
@@ -139,9 +139,9 @@ function ToggleRow({
   icon: JSX.Element;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2">
-      <div className="flex items-center gap-2 text-sm text-[#dbe7ff]">
-        <span className="text-[#6ea7ff]">{icon}</span>
+    <div className="flex items-center justify-between rounded-2xl border border-[var(--app-line)] px-3 py-2">
+      <div className="flex items-center gap-2 text-sm text-[var(--app-text-strong)]">
+        <span className="text-[var(--app-text-muted)]">{icon}</span>
         {label}
       </div>
       <Switch checked={enabled} onCheckedChange={onChange} />

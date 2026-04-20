@@ -33,8 +33,8 @@ export function RightSidebar() {
             Re-run Analysis
           </Button>
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-            <p className="mb-2 text-xs uppercase tracking-wide text-[#8ea7cd]">Model Version</p>
+          <div className="rounded-[28px] border border-[var(--app-line)] bg-[var(--app-panel-soft)] p-3">
+            <p className="mb-2 text-xs uppercase tracking-wide text-[var(--app-text-muted)]">Model Version</p>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant={modelVersion === "fusion-v1" ? "default" : "outline"}
@@ -53,8 +53,8 @@ export function RightSidebar() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2">
-            <p className="text-sm text-[#dce8ff]">Show Raw Data</p>
+          <div className="flex items-center justify-between rounded-[24px] border border-[var(--app-line)] bg-[var(--app-panel-soft)] px-3 py-2">
+            <p className="text-sm text-[var(--app-text-strong)]">Show Raw Data</p>
             <Switch checked={showRawData} onCheckedChange={setShowRawData} />
           </div>
         </CardContent>
@@ -66,7 +66,7 @@ export function RightSidebar() {
           <CardDescription>Current consumption for this account window.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-2 flex justify-between text-sm text-[#dce8ff]">
+          <div className="mb-2 flex justify-between text-sm text-[var(--app-text-strong)]">
             <span>{apiUsed} used</span>
             <span>{apiLimit} quota</span>
           </div>

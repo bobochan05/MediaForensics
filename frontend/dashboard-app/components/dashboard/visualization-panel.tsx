@@ -58,9 +58,9 @@ export function VisualizationPanel() {
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="rgba(148,163,184,.14)" strokeDasharray="4 6" />
-              <XAxis dataKey="timeLabel" tick={{ fill: "#8ea7cd", fontSize: 11 }} minTickGap={24} />
-              <YAxis tick={{ fill: "#8ea7cd", fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: "#111b2e", border: "1px solid rgba(148,163,184,.2)", borderRadius: 10 }} />
+              <XAxis dataKey="timeLabel" tick={{ fill: "#b6bbc5", fontSize: 11 }} minTickGap={24} />
+              <YAxis tick={{ fill: "#b6bbc5", fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: "#232326", border: "1px solid rgba(229,231,235,.18)", borderRadius: 10 }} />
               <Area type="monotone" dataKey="mentions" stroke="#67a8ff" fill="url(#mentionsGradient)" strokeWidth={2.2} />
             </AreaChart>
           </ResponsiveContainer>
@@ -76,10 +76,10 @@ export function VisualizationPanel() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={timeline}>
               <CartesianGrid stroke="rgba(148,163,184,.14)" strokeDasharray="4 6" />
-              <XAxis dataKey="timeLabel" tick={{ fill: "#8ea7cd", fontSize: 11 }} minTickGap={24} />
-              <YAxis yAxisId="left" tick={{ fill: "#8ea7cd", fontSize: 11 }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fill: "#8ea7cd", fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: "#111b2e", border: "1px solid rgba(148,163,184,.2)", borderRadius: 10 }} />
+              <XAxis dataKey="timeLabel" tick={{ fill: "#b6bbc5", fontSize: 11 }} minTickGap={24} />
+              <YAxis yAxisId="left" tick={{ fill: "#b6bbc5", fontSize: 11 }} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fill: "#b6bbc5", fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: "#232326", border: "1px solid rgba(229,231,235,.18)", borderRadius: 10 }} />
               <Line yAxisId="left" type="monotone" dataKey="mentions" stroke="#7db4ff" strokeWidth={2.2} dot={false} />
               <Line yAxisId="right" type="monotone" dataKey="risk" stroke="#f59e0b" strokeWidth={2} dot={false} />
             </LineChart>
@@ -98,9 +98,9 @@ export function VisualizationPanel() {
             <RiskMetric label="Spread Velocity" value={formatPercent(risk.spread_velocity)} />
             <RiskMetric label="Source Credibility" value={formatPercent(risk.source_credibility)} />
           </div>
-          <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-            <p className="text-xs uppercase tracking-wide text-[#8ea7cd]">Composite Risk</p>
-            <p className="mt-1 text-3xl font-bold text-white">{formatPercent(risk.risk_score)}</p>
+          <div className="mt-4 rounded-[28px] border border-[var(--app-line)] bg-[var(--app-panel-soft)] p-4">
+            <p className="text-xs uppercase tracking-wide text-[var(--app-text-muted)]">Composite Risk</p>
+            <p className="mt-1 text-3xl font-bold text-[var(--app-text-strong)]">{formatPercent(risk.risk_score)}</p>
           </div>
         </CardContent>
       </Card>
@@ -111,7 +111,7 @@ export function VisualizationPanel() {
           <CardDescription>Propagation topology placeholder (platform nodes + diffusion edges).</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-xl border border-dashed border-white/20 bg-white/[0.02] p-5 text-sm text-[#8ea7cd]">
+          <div className="rounded-[28px] border border-dashed border-[var(--app-line-strong)] bg-[var(--app-panel-soft)] p-5 text-sm text-[var(--app-text-muted)]">
             Node-edge propagation visualization placeholder ready for graph engine integration (D3 / Sigma).
           </div>
         </CardContent>
@@ -122,9 +122,9 @@ export function VisualizationPanel() {
 
 function RiskMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-      <p className="text-xs uppercase tracking-wide text-[#8ea7cd]">{label}</p>
-      <p className="mt-1 text-base font-semibold text-[#e7f0ff]">{value}</p>
+    <div className="rounded-[24px] border border-[var(--app-line)] bg-[var(--app-panel-soft)] p-3">
+      <p className="text-xs uppercase tracking-wide text-[var(--app-text-muted)]">{label}</p>
+      <p className="mt-1 text-base font-semibold text-[var(--app-text-strong)]">{value}</p>
     </div>
   );
 }

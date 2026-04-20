@@ -51,17 +51,17 @@ export function ResultsPanel() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-[200px,1fr]">
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-              <p className="text-xs uppercase tracking-wide text-[#88a4cc]">Verdict</p>
-              <p className="mt-2 text-3xl font-bold text-white">{result.layer1.result}</p>
+            <div className="rounded-[28px] border border-[var(--app-line)] bg-[var(--app-panel-soft)] p-4">
+              <p className="text-xs uppercase tracking-wide text-[var(--app-text-muted)]">Verdict</p>
+              <p className="mt-2 text-3xl font-bold text-[var(--app-text-strong)]">{result.layer1.result}</p>
               <Badge variant={isFake ? "danger" : "success"} className="mt-2">
                 {result.layer1.confidence.toFixed(2)}% confidence
               </Badge>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-              <p className="mb-2 text-sm text-[#9eb3d6]">Confidence meter</p>
+            <div className="rounded-[28px] border border-[var(--app-line)] bg-[var(--app-panel-soft)] p-4">
+              <p className="mb-2 text-sm text-[var(--app-text-muted)]">Confidence meter</p>
               <Progress value={result.layer1.confidence} className="mb-3" />
-              <p className="text-xs text-[#8ca3c8]">Heatmap overlay: {result.layer1.heatmap ? "available" : "not available"}</p>
+              <p className="text-xs text-[var(--app-text-muted)]">Heatmap overlay: {result.layer1.heatmap ? "available" : "not available"}</p>
             </div>
           </div>
         </CardContent>
@@ -74,7 +74,7 @@ export function ResultsPanel() {
         </CardHeader>
         <CardContent>
           {result.layer2.matches.length === 0 ? (
-            <p className="text-sm text-[#8fa4c8]">No external source matches returned for this run.</p>
+            <p className="text-sm text-[var(--app-text-muted)]">No external source matches returned for this run.</p>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {result.layer2.matches.map((match, index) => (
@@ -83,15 +83,15 @@ export function ResultsPanel() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]"
+                  className="overflow-hidden rounded-[28px] border border-[var(--app-line)] bg-[var(--app-panel-soft)]"
                 >
                   <img src={match.preview_url} alt={match.title} className="h-28 w-full object-cover" />
                   <div className="space-y-2 p-3">
-                    <p className="line-clamp-1 text-sm font-medium text-[#deebff]">{match.title}</p>
-                    <p className="text-xs text-[#8fa4c8]">Similarity {(match.similarity * 100).toFixed(1)}%</p>
-                    <p className="text-xs text-[#8fa4c8]">First seen {shortDateTime(match.first_seen)}</p>
+                    <p className="line-clamp-1 text-sm font-medium text-[var(--app-text-strong)]">{match.title}</p>
+                    <p className="text-xs text-[var(--app-text-muted)]">Similarity {(match.similarity * 100).toFixed(1)}%</p>
+                    <p className="text-xs text-[var(--app-text-muted)]">First seen {shortDateTime(match.first_seen)}</p>
                     <a
-                      className="inline-flex items-center gap-1 text-xs text-[#83beff] hover:text-[#b6dbff]"
+                      className="inline-flex items-center gap-1 text-xs text-[var(--app-text-strong)] hover:text-white"
                       href={match.source_url}
                       target="_blank"
                       rel="noreferrer"
@@ -122,7 +122,7 @@ export function ResultsPanel() {
           {result.layer3.alerts.length > 0 && (
             <div className="mt-4 space-y-2">
               {result.layer3.alerts.map((alert) => (
-                <div key={alert.id} className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-3">
+                <div key={alert.id} className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 p-3">
                   <p className="text-sm font-medium text-[#ffe7b5]">{alert.title}</p>
                   <p className="text-xs text-[#d8c7a3]">{alert.message}</p>
                 </div>
@@ -137,9 +137,9 @@ export function ResultsPanel() {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-      <p className="text-xs uppercase tracking-wide text-[#8ea7cd]">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-white">{value}</p>
+    <div className="rounded-[24px] border border-[var(--app-line)] bg-[var(--app-panel-soft)] p-3">
+      <p className="text-xs uppercase tracking-wide text-[var(--app-text-muted)]">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-[var(--app-text-strong)]">{value}</p>
     </div>
   );
 }
