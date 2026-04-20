@@ -2499,15 +2499,8 @@
         gridEl.innerHTML = `<div class="empty-note">${escapeHtml(emptyText)}</div>`;
         return;
       }
-      const visible = ranked.slice(0, 5);
-      const hidden = ranked.slice(5);
-      const visibleMarkup = visible.map((item, index)=>safeDiscoveryCard(item, fallbackTitle, index)).join("");
-      if(!hidden.length){
-        gridEl.innerHTML = visibleMarkup;
-        return;
-      }
-      const hiddenMarkup = hidden.map((item, index)=>safeDiscoveryCard(item, fallbackTitle, index + 5)).join("");
-      gridEl.innerHTML = `${visibleMarkup}<details class="match-more fold"><summary class="search-link">Show ${hidden.length} more</summary><div class="fold-content"><div class="match-grid">${hiddenMarkup}</div></div></details>`;
+      // User requested to show all results at once instead of hiding behind a "Show more" button
+      gridEl.innerHTML = ranked.map((item, index)=>safeDiscoveryCard(item, fallbackTitle, index)).join("");
     }
 
     function renderManualSearch(l2){

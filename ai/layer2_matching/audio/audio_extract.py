@@ -112,7 +112,11 @@ def extract_audio_from_media(
 
     waveform, sample_rate = _to_mono_resampled(waveform, int(sample_rate), target_sample_rate)
     duration_seconds = float(waveform.shape[-1] / max(sample_rate, 1))
-    torchaudio.save(str(output_path), waveform.cpu(), sample_rate)
+    
+    import scipy.io.wavfile
+    import numpy as np
+    pcm16 = (waveform.cpu().squeeze().numpy() * 32767).clip(-32768, 32767).astype(np.int16)
+    scipy.io.wavfile.write(str(output_path), sample_rate, pcm16)
     return AudioExtractionResult(
         has_audio=bool(waveform.numel() > 0),
         waveform=waveform,

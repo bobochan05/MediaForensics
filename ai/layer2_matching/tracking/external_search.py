@@ -2,15 +2,36 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from pathlib import Path
-from urllib.parse import urlparse
 from urllib.parse import urlparse
 
 import numpy as np
 import cv2
 from PIL import Image
+
+import torch
+import torchvision.models.detection as det
+import torchvision.transforms.functional as F_vision
+from threading import Lock
+
+LOGGER = logging.getLogger(__name__)
+
+_PERSON_DETECTOR_MODEL = None
+_PERSON_DETECTOR_LOCK = Lock()
+
+def _get_person_detector():
+    global _PERSON_DETECTOR_MODEL
+    with _PERSON_DETECTOR_LOCK:
+        if _PERSON_DETECTOR_MODEL is None:
+            model = det.fasterrcnn_resnet50_fpn(weights="DEFAULT", box_score_thresh=0.5)
+            model.eval()
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            model.to(device)
+            _PERSON_DETECTOR_MODEL = (model, device)
+        return _PERSON_DETECTOR_MODEL
 
 from ai.layer1_detection.frame_extractor import IMAGE_EXTENSIONS, extract_sampled_frames
 from ai.layer2_matching.similarity.embedding import VisualEmbeddingService
@@ -160,6 +181,50 @@ class ExternalSearchClient:
             for selected_index in selected_indexes
         ]
 
+    @staticmethod
+    def _crop_to_person(frame: Image.Image, margin_ratio: float = 0.1) -> Image.Image | None:
+        """Detect the largest person using Faster R-CNN and return a cropped image."""
+        try:
+            model, device = _get_person_detector()
+            tensor_img = F_vision.to_tensor(frame).to(device)
+            
+            with torch.no_grad():
+                predictions = model([tensor_img])[0]
+                
+            boxes = predictions["boxes"].cpu()
+            labels = predictions["labels"].cpu()
+            scores = predictions["scores"].cpu()
+            
+            # Label 1 is 'person' in COCO dataset
+            mask = (labels == 1) & (scores > 0.6)
+            person_boxes = boxes[mask]
+            
+            if len(person_boxes) == 0:
+                return None
+                
+            # Find the largest person bounding box by area
+            areas = (person_boxes[:, 2] - person_boxes[:, 0]) * (person_boxes[:, 3] - person_boxes[:, 1])
+            largest_idx = torch.argmax(areas).item()
+            x1, y1, x2, y2 = person_boxes[largest_idx].tolist()
+            
+            w = x2 - x1
+            h = y2 - y1
+            
+            # Calculate margin
+            margin_x = int(w * margin_ratio)
+            margin_y = int(h * margin_ratio)
+            
+            img_w, img_h = frame.size
+            crop_x1 = max(0, int(x1) - margin_x)
+            crop_y1 = max(0, int(y1) - margin_y)
+            crop_x2 = min(img_w, int(x2) + margin_x)
+            crop_y2 = min(img_h, int(y2) + margin_y)
+            
+            return frame.crop((crop_x1, crop_y1, crop_x2, crop_y2))
+        except Exception as e:
+            LOGGER.error("Failed to crop person using Faster R-CNN: %s", e)
+            return None
+
     def _prepare_query_images(self, file_path: Path) -> list[Path]:
         effective_sample_fps, effective_frames_per_video, profile = adaptive_frame_plan(
             file_path,
@@ -188,7 +253,12 @@ class ExternalSearchClient:
         for index, (_, frame, frame_key) in enumerate(selected_frames, start=1):
             frame_path = frame_dir / f"frame_{index:02d}_{frame_key}.jpg"
             if not frame_path.exists():
-                frame.save(frame_path, format="JPEG", quality=92)
+                person_crop = self._crop_to_person(frame)
+                if person_crop:
+                    LOGGER.info("Person detected in frame %s, cropping for reverse search.", frame_key)
+                    person_crop.save(frame_path, format="JPEG", quality=92)
+                else:
+                    frame.save(frame_path, format="JPEG", quality=92)
             query_paths.append(frame_path)
         return query_paths
 
