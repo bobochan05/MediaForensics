@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -16,6 +17,17 @@ import cloudinary
 import cloudinary.uploader
 import requests
 from dotenv import load_dotenv
+
+from ai.layer2_matching.tracking.search_diagnostics import (
+    SearchInputFingerprint,
+    SearchRequestLog,
+    SearchResponseLog,
+    compute_bytes_sha256,
+    compute_file_sha256,
+    extract_top_domains,
+    get_diagnostics,
+    search_quality_gate,
+)
 
 LOGGER = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -150,7 +162,11 @@ def _configure_cloudinary() -> None:
 
 
 def upload_to_cloudinary(file) -> str:
-    """Upload a Flask file object to Cloudinary and return a secure public URL."""
+    """Upload a Flask file object to Cloudinary and return a secure public URL.
+
+    Uses content-addressable public_id (SHA-256) so the same image always
+    produces the same Cloudinary URL, preventing cache key drift.
+    """
 
     if file is None or not getattr(file, "filename", ""):
         raise ReverseSearchInputError("Upload an image file or provide a public image URL.")
@@ -161,19 +177,33 @@ def upload_to_cloudinary(file) -> str:
     try:
         if hasattr(upload_target, "seek"):
             upload_target.seek(0)
+        raw_bytes = upload_target.read()
+        content_hash = compute_bytes_sha256(raw_bytes)
+        # Log input fingerprint for diagnostics
+        diag = get_diagnostics()
+        fingerprint = SearchInputFingerprint.from_bytes(
+            raw_bytes,
+            filename=getattr(file, "filename", "unknown"),
+            correlation_id=content_hash[:16],
+        )
+        diag.log_input(fingerprint)
+
+        from io import BytesIO
         result = cloudinary.uploader.upload(
-            upload_target,
+            BytesIO(raw_bytes),
             folder="deepfake-detector/reverse-search",
             resource_type="image",
-            use_filename=True,
-            unique_filename=True,
+            public_id=f"rs_{content_hash[:24]}",
+            use_filename=False,
+            unique_filename=False,
             overwrite=False,
-            filename_override=Path(str(file.filename)).name,
+            format="jpg",
             tags=["deepfake-detector", "reverse-search", "layer2"],
         )
         secure_url = result.get("secure_url")
         if not secure_url:
             raise ReverseSearchError("Cloudinary upload did not return a secure URL.")
+        LOGGER.info("[Cloudinary] content_hash=%s url=%s", content_hash[:16], secure_url)
         return _validate_url(secure_url)
     except ReverseSearchError:
         raise
@@ -183,7 +213,11 @@ def upload_to_cloudinary(file) -> str:
 
 
 def upload_path_to_cloudinary(file_path: str | Path, filename_override: str | None = None) -> str:
-    """Upload a local image path to Cloudinary and return a secure public URL."""
+    """Upload a local image path to Cloudinary and return a secure public URL.
+
+    Uses content-addressable public_id (SHA-256) so the same image always
+    produces the same Cloudinary URL.
+    """
 
     path_obj = Path(file_path)
     if not path_obj.exists() or not path_obj.is_file():
@@ -192,19 +226,30 @@ def upload_path_to_cloudinary(file_path: str | Path, filename_override: str | No
     _configure_cloudinary()
 
     try:
+        content_hash = compute_file_sha256(path_obj)
+        # Log input fingerprint for diagnostics
+        diag = get_diagnostics()
+        fingerprint = SearchInputFingerprint.from_file(
+            path_obj,
+            correlation_id=content_hash[:16],
+        )
+        diag.log_input(fingerprint)
+
         result = cloudinary.uploader.upload(
             str(path_obj),
             folder="deepfake-detector/reverse-search",
             resource_type="image",
-            use_filename=True,
-            unique_filename=True,
+            public_id=f"rs_{content_hash[:24]}",
+            use_filename=False,
+            unique_filename=False,
             overwrite=False,
-            filename_override=filename_override or path_obj.name,
+            format="jpg",
             tags=["deepfake-detector", "reverse-search", "layer2"],
         )
         secure_url = result.get("secure_url")
         if not secure_url:
             raise ReverseSearchError("Cloudinary upload did not return a secure URL.")
+        LOGGER.info("[Cloudinary] content_hash=%s path=%s url=%s", content_hash[:16], path_obj.name, secure_url)
         return _validate_url(secure_url)
     except ReverseSearchError:
         raise
@@ -223,7 +268,27 @@ def ensure_public_url(file=None, image_url: str | None = None) -> str:
     raise ReverseSearchInputError("Provide either an uploaded image file or a public image URL.")
 
 
-def _serpapi_request(engine: str, image_url: str, *, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS) -> dict[str, Any]:
+_SERPAPI_MAX_RETRIES = 2
+_SERPAPI_BACKOFF_BASE = 1.5  # seconds — grows exponentially
+
+
+class RateLimitedError(ReverseSearchError):
+    """Raised specifically when SerpAPI returns 429."""
+
+
+def _serpapi_request(
+    engine: str,
+    image_url: str,
+    *,
+    timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    correlation_id: str = "",
+) -> tuple[dict[str, Any], str]:
+    """Execute a SerpAPI request with rate limiting, retry, and diagnostics.
+
+    Returns:
+        (payload, quality_status)  where quality_status is one of
+        'ok', 'rate_limited', 'failed'.
+    """
     api_key = _get_env("SERPAPI_KEY", "SERPAPI_API_KEY", "SERP_API_KEY")
     if not api_key:
         raise ReverseSearchError("SERPAPI_KEY is not configured in the environment.")
@@ -236,39 +301,136 @@ def _serpapi_request(engine: str, image_url: str, *, timeout_seconds: int = DEFA
     else:
         raise ReverseSearchError(f"Unsupported SerpApi engine: {engine}")
 
-    try:
-        response = requests.get(SERPAPI_ENDPOINT, params=params, timeout=timeout_seconds)
-        response.raise_for_status()
-        payload = response.json()
-    except requests.Timeout as exc:
-        LOGGER.exception("SerpApi %s request timed out.", engine)
-        raise ReverseSearchError(f"{engine} request to SerpApi timed out.") from exc
-    except requests.RequestException as exc:
-        LOGGER.exception("SerpApi %s request failed.", engine)
-        raise ReverseSearchError(f"{engine} request to SerpApi failed.") from exc
-    except ValueError as exc:
-        LOGGER.exception("SerpApi %s returned invalid JSON.", engine)
-        raise ReverseSearchError(f"{engine} returned invalid JSON.") from exc
+    diag = get_diagnostics()
+    limiter = diag.get_rate_limiter(engine, rate_per_second=1.0, burst=3)
 
-    _log_json(f"SerpApi response ({engine})", payload)
+    last_exc: Exception | None = None
+    for attempt in range(1, _SERPAPI_MAX_RETRIES + 2):  # 1-indexed, up to max_retries+1
+        # Acquire rate-limit token (blocks up to 10s)
+        if not limiter.acquire(timeout_seconds=10.0):
+            LOGGER.warning("[SerpApi] Rate limiter timeout for engine=%s", engine)
 
-    if payload.get("error"):
-        LOGGER.error("SerpApi %s returned an error: %s", engine, payload["error"])
-        raise ReverseSearchError(str(payload["error"]))
+        # Log the request
+        safe_params = {k: v for k, v in params.items() if k != "api_key"}
+        diag.log_request(SearchRequestLog(
+            correlation_id=correlation_id,
+            engine=engine,
+            image_url=image_url[:120],
+            params=safe_params,
+            timestamp_utc=time.time(),
+            attempt_number=attempt,
+        ))
 
-    search_status = str((payload.get("search_metadata") or {}).get("status") or "").lower()
-    if search_status == "error":
-        message = payload.get("error") or "SerpApi search_metadata.status=Error"
-        LOGGER.error("SerpApi %s metadata error: %s", engine, message)
-        raise ReverseSearchError(str(message))
+        t0 = time.perf_counter()
+        try:
+            response = requests.get(SERPAPI_ENDPOINT, params=params, timeout=timeout_seconds)
+            latency_ms = (time.perf_counter() - t0) * 1000
 
-    return payload
+            # 429 — rate limited, retry with backoff
+            if response.status_code == 429:
+                diag.log_response(SearchResponseLog(
+                    correlation_id=correlation_id, engine=engine,
+                    http_status=429, result_count=0, top_3_domains=[], top_3_scores=[],
+                    quality_status="rate_limited", latency_ms=latency_ms,
+                    raw_error="HTTP 429 Too Many Requests",
+                ))
+                if attempt <= _SERPAPI_MAX_RETRIES:
+                    delay = _SERPAPI_BACKOFF_BASE ** attempt
+                    LOGGER.warning("[SerpApi] 429 on %s attempt %d, backing off %.1fs", engine, attempt, delay)
+                    time.sleep(delay)
+                    continue
+                raise RateLimitedError(f"{engine}: rate limited after {attempt} attempts")
+
+            # 5xx — server error, retry
+            if response.status_code >= 500:
+                diag.log_response(SearchResponseLog(
+                    correlation_id=correlation_id, engine=engine,
+                    http_status=response.status_code, result_count=0,
+                    top_3_domains=[], top_3_scores=[],
+                    quality_status="failed", latency_ms=latency_ms,
+                    raw_error=f"HTTP {response.status_code}",
+                ))
+                if attempt <= _SERPAPI_MAX_RETRIES:
+                    delay = _SERPAPI_BACKOFF_BASE ** attempt
+                    LOGGER.warning("[SerpApi] %d on %s attempt %d, backing off %.1fs", response.status_code, engine, attempt, delay)
+                    time.sleep(delay)
+                    continue
+                response.raise_for_status()
+
+            response.raise_for_status()
+            payload = response.json()
+
+        except RateLimitedError:
+            raise
+        except requests.Timeout as exc:
+            latency_ms = (time.perf_counter() - t0) * 1000
+            diag.log_response(SearchResponseLog(
+                correlation_id=correlation_id, engine=engine,
+                http_status=0, result_count=0, top_3_domains=[], top_3_scores=[],
+                quality_status="failed", latency_ms=latency_ms, raw_error="timeout",
+            ))
+            last_exc = exc
+            if attempt <= _SERPAPI_MAX_RETRIES:
+                time.sleep(_SERPAPI_BACKOFF_BASE ** attempt)
+                continue
+            raise ReverseSearchError(f"{engine} request to SerpApi timed out.") from exc
+        except requests.RequestException as exc:
+            latency_ms = (time.perf_counter() - t0) * 1000
+            diag.log_response(SearchResponseLog(
+                correlation_id=correlation_id, engine=engine,
+                http_status=0, result_count=0, top_3_domains=[], top_3_scores=[],
+                quality_status="failed", latency_ms=latency_ms, raw_error=str(exc),
+            ))
+            last_exc = exc
+            if attempt <= _SERPAPI_MAX_RETRIES:
+                time.sleep(_SERPAPI_BACKOFF_BASE ** attempt)
+                continue
+            raise ReverseSearchError(f"{engine} request to SerpApi failed.") from exc
+        except ValueError as exc:
+            LOGGER.exception("SerpApi %s returned invalid JSON.", engine)
+            raise ReverseSearchError(f"{engine} returned invalid JSON.") from exc
+
+        # -- Success path: validate payload ---------------------------------
+        _log_json(f"SerpApi response ({engine})", payload)
+
+        if payload.get("error"):
+            err_msg = str(payload["error"])
+            LOGGER.error("SerpApi %s returned an error: %s", engine, err_msg)
+            # Check if the error message indicates rate limiting
+            if "rate" in err_msg.lower() or "limit" in err_msg.lower() or "429" in err_msg:
+                raise RateLimitedError(err_msg)
+            raise ReverseSearchError(err_msg)
+
+        search_status = str((payload.get("search_metadata") or {}).get("status") or "").lower()
+        if search_status == "error":
+            message = payload.get("error") or "SerpApi search_metadata.status=Error"
+            LOGGER.error("SerpApi %s metadata error: %s", engine, message)
+            raise ReverseSearchError(str(message))
+
+        # Log successful response with quality metrics
+        parsed_preview = parse_serpapi_results(payload) if payload else {}
+        top_domains = extract_top_domains(parsed_preview, limit=3)
+        total = len(parsed_preview.get("top_matches") or []) + len(parsed_preview.get("similar_images") or [])
+        diag.log_response(SearchResponseLog(
+            correlation_id=correlation_id, engine=engine,
+            http_status=200, result_count=total,
+            top_3_domains=top_domains, top_3_scores=[],
+            quality_status="ok" if total > 0 else "empty",
+            latency_ms=latency_ms,
+        ))
+
+        return payload, "ok"
+
+    # Should not reach here, but just in case
+    raise ReverseSearchError(f"{engine} request failed after all retries.") from last_exc
 
 
-def reverse_image_search(image_url: str) -> dict[str, Any]:
-    """Run the primary SerpApi reverse-image request."""
+def reverse_image_search(image_url: str, *, correlation_id: str = "") -> tuple[dict[str, Any], str]:
+    """Run the primary SerpApi reverse-image request.
 
-    return _serpapi_request(engine="google_reverse_image", image_url=image_url)
+    Returns (payload, quality_status).
+    """
+    return _serpapi_request(engine="google_reverse_image", image_url=image_url, correlation_id=correlation_id)
 
 
 def _normalize_result_item(item: Any, *, bucket: str, rank: int) -> dict[str, Any] | None:
@@ -412,11 +574,13 @@ def parse_serpapi_results(results: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def fallback_search(image_url: str) -> dict[str, Any]:
-    """Fallback to Google Lens and include placeholders for future local verification methods."""
+def fallback_search(image_url: str, *, correlation_id: str = "") -> tuple[dict[str, Any], str]:
+    """Fallback to Google Lens. Returns (parsed_results, quality_status)."""
 
     try:
-        raw_results = _serpapi_request(engine="google_lens", image_url=image_url)
+        raw_results, quality_status = _serpapi_request(
+            engine="google_lens", image_url=image_url, correlation_id=correlation_id,
+        )
         parsed = parse_serpapi_results(raw_results)
         parsed["engine"] = "google_lens"
         parsed["placeholder_methods"] = [
@@ -431,7 +595,22 @@ def fallback_search(image_url: str) -> dict[str, Any]:
                 "reason": "Remote embedding verification is handled in the Layer 2 verification pipeline, not in this route yet.",
             },
         ]
-        return parsed
+        return parsed, quality_status
+    except RateLimitedError as exc:
+        LOGGER.warning("Fallback Google Lens search rate limited: %s", exc)
+        return {
+            "matches_found": False,
+            "top_matches": [],
+            "similar_images": [],
+            "sources": [],
+            "image_results": [],
+            "inline_images": [],
+            "visual_matches": [],
+            "knowledge_graph": None,
+            "engine": "google_lens",
+            "errors": [str(exc)],
+            "placeholder_methods": [],
+        }, "rate_limited"
     except ReverseSearchError as exc:
         LOGGER.exception("Fallback Google Lens search failed.")
         return {
@@ -445,19 +624,8 @@ def fallback_search(image_url: str) -> dict[str, Any]:
             "knowledge_graph": None,
             "engine": "google_lens",
             "errors": [str(exc)],
-            "placeholder_methods": [
-                {
-                    "name": "perceptual_hash",
-                    "available": False,
-                    "reason": "Google Lens fallback failed before local verification placeholders could run.",
-                },
-                {
-                    "name": "embedding_similarity",
-                    "available": False,
-                    "reason": "Google Lens fallback failed before remote verification placeholders could run.",
-                },
-            ],
-        }
+            "placeholder_methods": [],
+        }, "failed"
 
 
 def compute_confidence(results: dict[str, Any]) -> float:
@@ -522,7 +690,11 @@ def _merge_parsed_results(primary: dict[str, Any], fallback: dict[str, Any] | No
 
 
 def process_reverse_search(file=None, image_url: str | None = None) -> dict[str, Any]:
-    """Execute the full reverse-search pipeline for a file upload or public URL."""
+    """Execute the full reverse-search pipeline for a file upload or public URL.
+
+    Includes cache quality gates: only caches high-quality results.
+    Rate-limited and fully-failed responses are NEVER cached.
+    """
 
     started_at = time.perf_counter()
     public_url = ensure_public_url(file=file, image_url=image_url)
@@ -531,35 +703,45 @@ def process_reverse_search(file=None, image_url: str | None = None) -> dict[str,
         LOGGER.info("reverse_search duration_ms=%s cache=hit url=%s", round((time.perf_counter() - started_at) * 1000, 1), public_url)
         return cached
 
+    primary_status: str = "ok"
+    fallback_status: str = "ok"
     primary_errors: list[str] = []
+    correlation_id = hashlib.sha256(public_url.encode()).hexdigest()[:16]
 
-    def run_primary() -> dict[str, Any]:
+    def run_primary() -> tuple[dict[str, Any], str]:
+        nonlocal primary_status
         try:
-            primary_raw = reverse_image_search(public_url)
+            primary_raw, primary_status = reverse_image_search(public_url, correlation_id=correlation_id)
             parsed = parse_serpapi_results(primary_raw)
             if primary_errors:
                 parsed["errors"] = primary_errors
-            return parsed
-        except ReverseSearchError as exc:
-            LOGGER.exception("Primary reverse image search failed.")
+            return parsed, primary_status
+        except RateLimitedError as exc:
+            LOGGER.warning("Primary reverse image search rate limited: %s", exc)
+            primary_status = "rate_limited"
             primary_errors.append(str(exc))
             return {
-                "matches_found": False,
-                "top_matches": [],
-                "similar_images": [],
-                "sources": [],
-                "image_results": [],
-                "inline_images": [],
-                "visual_matches": [],
-                "knowledge_graph": None,
+                "matches_found": False, "top_matches": [], "similar_images": [],
+                "sources": [], "image_results": [], "inline_images": [],
+                "visual_matches": [], "knowledge_graph": None,
                 "errors": list(primary_errors),
-            }
+            }, "rate_limited"
+        except ReverseSearchError as exc:
+            LOGGER.exception("Primary reverse image search failed.")
+            primary_status = "failed"
+            primary_errors.append(str(exc))
+            return {
+                "matches_found": False, "top_matches": [], "similar_images": [],
+                "sources": [], "image_results": [], "inline_images": [],
+                "visual_matches": [], "knowledge_graph": None,
+                "errors": list(primary_errors),
+            }, "failed"
 
     with ThreadPoolExecutor(max_workers=2, thread_name_prefix="reverse-search") as executor:
         primary_future = executor.submit(run_primary)
-        fallback_future = executor.submit(fallback_search, public_url)
-        primary_parsed = primary_future.result()
-        fallback_parsed = fallback_future.result()
+        fallback_future = executor.submit(fallback_search, public_url, correlation_id=correlation_id)
+        primary_parsed, primary_status = primary_future.result()
+        fallback_parsed, fallback_status = fallback_future.result()
 
     fallback_used = bool(
         not primary_parsed.get("matches_found", False)
@@ -568,18 +750,52 @@ def process_reverse_search(file=None, image_url: str | None = None) -> dict[str,
     combined = _merge_parsed_results(primary_parsed, fallback_parsed)
     confidence_score = compute_confidence(combined)
 
+    # --- Consistency tracking ---
+    diag = get_diagnostics()
+    top_domains = extract_top_domains(combined, limit=5)
+    consistency_label = diag.consistency_tracker.check_consistency(correlation_id, top_domains)
+    diag.consistency_tracker.record(
+        image_hash=correlation_id,
+        top_domains=top_domains,
+        match_count=len(combined.get("top_matches") or []) + len(combined.get("similar_images") or []),
+    )
+
     response = {
         "image_url": public_url,
         "reverse_search": combined,
         "fallback_used": fallback_used,
         "confidence_score": confidence_score,
         "message": "Matches found" if combined.get("matches_found") else "No matches found",
+        "provider_status": {
+            "primary": primary_status,
+            "fallback": fallback_status,
+        },
+        "provider_stability": consistency_label,
     }
-    _set_cached_reverse_search(public_url, response)
-    LOGGER.info(
-        "reverse_search duration_ms=%s cache=miss matches=%s sources=%s",
-        round((time.perf_counter() - started_at) * 1000, 1),
-        len(combined.get("top_matches") or []) + len(combined.get("similar_images") or []),
-        len(combined.get("sources") or []),
+
+    # --- Cache quality gate: only cache worthy results ---
+    should_cache, cache_reason, cache_ttl = search_quality_gate(
+        response, primary_status=primary_status, fallback_status=fallback_status,
     )
+    response["cache_status"] = cache_reason
+
+    if should_cache:
+        _set_cached_reverse_search(public_url, response)
+        LOGGER.info(
+            "reverse_search duration_ms=%s cache=stored reason=%s ttl=%ds matches=%s sources=%s stability=%s",
+            round((time.perf_counter() - started_at) * 1000, 1),
+            cache_reason, cache_ttl,
+            len(combined.get("top_matches") or []) + len(combined.get("similar_images") or []),
+            len(combined.get("sources") or []),
+            consistency_label,
+        )
+    else:
+        LOGGER.warning(
+            "reverse_search duration_ms=%s cache=SKIPPED reason=%s primary=%s fallback=%s matches=%s stability=%s",
+            round((time.perf_counter() - started_at) * 1000, 1),
+            cache_reason, primary_status, fallback_status,
+            len(combined.get("top_matches") or []) + len(combined.get("similar_images") or []),
+            consistency_label,
+        )
     return response
+

@@ -517,6 +517,10 @@ class ExternalSearchClient:
 
         merged = []
         for key, bucket in grouped.items():
+            provider_hits = len(bucket["providers"])
+            # Cross-provider agreement: candidates confirmed by 2+ providers
+            # get a confidence boost factor
+            cross_provider_agreement = min(1.0, provider_hits / 2.0) if provider_hits >= 2 else 0.0
             merged.append(
                 {
                     "candidate_key": key,
@@ -526,16 +530,23 @@ class ExternalSearchClient:
                     "snippet": bucket["snippet"],
                     "timestamp": bucket["timestamp"],
                     "frame_hits": len(bucket["frame_indices"]),
-                    "provider_hits": len(bucket["providers"]),
+                    "provider_hits": provider_hits,
                     "providers": sorted(bucket["providers"]),
                     "best_rank": int(bucket["best_rank"]),
+                    "cross_provider_agreement": cross_provider_agreement,
                     "raw_candidates": bucket["raw_candidates"],
                 }
             )
 
+        # Prioritize: multi-provider agreement → frame coverage → rank
         return sorted(
             merged,
-            key=lambda item: (item["frame_hits"], item["provider_hits"], -item["best_rank"]),
+            key=lambda item: (
+                item["cross_provider_agreement"],
+                item["frame_hits"],
+                item["provider_hits"],
+                -item["best_rank"],
+            ),
             reverse=True,
         )
 

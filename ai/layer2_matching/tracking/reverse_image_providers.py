@@ -93,7 +93,7 @@ class SerpApiReverseImageProvider(ReverseImageProvider):
         endpoint = (
             "https://serpapi.com/search.json"
             f"?engine=google_reverse_image&image_url={quote_plus(image_url)}"
-            f"&api_key={quote_plus(str(self.api_key))}&no_cache=true"
+            f"&api_key={quote_plus(str(self.api_key))}"
         )
         request = Request(endpoint, headers={"User-Agent": "Mozilla/5.0"})
         with urlopen(request, timeout=self.timeout_seconds) as response:
@@ -109,7 +109,11 @@ class SerpApiReverseImageProvider(ReverseImageProvider):
 
         try:
             payload = self._request_json(image_url=image_url)
-        except Exception:
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(
+                "[SerpApiReverse] search_image failed: %s", exc,
+            )
             return []
 
         candidates: list[ReverseImageCandidate] = []
@@ -177,7 +181,7 @@ class SerpApiGoogleLensProvider(ReverseImageProvider):
             "https://serpapi.com/search.json"
             f"?engine=google_lens&url={quote_plus(image_url)}"
             f"&type={quote_plus(search_type)}"
-            f"&api_key={quote_plus(str(self.api_key))}&no_cache=true"
+            f"&api_key={quote_plus(str(self.api_key))}"
         )
         request = Request(endpoint, headers={"User-Agent": "Mozilla/5.0"})
         with urlopen(request, timeout=self.timeout_seconds) as response:
@@ -193,7 +197,11 @@ class SerpApiGoogleLensProvider(ReverseImageProvider):
 
         try:
             payload = self._request_json(image_url=image_url, search_type="visual_matches")
-        except Exception:
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(
+                "[SerpApiLens] search_image failed: %s", exc,
+            )
             return []
 
         results = payload.get("visual_matches") or []
@@ -372,9 +380,10 @@ def configured_reverse_image_providers() -> list[ReverseImageProvider]:
     lens_provider = SerpApiGoogleLensProvider()
     reverse_provider = SerpApiReverseImageProvider()
     providers: list[ReverseImageProvider] = []
+    # Include BOTH SerpAPI engines when both are configured (was elif — bug)
     if lens_provider.is_configured():
         providers.append(lens_provider)
-    elif reverse_provider.is_configured():
+    if reverse_provider.is_configured():
         providers.append(reverse_provider)
     providers.extend(
         [
