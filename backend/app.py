@@ -120,14 +120,24 @@ AGENT_SCOPE_PATTERN = re.compile(
     r"\b(authentic(?:ity)?|synthetic|deepfake|manipulat(?:ed|ion)|detect(?:ion|ed|or)?|"
     r"result(?:s)?|confidence|verdict|fake|real|risk|source|origin|trace|tracing|"
     r"spread|spreading|propagat(?:ion|e|ed)|timeline|match(?:es)?|similar(?:ity)?|analysis|"
-    r"flag(?:ged)?|indicator(?:s)?|artifact(?:s)?|anomal(?:y|ies)|velocity|cluster|layer ?[1234])\b"
+    r"flag(?:ged)?|indicator(?:s)?|artifact(?:s)?|anomal(?:y|ies)|velocity|cluster|layer ?[1234]|"
+    r"score|platform|domain|image|video|audio|frequency|fft|clip|dino|efficientnet|fusion|"
+    r"hash|phash|embedding|neural|model|branch|classify|classifi(?:ed|cation)|probability|"
+    r"threshold|heatmap|pixel|frame|warning|alert|suspicious|credib(?:le|ility)|"
+    r"original|modif(?:ied|ication)|crop(?:ped)?|resiz(?:ed|e)|compress(?:ed|ion)|"
+    r"watermark|upload|scan|report|finding|discover(?:y|ed)?|provenance|forensic|"
+    r"misinformation|propaganda|meme|news|context|medium|severity|danger(?:ous)?|"
+    r"trust(?:worthy)?|legitimate|genuine|fabricat(?:ed|ion)|gener(?:ated|ation)|ai|cnn|"
+    r"tracelyt|intelligence|investigation|occurrence|candidate|reverse.?search)\b"
 )
 AGENT_CONTEXTUAL_SCOPE_PATTERN = re.compile(
-    r"\b(this|that|it|current|uploaded|media|content|file|analysis|result|findings?)\b"
+    r"\b(this|that|it|its|the|current|uploaded|media|content|file|photo|picture|image|video|"
+    r"analysis|result|findings?|report|data|output|scan|investigation|what|answer|response)\b"
 )
 AGENT_INTENT_PATTERN = re.compile(
-    r"\b(explain|meaning|mean|why|how|summari[sz]e|summary|details?|show|tell|clarify|"
-    r"understand|trust|safe)\b"
+    r"\b(explain|meaning|mean|why|how|what|which|where|when|who|summari[sz]e|summary|details?|"
+    r"show|tell|clarify|understand|trust|safe|describe|interpret|break.?down|elaborate|"
+    r"analyze|assess|evaluate|compare|identify|help|give|provide|list|more|about)\b"
 )
 
 app = Flask(__name__, template_folder=str(APP_DIR / "templates"))
@@ -164,7 +174,7 @@ REVERSE_SEARCH_ALLOWED_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 REVERSE_SEARCH_ALLOWED_MIME_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 GEMINI_API_KEY = str(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
 GEMINI_MODEL = str(os.getenv("GEMINI_MODEL") or "gemini-2.0-flash").strip()
-GEMINI_TIMEOUT_SECONDS = 20.0
+GEMINI_TIMEOUT_SECONDS = 30.0
 AGENT_HISTORY_LIMIT = 10
 AGENT_MATCH_LIMIT = 5
 AGENT_ALERT_LIMIT = 4
@@ -1679,7 +1689,7 @@ def _load_agent_history() -> list[dict[str, str]]:
         content = str(item.get("content") or "").strip()
         if role not in {"user", "assistant"} or not content:
             continue
-        history.append({"role": role, "content": content[:2000]})
+        history.append({"role": role, "content": content[:3000]})
     return history
 
 
@@ -1694,7 +1704,7 @@ def _append_agent_history(role: str, content: str) -> None:
     if cleaned_role not in {"user", "assistant"} or not cleaned_content:
         return
     history = _load_agent_history()
-    history.append({"role": cleaned_role, "content": cleaned_content[:2000]})
+    history.append({"role": cleaned_role, "content": cleaned_content[:3000]})
     _store_agent_history(history)
 
 
@@ -1807,24 +1817,79 @@ def _build_agent_context(layer1: dict[str, object], layer2: dict[str, object], l
         for item in list(layer3.get("timeline") or [])[-AGENT_TIMELINE_LIMIT:]
         if isinstance(item, dict)
     ]
+    # Extract risk breakdown if available
+    risk_breakdown = {}
+    raw_risk = layer3.get("risk_breakdown") or layer3.get("risk") or {}
+    if isinstance(raw_risk, dict):
+        for key in ("fake_probability", "occurrence_score", "spread_velocity_score",
+                     "credibility_risk", "misuse_probability", "visual_similarity_score",
+                     "audio_similarity_score", "final_score"):
+            val = raw_risk.get(key)
+            if val is not None:
+                risk_breakdown[key] = round(_safe_float(val), 4)
+    # Extract layer2 insights
+    insights = dict(normalized_layer2.get("layer2_insights") or {})
+    cross_modal = dict(insights.get("cross_modal_consistency") or {})
+    temporal_anomalies = list(insights.get("temporal_anomalies") or [])
+    platform_distribution = dict(insights.get("platform_distribution") or {})
+    # Extract important domain details
+    important_domains_raw = list(normalized_layer2.get("important_domains") or [])[:AGENT_DOMAIN_LIMIT]
+    important_domains_enriched = []
+    for item in important_domains_raw:
+        if not isinstance(item, dict):
+            continue
+        important_domains_enriched.append({
+            "domain": str(item.get("domain") or ""),
+            "label": str(item.get("label") or item.get("domain") or ""),
+            "count": int(item.get("count") or 0),
+            "confidence": str(item.get("confidence") or ""),
+            "max_similarity": round(_safe_float(item.get("max_similarity")), 4),
+            "match_types": list(item.get("match_types") or []),
+        })
+    # Build human-readable narrative
+    result = str(layer1.get("result") or "UNKNOWN").upper()
+    confidence = round(_safe_float(layer1.get("confidence")), 2)
+    content_type = str(classification.get("content_type") or classification.get("raw_label") or "unknown")
+    total_exact = len(exact_matches)
+    total_visual = len(visual_matches)
+    total_related = len(related_matches)
+    risk_score_val = round(_safe_float(layer3.get("risk_score")), 4)
+    risk_level_val = str(layer3.get("risk_level") or "")
+    origin_summary_text = str(normalized_layer2.get("origin_summary") or "")
+    narrative_parts = [f"Detection verdict: {result} at {confidence}% confidence."]
+    if content_type and content_type.lower() != "unknown":
+        narrative_parts.append(f"Content classified as: {content_type}.")
+    if total_exact + total_visual + total_related > 0:
+        narrative_parts.append(f"Matches found: {total_exact} exact, {total_visual} visual, {total_related} related.")
+    if risk_level_val:
+        narrative_parts.append(f"Risk level: {risk_level_val} ({round(risk_score_val * 100, 1)}%).")
+    if origin_summary_text:
+        narrative_parts.append(f"Origin: {origin_summary_text}")
+    narrative = " ".join(narrative_parts)
+
     return {
+        "narrative_summary": narrative,
         "layer1": {
-            "result": str(layer1.get("result") or "UNKNOWN"),
-            "confidence": round(_safe_float(layer1.get("confidence")), 2),
+            "result": result,
+            "confidence": confidence,
             "heatmap_available": bool(layer1.get("heatmap")),
-            "content_type": str(classification.get("content_type") or "unknown"),
+            "content_type": content_type,
             "raw_label": str(classification.get("raw_label") or "unknown"),
+            "detection_method": "4-branch fusion (CLIP + DINOv2 + EfficientNet + FFT)",
         },
         "layer2": {
-            "origin_summary": _truncate_text(normalized_layer2.get("origin_summary") or "", 260),
+            "origin_summary": _truncate_text(origin_summary_text, 400),
             "top_domains": list(normalized_layer2.get("top_domains") or [])[:AGENT_DOMAIN_LIMIT],
             "platforms": _agent_platforms(normalized_layer2),
             "first_seen_estimate": str(normalized_layer2.get("first_seen_estimate") or ""),
             "counts": dict(normalized_layer2.get("counts") or {}),
             "consistency_warning": dict(normalized_layer2.get("consistency_warning") or {}),
-            "important_domains": list(normalized_layer2.get("important_domains") or [])[:AGENT_DOMAIN_LIMIT],
+            "important_domains": important_domains_enriched,
             "domain_distribution": list(normalized_layer2.get("domain_distribution") or [])[:AGENT_DOMAIN_LIMIT],
             "indicators": _agent_indicator_list(layer1, normalized_layer2, layer3),
+            "cross_modal_consistency": cross_modal,
+            "temporal_anomalies": temporal_anomalies[:3],
+            "platform_distribution": platform_distribution,
             "matches": {
                 "exact": exact_matches,
                 "visual": visual_matches,
@@ -1832,8 +1897,9 @@ def _build_agent_context(layer1: dict[str, object], layer2: dict[str, object], l
             },
         },
         "layer3": {
-            "risk_score": round(_safe_float(layer3.get("risk_score")), 4),
-            "risk_level": str(layer3.get("risk_level") or ""),
+            "risk_score": risk_score_val,
+            "risk_level": risk_level_val,
+            "risk_breakdown": risk_breakdown,
             "growth": dict(layer3.get("growth") or {}),
             "growth_rate_percent": round(_safe_float((layer3.get("growth") or {}).get("rate_percent"), _safe_float(layer3.get("growth_rate"))), 2),
             "spread_level": str(layer3.get("spread_level") or layer3.get("status") or ""),
@@ -1867,42 +1933,79 @@ def _agent_query_in_scope(message: str, context: dict[str, object]) -> bool:
         return False
     if AGENT_SCOPE_PATTERN.search(cleaned):
         return True
-    if (
-        _agent_context_ready(context)
-        and AGENT_CONTEXTUAL_SCOPE_PATTERN.search(cleaned)
-        and AGENT_INTENT_PATTERN.search(cleaned)
-    ):
-        return True
+    ready = _agent_context_ready(context)
+    print(f"DEBUG: message='{cleaned}', context_ready={ready}")
+    if ready:
+        if AGENT_CONTEXTUAL_SCOPE_PATTERN.search(cleaned):
+            print("DEBUG: Matched AGENT_CONTEXTUAL_SCOPE_PATTERN")
+            return True
+        if AGENT_INTENT_PATTERN.search(cleaned):
+            print("DEBUG: Matched AGENT_INTENT_PATTERN")
+            return True
+        if len(cleaned.split()) <= 12:
+            print("DEBUG: Length <= 12")
+            return True
     return False
 
 
 def _agent_policy_reply(message: str, context: dict[str, object]) -> str | None:
     if not _agent_query_in_scope(message, context):
         return AGENT_OUT_OF_SCOPE_REPLY
-    if not _agent_context_ready(context):
-        return AGENT_INSUFFICIENT_EVIDENCE_REPLY
     return None
 
 
 def _agent_system_prompt() -> str:
-    return (
-        "You are an AI assistant for Tracelyt, an advanced digital media forensics platform. "
-        "You are not a general chatbot. You are a specialized assistant trained only on Tracelyt system outputs and analysis. "
-        "Use the provided analysis context as the only source of truth. "
-        "Tracelyt context: Layer 1 determines if content is real or AI-generated and provides confidence and artifact indicators. "
-        "Layer 2 explains reasons for detection and identifies anomalies. "
-        "Layer 3 tracks similar content, spread across platforms, re-uploads, and modifications. "
-        "Layer 4 risk assessment uses detection confidence, spread intensity, velocity, and cluster density, and may be summarized as a 1-10 style decision score when such system data is explicitly present. "
-        "Definitions: detection confidence means the probability content is synthetic. "
-        "Spread intensity means how widely content appears across platforms. "
-        "Velocity means speed of spread over time. "
-        "Cluster density means how many similar variants exist. "
-        "Allowed questions are limited to why content was flagged, what the risk score means, how the content is spreading, what the indicators suggest, and what the confidence score implies. "
-        f'If a request is outside that scope, reply exactly with: "{AGENT_OUT_OF_SCOPE_REPLY}" '
-        f'If information is missing, unclear, incomplete, or insufficient, reply exactly with: "{AGENT_INSUFFICIENT_EVIDENCE_REPLY}" '
-        "Do not invent facts, do not speculate, do not answer unrelated questions, do not provide opinions, and do not behave like a general assistant. "
-        "Output style must be clear, concise, analytical, and without fluff or storytelling."
-    )
+    return "\n".join([
+        "You are the Tracelyt forensic analyst — a specialized AI assistant for a digital media forensics and deepfake intelligence platform.",
+        "Your sole purpose is to explain Tracelyt analysis results to investigators. You are NOT a general chatbot.",
+        "",
+        "IMPORTANT INSTRUCTIONS:",
+        "- Read the INVESTIGATION DATA provided in each user message carefully. It contains the actual numbers, scores, matches, and risk data.",
+        "- Base EVERY answer on the specific data values provided. Quote exact numbers (percentages, scores, counts).",
+        "- Write clear, varied, analytical responses. Never repeat the same sentence structure across answers.",
+        "- If the user asks a follow-up, build on your previous answer — do not restart from scratch.",
+        "",
+        "PLATFORM ARCHITECTURE:",
+        "",
+        "Layer 1 — Detection Engine:",
+        "- Uses 4-branch neural fusion: CLIP (512d semantic), DINOv2 (384d structural), EfficientNet-B0 (1280d texture), FFT (128d frequency).",
+        "- Total fusion input: 2304 dimensions → MLP classifier → sigmoid → fake probability.",
+        "- Threshold: >= 0.5 = FAKE, < 0.5 = REAL. Confidence = distance from 0.5 boundary as percentage.",
+        "- Videos: frames sampled at 0.5 FPS, probabilities averaged for file-level decision.",
+        "",
+        "Layer 2 — Source Matching & Intelligence:",
+        "- Finds where else the media appears using FAISS visual search, web discovery, reverse image search.",
+        "- Match types: exact (hash match), near_exact (minor edits), visual (embedding > 0.75), related (embedding > 0.5).",
+        "- Classifies context of each match: news / meme / propaganda via NLP.",
+        "- Estimates origin from earliest accessible occurrence.",
+        "- Audio analysis via wav2vec 2.0 and CLAP when video has audio.",
+        "",
+        "Layer 3 — Spread Tracking & Risk:",
+        "- Tracks propagation: timeline, growth rate, cluster size, platform diversity.",
+        "- Risk score 0.0-1.0 from: fake_probability, occurrence_count, spread_velocity, credibility_risk, misuse_probability, visual/audio similarity.",
+        "- Risk levels: LOW (<0.3), MEDIUM (0.3-0.6), HIGH (0.6-0.8), CRITICAL (>0.8).",
+        "",
+        "HOW TO RESPOND TO DIFFERENT QUESTIONS:",
+        "",
+        '- "Explain result" / "Summarize": Give a complete overview covering the verdict, confidence, key matches, risk level, and what it means.',
+        '- "Why is this fake/real?": Explain the detection confidence, what the 4-branch fusion found, content type, and supporting evidence from matches.',
+        '- "Where did this come from?" / origin: Discuss origin estimate, earliest known appearance, platforms, and domain distribution.',
+        '- "Explain risk": Break down each risk component with its score, explain what drives the overall risk level, mention growth rate and alerts.',
+        '- "What about the matches?": Detail exact vs visual vs related matches, their similarity scores, platforms, and what they indicate.',
+        '- General questions about the investigation: Synthesize across all three layers to give a comprehensive forensic interpretation.',
+        "",
+        "RESPONSE STYLE:",
+        "- Be analytical and professional but also accessible. Explain technical terms when first used.",
+        "- Use bullet points for multi-part answers. Use specific numbers from the data.",
+        "- Vary your language — do not use the same opening phrase repeatedly.",
+        "- When data is rich, provide a thorough analysis. When data is sparse, say what is known and what is missing.",
+        "- Keep responses focused and between 100-400 words depending on question complexity.",
+        "",
+        "BOUNDARIES:",
+        f'- Off-topic requests (cooking, sports, general knowledge): Reply with "{AGENT_OUT_OF_SCOPE_REPLY}"',
+        f'- Missing critical data for the specific question asked: Reply with "{AGENT_INSUFFICIENT_EVIDENCE_REPLY}"',
+        "- Never invent data. Never speculate beyond what the evidence shows. Stay grounded in the provided investigation data.",
+    ])
 
 
 def _agent_cache_key(message: str, context: dict[str, object], history: list[dict[str, str]]) -> str:
@@ -1944,55 +2047,109 @@ def _agent_fallback_reply(message: str, context: dict[str, object]) -> str:
     if "indicator" in lowered or "artifact" in lowered or "anomal" in lowered:
         if not indicators:
             return AGENT_INSUFFICIENT_EVIDENCE_REPLY
-        return f"Indicators: {', '.join(indicators[:4])}."
-    if "where" in lowered or "come from" in lowered or "source" in lowered:
+        parts = [f"The analysis flagged the following forensic indicators: {', '.join(indicators[:4])}."]
+        if content_type and content_type.lower() != "unknown":
+            parts.append(f"The content was classified as '{content_type}'.")
+        if confidence > 0:
+            parts.append(f"Detection confidence stands at {confidence}%.")
+        return " ".join(parts)
+    if "where" in lowered or "come from" in lowered or "source" in lowered or "origin" in lowered:
         if origin_summary:
-            return origin_summary
+            parts = [f"Origin analysis: {origin_summary}"]
+            if platforms:
+                parts.append(f"The content has been observed on: {', '.join(platforms[:4])}.")
+            if total_matches > 0:
+                parts.append(f"Tracelyt found {exact_count} exact, {visual_count} visual, and {related_count} related source matches.")
+            return " ".join(parts)
+        if platforms:
+            return f"While no definitive origin was established, the content was found on these platforms: {', '.join(platforms[:4])}. {total_matches} total matches were identified."
         return AGENT_INSUFFICIENT_EVIDENCE_REPLY
-    if "risk" in lowered or "danger" in lowered or "safe" in lowered or "share" in lowered:
+    if "risk" in lowered or "danger" in lowered or "safe" in lowered:
         if risk_percent <= 0 and growth_rate <= 0 and cluster_size <= 0:
             return AGENT_INSUFFICIENT_EVIDENCE_REPLY
-        components: list[str] = [f"Risk score: {risk_percent}%"]
+        parts = [f"The current risk assessment shows an overall risk score of {risk_percent}%"]
         if risk_level:
-            components.append(f"level: {risk_level}")
+            parts[0] += f", classified as {risk_level} risk."
+        else:
+            parts[0] += "."
         if growth_rate > 0:
-            components.append(f"growth: {growth_rate}%")
+            parts.append(f"Content spread is growing at {growth_rate}% rate.")
         if cluster_size > 0:
-            components.append(f"cluster size: {cluster_size}")
-        return ". ".join(components) + "."
+            parts.append(f"There are {cluster_size} related variants or re-uploads in circulation.")
+        if source_count > 0:
+            parts.append(f"The content has been tracked across {source_count} distinct sources.")
+        if result != "UNKNOWN" and confidence > 0:
+            parts.append(f"The detection verdict ({result} at {confidence}%) contributes to the risk calculation.")
+        return " ".join(parts)
     if "confidence" in lowered:
         if confidence <= 0:
             return AGENT_INSUFFICIENT_EVIDENCE_REPLY
-        suffix = f" Content type: {content_type}." if content_type and content_type.lower() != "unknown" else ""
-        return f"Detection confidence is {confidence}%. This is the system probability that the content is synthetic.{suffix}"
+        parts = [f"The 4-branch fusion detection engine returned a confidence of {confidence}% that this content is {'synthetic' if result == 'FAKE' else 'authentic'}."]
+        if content_type and content_type.lower() != "unknown":
+            parts.append(f"The content was classified as '{content_type}'.")
+        parts.append("This confidence is calculated as the distance from the 0.5 decision boundary, where CLIP, DINOv2, EfficientNet, and FFT features are combined into a 2304-dimensional fusion vector.")
+        return " ".join(parts)
     if "spread" in lowered or "spreading" in lowered or "velocity" in lowered or "cluster" in lowered or "variant" in lowered:
         if spread_instances <= 0 and growth_rate <= 0 and cluster_size <= 0:
             return AGENT_INSUFFICIENT_EVIDENCE_REPLY
         parts: list[str] = []
-        if platforms:
-            parts.append(f"Platforms: {', '.join(platforms[:4])}")
         if spread_instances > 0:
-            parts.append(f"instances: {spread_instances}")
+            parts.append(f"Tracelyt has tracked {spread_instances} instances of this content across the monitored landscape.")
+        if platforms:
+            parts.append(f"Platforms where it appears: {', '.join(platforms[:4])}.")
         if growth_rate > 0:
-            parts.append(f"growth: {growth_rate}%")
+            parts.append(f"The spread is growing at a rate of {growth_rate}%.")
         if cluster_size > 0:
-            parts.append(f"variants: {cluster_size}")
+            parts.append(f"{cluster_size} close variants or re-uploads have been identified.")
         if strong_match_similarity > 0:
-            parts.append(f"strong match similarity: {strong_match_similarity}%")
-        return ". ".join(parts) + "."
-    if "flag" in lowered or "fake" in lowered or "real" in lowered or "why" in lowered or "explain" in lowered:
-        if result == "UNKNOWN" and confidence <= 0:
+            parts.append(f"The strongest match similarity reached {strong_match_similarity}%.")
+        return " ".join(parts) if parts else AGENT_INSUFFICIENT_EVIDENCE_REPLY
+    if "flag" in lowered or "fake" in lowered or "real" in lowered or "why" in lowered or "explain" in lowered or "summar" in lowered or "detail" in lowered:
+        narrative = str(context.get("narrative_summary") or "").strip()
+        if result == "UNKNOWN" and confidence <= 0 and not narrative:
             return AGENT_INSUFFICIENT_EVIDENCE_REPLY
-        parts = [f"Layer 1 result: {result}", f"detection confidence: {confidence}%"]
-        if content_type and content_type.lower() != "unknown":
-            parts.append(f"content type: {content_type}")
-        if indicators:
-            parts.append(f"indicators: {', '.join(indicators[:3])}")
-        elif total_matches > 0:
-            parts.append(f"supporting matches: {exact_count} exact, {visual_count} visual, {related_count} related")
-        return ". ".join(parts) + "."
+        parts: list[str] = []
+        if narrative:
+            parts.append(narrative)
+        else:
+            verdict_text = "synthetic (FAKE)" if result == "FAKE" else "authentic (REAL)" if result == "REAL" else result
+            parts.append(f"Layer 1 detection classified this content as {verdict_text} with {confidence}% confidence.")
+        if content_type and content_type.lower() != "unknown" and not narrative:
+            parts.append(f"The content is categorized as '{content_type}'.")
+        if total_matches > 0 and not narrative:
+            parts.append(f"Source matching found {exact_count} exact, {visual_count} visual, and {related_count} related matches.")
+        if indicators and not narrative:
+            parts.append(f"Key indicators: {', '.join(indicators[:3])}.")
+        if risk_level and risk_percent > 0:
+            parts.append(f"Overall risk is assessed as {risk_level} ({risk_percent}%).")
+        return " ".join(parts)
+
+    # Generic fallback — build a comprehensive summary
+    parts: list[str] = []
+    if result != "UNKNOWN" and confidence > 0:
+        verdict_text = "synthetic (FAKE)" if result == "FAKE" else "authentic (REAL)" if result == "REAL" else result
+        parts.append(f"Detection result: {verdict_text} at {confidence}% confidence.")
+    if total_matches > 0:
+        parts.append(f"Source matching identified {total_matches} matches ({exact_count} exact, {visual_count} visual, {related_count} related).")
+    if origin_summary:
+        parts.append(f"Origin: {origin_summary}")
+    if risk_level and risk_percent > 0:
+        parts.append(f"Risk assessment: {risk_level} ({risk_percent}%).")
+    if growth_rate > 0:
+        parts.append(f"Spread growth rate: {growth_rate}%.")
+    if platforms:
+        parts.append(f"Observed on: {', '.join(platforms[:3])}.")
+
+    if parts:
+        return " ".join(parts)
+
+    narrative = str(context.get("narrative_summary") or "").strip()
+    if narrative:
+        return narrative
+
     return (
-        f"Current analysis: {result} at {confidence}% confidence, {spread_instances} tracked instances, and {risk_percent}% risk."
+        f"Current analysis: {result} at {confidence}% confidence, {spread_instances} tracked instances, and {risk_percent}% risk. "
+        "Ask about specific aspects like risk breakdown, source origin, match details, or detection confidence for a deeper analysis."
     )
 
 
@@ -2019,23 +2176,172 @@ def _extract_gemini_text(payload: dict[str, object]) -> str:
     return "".join(texts).strip()
 
 
+def _format_context_as_text(context: dict[str, object]) -> str:
+    """Convert the agent context dict into human-readable structured text for Gemini."""
+    lines: list[str] = []
+    narrative = str(context.get("narrative_summary") or "").strip()
+    if narrative:
+        lines.append(f"Summary: {narrative}")
+        lines.append("")
+
+    # Layer 1 — Detection
+    layer1 = dict(context.get("layer1") or {})
+    result = str(layer1.get("result") or "UNKNOWN")
+    confidence = layer1.get("confidence", 0)
+    content_type = str(layer1.get("content_type") or layer1.get("raw_label") or "unknown")
+    detection_method = str(layer1.get("detection_method") or "4-branch fusion")
+    heatmap = "Yes" if layer1.get("heatmap_available") else "No"
+    lines.append("LAYER 1 — DETECTION RESULTS:")
+    lines.append(f"  Verdict: {result}")
+    lines.append(f"  Confidence: {confidence}%")
+    lines.append(f"  Content type: {content_type}")
+    lines.append(f"  Detection method: {detection_method}")
+    lines.append(f"  Heatmap available: {heatmap}")
+    lines.append("")
+
+    # Layer 2 — Source Matching
+    layer2 = dict(context.get("layer2") or {})
+    origin = str(layer2.get("origin_summary") or "Not determined").strip()
+    first_seen = str(layer2.get("first_seen_estimate") or "Unknown")
+    platforms = layer2.get("platforms") or []
+    counts = dict(layer2.get("counts") or {})
+    indicators = list(layer2.get("indicators") or [])
+    matches = dict(layer2.get("matches") or {})
+    exact_matches = list(matches.get("exact") or [])
+    visual_matches = list(matches.get("visual") or [])
+    related_matches = list(matches.get("related") or [])
+    cross_modal = dict(layer2.get("cross_modal_consistency") or {})
+    important_domains = list(layer2.get("important_domains") or [])
+    consistency_warning = dict(layer2.get("consistency_warning") or {})
+
+    lines.append("LAYER 2 — SOURCE MATCHING:")
+    lines.append(f"  Origin estimate: {origin}")
+    lines.append(f"  First seen: {first_seen}")
+    if platforms:
+        lines.append(f"  Platforms: {', '.join(str(p) for p in platforms[:6])}")
+    lines.append(f"  Match counts: {int(_safe_float(counts.get('exact')))} exact, {int(_safe_float(counts.get('visual')))} visual, {int(_safe_float(counts.get('related')))} related")
+
+    if exact_matches:
+        lines.append("  Exact matches:")
+        for m in exact_matches[:4]:
+            title = str(m.get("title") or "Untitled")
+            sim = round(_safe_float(m.get("similarity_score")) * 100, 1)
+            domain = str(m.get("domain") or "unknown")
+            explanation = str(m.get("explanation") or "")
+            lines.append(f"    - {title} (domain: {domain}, similarity: {sim}%){f' — {explanation}' if explanation else ''}")
+
+    if visual_matches:
+        lines.append("  Visual matches:")
+        for m in visual_matches[:4]:
+            title = str(m.get("title") or "Untitled")
+            sim = round(_safe_float(m.get("similarity_score")) * 100, 1)
+            domain = str(m.get("domain") or "unknown")
+            lines.append(f"    - {title} (domain: {domain}, similarity: {sim}%)")
+
+    if related_matches:
+        lines.append("  Related web sources:")
+        for m in related_matches[:4]:
+            title = str(m.get("title") or "Untitled")
+            sim = round(_safe_float(m.get("similarity_score")) * 100, 1)
+            domain = str(m.get("domain") or "unknown")
+            lines.append(f"    - {title} (domain: {domain}, similarity: {sim}%)")
+
+    if important_domains:
+        lines.append("  Important domains:")
+        for d in important_domains[:5]:
+            label = str(d.get("label") or d.get("domain") or "")
+            count = int(d.get("count") or 0)
+            max_sim = round(_safe_float(d.get("max_similarity")) * 100, 1)
+            lines.append(f"    - {label}: {count} matches, max similarity {max_sim}%")
+
+    if indicators:
+        lines.append(f"  Indicators: {'; '.join(str(i) for i in indicators[:5])}")
+
+    if cross_modal.get("status"):
+        lines.append(f"  Cross-modal consistency: {cross_modal.get('status')}")
+
+    warning_msg = str(consistency_warning.get("message") or "").strip()
+    if warning_msg:
+        lines.append(f"  ⚠ Consistency warning: {warning_msg}")
+
+    lines.append("")
+
+    # Layer 3 — Risk & Tracking
+    layer3 = dict(context.get("layer3") or {})
+    risk_score = round(_safe_float(layer3.get("risk_score")) * 100, 1)
+    risk_level = str(layer3.get("risk_level") or "Unknown")
+    growth_rate = round(_safe_float(layer3.get("growth_rate_percent")), 1)
+    spread_level = str(layer3.get("spread_level") or "")
+    source_count = int(_safe_float(layer3.get("source_count")))
+    cluster_size = int(_safe_float(layer3.get("cluster_size")))
+    strong_sim = round(_safe_float(layer3.get("strong_match_similarity")) * 100, 1)
+    risk_breakdown = dict(layer3.get("risk_breakdown") or {})
+    alerts = list(layer3.get("alerts") or [])
+    timeline = list(layer3.get("timeline") or [])
+
+    lines.append("LAYER 3 — RISK & TRACKING:")
+    lines.append(f"  Risk score: {risk_score}%")
+    lines.append(f"  Risk level: {risk_level}")
+    if spread_level:
+        lines.append(f"  Spread level: {spread_level}")
+    lines.append(f"  Growth rate: {growth_rate}%")
+    lines.append(f"  Source count: {source_count}")
+    lines.append(f"  Cluster size (variants): {cluster_size}")
+    if strong_sim > 0:
+        lines.append(f"  Strongest match similarity: {strong_sim}%")
+
+    if risk_breakdown:
+        lines.append("  Risk breakdown:")
+        component_labels = {
+            "fake_probability": "Fake probability",
+            "occurrence_score": "Occurrence score",
+            "spread_velocity_score": "Spread velocity",
+            "credibility_risk": "Credibility risk",
+            "misuse_probability": "Misuse probability",
+            "visual_similarity_score": "Visual similarity",
+            "audio_similarity_score": "Audio similarity",
+            "final_score": "Final combined score",
+        }
+        for key, label in component_labels.items():
+            val = risk_breakdown.get(key)
+            if val is not None:
+                lines.append(f"    - {label}: {round(float(val) * 100, 1)}%")
+
+    if alerts:
+        lines.append("  Active alerts:")
+        for a in alerts[:4]:
+            severity = str(a.get("severity") or "info").upper()
+            title = str(a.get("title") or a.get("message") or "Alert")
+            lines.append(f"    - [{severity}] {title}")
+
+    if timeline:
+        lines.append("  Recent timeline:")
+        for t in timeline[-4:]:
+            ts = str(t.get("timestamp") or "unknown")
+            mentions = int(t.get("mentions") or 0)
+            lines.append(f"    - {ts}: {mentions} mentions")
+
+    return "\n".join(lines)
+
+
 def _build_gemini_payload(message: str, context: dict[str, object], history: list[dict[str, str]]) -> dict[str, object]:
     content_items: list[dict[str, object]] = []
-    for item in history[-6:]:
+    for item in history[-10:]:
         role = "model" if item.get("role") == "assistant" else "user"
         content_items.append({"role": role, "parts": [{"text": item.get("content") or ""}]})
+    readable_context = _format_context_as_text(context)
     prompt = (
-        f"User question:\n{message}\n\n"
-        f"Forensic context JSON:\n{json.dumps(context, ensure_ascii=True, separators=(',', ':'))}"
+        f"USER QUESTION:\n{message}\n\n"
+        f"INVESTIGATION DATA:\n{readable_context}"
     )
     content_items.append({"role": "user", "parts": [{"text": prompt}]})
     return {
         "system_instruction": {"parts": [{"text": _agent_system_prompt()}]},
         "contents": content_items,
         "generationConfig": {
-            "temperature": 0.3,
-            "topP": 0.9,
-            "maxOutputTokens": 500,
+            "temperature": 0.45,
+            "topP": 0.92,
+            "maxOutputTokens": 2048,
         },
     }
 

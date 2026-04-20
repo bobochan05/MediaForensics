@@ -54,23 +54,24 @@
     .value-inner{position:relative;max-width:640px;margin:0 auto;text-align:center;padding:18px 14px}
     .value-text{font-family:Inter,Manrope,sans-serif;font-size:clamp(18px,2.2vw,28px);line-height:1.64;color:rgba(233,241,252,.86);letter-spacing:.01em;text-wrap:balance;font-weight:400}
     .value-prefix{font-weight:700}
-    .primer-sec{position:relative;overflow:hidden}
+    .primer-sec{position:relative;overflow:visible;scroll-margin-top:70px;align-items:start}
     .primer-sec::before{content:"";position:absolute;inset:0;background:
       radial-gradient(circle at 22% 26%,rgba(255,255,255,.04),transparent 26%),
       radial-gradient(circle at 82% 70%,rgba(148,163,184,.07),transparent 34%),
       linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0) 34%,rgba(0,0,0,.08));
       pointer-events:none}
-    .primer-sec .inner{width:min(1400px,100%);margin:0 auto}
-    .primer-shell{position:relative;display:grid;gap:34px}
-    .primer-head{display:grid;gap:14px;justify-items:start;max-width:980px}
+    .primer-sec{min-height:calc(100vh - 70px);padding:56px 14px 24px}
+    .primer-sec .inner{width:min(1360px,100%);margin:0 auto}
+    .primer-shell{position:relative;display:grid;gap:18px;align-content:start}
+    .primer-head{display:grid;gap:8px;justify-items:start;max-width:700px}
     .primer-kicker{font-family:Inter,Manrope,sans-serif;font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
-    .primer-title{font-family:"Plus Jakarta Sans",Inter,Manrope,sans-serif;font-size:clamp(40px,5.4vw,82px);line-height:.94;letter-spacing:-.05em;color:var(--display-color);max-width:11ch}
-    .primer-sub{font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:400;font-size:clamp(22px,2.15vw,30px);line-height:1.56;letter-spacing:.004em;color:var(--content-color);max-width:30ch}
-    .primer-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
-    .primer-card{position:relative;display:grid;gap:18px;align-content:start;min-height:360px;padding:32px 30px;border:1px solid rgba(229,231,235,.1);border-radius:32px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));box-shadow:0 16px 40px rgba(0,0,0,.08)}
-    .primer-card-title{font-family:"Plus Jakarta Sans",Inter,Manrope,sans-serif;font-size:clamp(24px,2.2vw,32px);line-height:1.08;letter-spacing:-.035em;color:var(--display-color);max-width:12ch}
-    .primer-card-copy{font-family:Inter,Manrope,sans-serif;font-size:17px;line-height:1.8;color:var(--content-color)}
-    .primer-note{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:20px;line-height:1.5;color:var(--content-color);padding-top:8px;border-top:1px solid rgba(229,231,235,.08)}
+    .primer-title{font-family:"Plus Jakarta Sans",Inter,Manrope,sans-serif;font-size:clamp(24px,3.35vw,52px);line-height:.92;letter-spacing:-.055em;color:var(--display-color);max-width:8.6ch}
+    .primer-sub{font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:400;font-size:clamp(17px,1.55vw,22px);line-height:1.35;letter-spacing:.004em;color:var(--content-color);max-width:24ch}
+    .primer-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch}
+    .primer-card{position:relative;display:grid;gap:10px;align-content:start;min-height:240px;padding:20px 20px;border:1px solid rgba(229,231,235,.1);border-radius:32px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));box-shadow:0 16px 40px rgba(0,0,0,.08)}
+    .primer-card-title{font-family:"Plus Jakarta Sans",Inter,Manrope,sans-serif;font-size:clamp(18px,1.45vw,22px);line-height:1.02;letter-spacing:-.04em;color:var(--display-color);max-width:8.5ch}
+    .primer-card-copy{font-family:Inter,Manrope,sans-serif;font-size:12px;line-height:1.45;color:var(--content-color)}
+    .primer-note{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:14px;line-height:1.28;color:var(--content-color);padding-top:8px;border-top:1px solid rgba(229,231,235,.08)}
     #upload .value-inner{text-align:left;max-width:680px}
     #uploadTitle{font-family:"Plus Jakarta Sans",Inter,Manrope,sans-serif;font-weight:800;letter-spacing:-.025em;line-height:1.08;text-align:left;max-width:760px;margin:0;color:var(--display-color)}
     #uploadSub{font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:400;font-size:clamp(16px,1.8vw,24px);line-height:1.58;letter-spacing:.004em;color:var(--content-color);max-width:640px;margin:14px 0 0;text-align:left;text-wrap:balance}
@@ -155,7 +156,7 @@
     .auth-foot{margin-top:12px;color:#5d7196;text-align:center;font-size:14px}
     .auth-foot button{border:none;background:none;color:#2f5fb3;font-weight:700;cursor:pointer}
     .auth-actions{display:grid;gap:8px;margin-top:10px}
-    @media (max-width:980px){.split{grid-template-columns:1fr}.btn,select{padding:8px 10px;font-size:12px}.nav-logo{height:42px}.top-nav{height:64px}.scroller{padding-top:64px}.top-nav .btn,.top-nav select{padding:7px 8px;font-size:11px}.top-nav .btn{font-size:11px}.lang-label{padding:7px 8px;font-size:11px}.footer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.site-footer{padding:54px 18px 34px}.sec{padding:20px 12px}.hero-main{font-size:clamp(42px,12vw,78px)}.sub{font-size:12px}.primer-head{gap:16px}.primer-grid{grid-template-columns:1fr}.primer-card{min-height:auto;padding:24px 22px}.primer-title,.primer-sub,.primer-card-title{max-width:none;justify-self:start}.mcard{width:min(500px,100%);padding:18px 18px}.auth-title{font-size:30px}}
+    @media (max-width:980px){.split{grid-template-columns:1fr}.btn,select{padding:8px 10px;font-size:12px}.nav-logo{height:42px}.top-nav{height:64px}.scroller{padding-top:64px}.top-nav .btn,.top-nav select{padding:7px 8px;font-size:11px}.top-nav .btn{font-size:11px}.lang-label{padding:7px 8px;font-size:11px}.footer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.site-footer{padding:54px 18px 34px}.sec{padding:20px 12px}.hero-main{font-size:clamp(42px,12vw,78px)}.sub{font-size:12px}.primer-sec{min-height:auto;padding:20px 12px}.primer-shell{height:auto;gap:16px}.primer-head{gap:16px;max-width:none}.primer-grid{grid-template-columns:1fr}.primer-card{min-height:auto;padding:24px 22px}.primer-title,.primer-sub,.primer-card-title{max-width:none;justify-self:start}.mcard{width:min(500px,100%);padding:18px 18px}.auth-title{font-size:30px}}
   </style>
 </head>
 <body>

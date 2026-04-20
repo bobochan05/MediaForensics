@@ -58,7 +58,7 @@ class ChatRequest:
             content = str(item.get("content") or item.get("text") or "").strip()
             if role not in {"user", "assistant"} or not content:
                 continue
-            history.append({"role": role, "content": content[:1200]})
+            history.append({"role": role, "content": content[:2500]})
         return cls(
             message=message,
             layer1=context.get("layer1") if isinstance(context.get("layer1"), dict) else (payload.get("layer1") if isinstance(payload.get("layer1"), dict) else {}),
