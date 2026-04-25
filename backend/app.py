@@ -115,7 +115,7 @@ INTERNAL_EMBEDDING_MAX_VISUAL_SIMILARITY = 0.82
 DISCOVERY_SECTION_LIMIT = 10
 INTERNAL_EMBEDDING_SEARCH_LIMIT = 100
 AGENT_OUT_OF_SCOPE_REPLY = "I specialize in AI, machine learning, deepfake detection, and media forensics. I can't help with that particular topic, but feel free to ask me anything about how deepfakes work, detection technology, or your investigation results."
-AGENT_INSUFFICIENT_EVIDENCE_REPLY = "Insufficient evidence to provide a reliable answer"
+AGENT_INSUFFICIENT_EVIDENCE_REPLY = "I can explain the Tracelyt pipeline right away, but I need an active scan before I can answer about this specific media item with confidence."
 AGENT_SCOPE_PATTERN = re.compile(
     r"\b(authentic(?:ity)?|synthetic|deepfake|deep.?fake|manipulat(?:ed|ion)|detect(?:ion|ed|or)?|"
     r"result(?:s)?|confidence|verdict|fake|real|risk|source|origin|trace|tracing|"
@@ -157,6 +157,23 @@ AGENT_INTENT_PATTERN = re.compile(
     r"show|tell|clarify|understand|trust|safe|describe|interpret|break.?down|elaborate|"
     r"analyze|assess|evaluate|compare|identify|help|give|provide|list|more|about)\b"
 )
+AGENT_SOCIAL_PATTERN = re.compile(
+    r"\b(hi|hello|hey|yo|sup|how are you|how's it going|whats up|what's up|good morning|good afternoon|good evening|"
+    r"thanks|thank you|cool|nice|great|awesome|ok|okay|alright|test|testing)\b"
+)
+AGENT_EXCLUDED_PATTERN = re.compile(
+    r"\b(who is|who's|identify (?:the )?(?:person|face|individual)|name (?:the )?(?:person|face|individual)|"
+    r"face recognition|biometric|doxx|personal advice|relationship advice|recipe|sports score|stock price)\b"
+)
+AGENT_CURRENT_ANALYSIS_PATTERN = re.compile(
+    r"\b(this|that|it|its|current|uploaded|upload|scan|result|results|finding|findings|"
+    r"report|media|image|video|audio|clip|verdict|risk here|origin here|source here|"
+    r"why is this|is this fake|is this real|is it fake|is it real|where did this come from|"
+    r"why did the model|why do you think the model|explain result|explain risk)\b"
+)
+AGENT_FOLLOWUP_PATTERN = re.compile(
+    r"^(why|how so|what do you mean|explain more|go deeper|tell me more|more details|can you elaborate)\??$"
+)
 
 app = Flask(__name__, template_folder=str(APP_DIR / "templates"))
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -193,11 +210,96 @@ REVERSE_SEARCH_ALLOWED_MIME_TYPES = {"image/jpeg", "image/jpg", "image/png", "im
 GEMINI_API_KEY = str(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
 GEMINI_MODEL = str(os.getenv("GEMINI_MODEL") or "gemini-2.0-flash").strip()
 GEMINI_TIMEOUT_SECONDS = 45.0
+AGENT_PROMPT_VERSION = "2026-04-21-tracelyt-chat-v2"
 AGENT_HISTORY_LIMIT = 10
 AGENT_MATCH_LIMIT = 5
 AGENT_ALERT_LIMIT = 4
 AGENT_DOMAIN_LIMIT = 8
 AGENT_TIMELINE_LIMIT = 6
+TRACELYT_KNOWLEDGE_BASE: dict[str, object] = {
+    "overview": (
+        "Tracelyt is an AI-powered synthetic media detection platform focused on detection, explanation, "
+        "traceability, and spread-risk assessment for suspicious digital media."
+    ),
+    "users": [
+        "Trust and safety analysts",
+        "Investigative journalists",
+    ],
+    "layers": {
+        "layer1": (
+            "Layer 1 is the detection engine. It fuses CLIP, DINOv2, EfficientNet-B0, and FFT frequency analysis "
+            "to estimate whether content is real or synthetic and to surface evidence signals."
+        ),
+        "layer2": (
+            "Layer 2 is the source discovery and provenance layer. It uses perceptual hashing, CLIP embeddings, "
+            "reverse search, and public web discovery to find exact, visual, and related matches."
+        ),
+        "layer3": (
+            "Layer 3 is the spread and risk layer. It tracks source count, growth, variants, alerts, and an overall "
+            "risk score that summarizes how actively and dangerously the content is circulating."
+        ),
+        "layer4": (
+            "The presentation frames a fourth intelligence layer around risk explanation and alerting, including "
+            "harm scoring, SDG-aware severity framing, and asynchronous alert workflows."
+        ),
+    },
+    "models": {
+        "clip": (
+            "CLIP is the semantic branch. It helps Tracelyt reason about high-level scene meaning and semantic "
+            "inconsistencies in suspicious media."
+        ),
+        "dino": (
+            "DINOv2 is the structure branch. It is a self-supervised vision transformer that is especially useful "
+            "for spatial geometry, facial structure, and other shape-level anomalies."
+        ),
+        "efficientnet": (
+            "EfficientNet-B0 is the texture branch. It captures fine local image artifacts such as blending, "
+            "surface smoothness issues, and subtle pixel-level irregularities."
+        ),
+        "fft": (
+            "FFT is the frequency branch. It helps reveal spectral fingerprints that synthetic generators often "
+            "leave behind even when the image looks convincing to a human."
+        ),
+    },
+    "google_stack": {
+        "vertex_ai": "Layer 1 deployment and inference orchestration",
+        "gemini_api": "Natural-language explanation and analyst-facing chat",
+        "cloud_vision": "Preprocessing and image understanding support",
+        "google_lens": "Source tracing and reverse discovery support",
+        "firebase": "Auth, alerts, and product-layer services",
+        "cloud_nlp": "Text/context classification and downstream intelligence",
+    },
+    "metrics": {
+        "accuracy_target": "88%+ detection accuracy",
+        "agreement_target": ">= 0.75 Cohen's Kappa",
+        "latency_target": "< 8 seconds",
+        "false_positive_target": "< 5% false positives",
+        "xai_target": "100% explanation coverage",
+    },
+    "ethics": [
+        "Confidence scoring should not be treated as a blind binary decision.",
+        "Human review stays in the loop for high-impact cases.",
+        "Bias testing matters across demographics and content types.",
+        "Transparency around errors and limitations is part of the product stance.",
+    ],
+    "roadmap": {
+        "mvp": "Layer 1 and Layer 2 live, risk dashboard, Google Cloud deployment",
+        "q3_2026": "Full propagation intelligence, video deepfakes, Grad-CAM explanations",
+        "q4_2026": "Platform APIs, mobile app, enterprise tier",
+    },
+    "repo": {
+        "backend": "Flask backend, rendered templates, API routes, chat orchestration",
+        "ai": "Detection, matching, and tracking logic for Layers 1-3",
+        "frontend": "Dashboard app and web UI assets",
+        "docs": "Technical notes, layer READMEs, handoff context",
+        "tests": "API and behavior tests",
+    },
+    "api": {
+        "analyze": "/api/analyze runs the investigation pipeline",
+        "status": "/api/status/<job_id> polls job status",
+        "chat": "/api/chat and /api/agent answer analyst questions",
+    },
+}
 LAYER3_LATENCY_ALERT_MS = float(os.getenv("LAYER3_LATENCY_ALERT_MS", "8000"))
 AI_HTTP = requests.Session()
 _LAYER3_INTELLIGENCE_STORE: Layer3IntelligenceStore | None = None
@@ -1945,32 +2047,234 @@ def _agent_context_ready(context: dict[str, object]) -> bool:
     return False
 
 
-def _agent_query_in_scope(message: str, context: dict[str, object]) -> bool:
+def _agent_is_social_message(message: str) -> bool:
     cleaned = str(message or "").strip().lower()
     if not cleaned:
         return False
-    # Direct topic match — always in scope
+    return bool(AGENT_SOCIAL_PATTERN.search(cleaned)) and len(cleaned.split()) <= 12
+
+
+def _agent_requires_investigation_data(message: str, context: dict[str, object], history: list[dict[str, str]] | None = None) -> bool:
+    cleaned = str(message or "").strip().lower()
+    if not cleaned:
+        return False
+    if _agent_is_social_message(cleaned):
+        return False
+    if AGENT_CURRENT_ANALYSIS_PATTERN.search(cleaned):
+        return True
+    if _agent_context_ready(context) and AGENT_FOLLOWUP_PATTERN.search(cleaned):
+        return True
+    if history:
+        prior_assistant = next(
+            (str(item.get("content") or "").strip().lower() for item in reversed(history) if item.get("role") == "assistant"),
+            "",
+        )
+        if prior_assistant and AGENT_FOLLOWUP_PATTERN.search(cleaned) and any(
+            needle in prior_assistant for needle in ("verdict", "risk", "source", "origin", "confidence", "match", "analysis")
+        ):
+            return True
+    return False
+
+
+def _agent_query_in_scope(message: str, context: dict[str, object], history: list[dict[str, str]] | None = None) -> bool:
+    cleaned = str(message or "").strip().lower()
+    if not cleaned:
+        return False
+    if AGENT_EXCLUDED_PATTERN.search(cleaned):
+        return False
+    if _agent_is_social_message(cleaned):
+        return True
     if AGENT_SCOPE_PATTERN.search(cleaned):
         return True
-    # Intent-based questions are in scope even without active analysis
-    if AGENT_INTENT_PATTERN.search(cleaned):
+    if _agent_requires_investigation_data(cleaned, context, history):
         return True
-    ready = _agent_context_ready(context)
-    if ready:
-        if AGENT_CONTEXTUAL_SCOPE_PATTERN.search(cleaned):
-            return True
-        # With active context, allow most reasonable-length questions
-        if len(cleaned.split()) <= 30:
-            return True
-    # Short questions without context are likely follow-ups
-    if len(cleaned.split()) <= 15:
+    if _agent_context_ready(context) and AGENT_CONTEXTUAL_SCOPE_PATTERN.search(cleaned) and AGENT_INTENT_PATTERN.search(cleaned):
         return True
     return False
 
 
-def _agent_policy_reply(message: str, context: dict[str, object]) -> str | None:
-    if not _agent_query_in_scope(message, context):
+def _agent_policy_reply(message: str, context: dict[str, object], history: list[dict[str, str]] | None = None) -> str | None:
+    if not _agent_query_in_scope(message, context, history):
         return AGENT_OUT_OF_SCOPE_REPLY
+    if _agent_requires_investigation_data(message, context, history) and not _agent_context_ready(context):
+        return AGENT_INSUFFICIENT_EVIDENCE_REPLY
+    return None
+
+
+def _join_as_human_list(items: list[str]) -> str:
+    cleaned = [str(item).strip() for item in items if str(item).strip()]
+    if not cleaned:
+        return ""
+    if len(cleaned) == 1:
+        return cleaned[0]
+    if len(cleaned) == 2:
+        return f"{cleaned[0]} and {cleaned[1]}"
+    return f"{', '.join(cleaned[:-1])}, and {cleaned[-1]}"
+
+
+def _format_tracelyt_knowledge_as_text() -> str:
+    layers = dict(TRACELYT_KNOWLEDGE_BASE.get("layers") or {})
+    models = dict(TRACELYT_KNOWLEDGE_BASE.get("models") or {})
+    google_stack = dict(TRACELYT_KNOWLEDGE_BASE.get("google_stack") or {})
+    metrics = dict(TRACELYT_KNOWLEDGE_BASE.get("metrics") or {})
+    roadmap = dict(TRACELYT_KNOWLEDGE_BASE.get("roadmap") or {})
+    repo = dict(TRACELYT_KNOWLEDGE_BASE.get("repo") or {})
+    api_map = dict(TRACELYT_KNOWLEDGE_BASE.get("api") or {})
+    users = list(TRACELYT_KNOWLEDGE_BASE.get("users") or [])
+    ethics = list(TRACELYT_KNOWLEDGE_BASE.get("ethics") or [])
+    lines = [
+        f"Overview: {TRACELYT_KNOWLEDGE_BASE.get('overview')}",
+        f"Primary users: {_join_as_human_list(users)}.",
+        "",
+        "Platform layers:",
+        f"- Layer 1: {layers.get('layer1')}",
+        f"- Layer 2: {layers.get('layer2')}",
+        f"- Layer 3: {layers.get('layer3')}",
+        f"- Layer 4: {layers.get('layer4')}",
+        "",
+        "Core model branches:",
+        f"- CLIP: {models.get('clip')}",
+        f"- DINOv2: {models.get('dino')}",
+        f"- EfficientNet-B0: {models.get('efficientnet')}",
+        f"- FFT: {models.get('fft')}",
+        "",
+        "Google stack mapping:",
+        *[f"- {key}: {value}" for key, value in google_stack.items()],
+        "",
+        "Quality and safety goals:",
+        *[f"- {value}" for value in metrics.values()],
+        *[f"- {item}" for item in ethics],
+        "",
+        "Roadmap:",
+        *[f"- {key}: {value}" for key, value in roadmap.items()],
+        "",
+        "Repository layout:",
+        *[f"- {key}: {value}" for key, value in repo.items()],
+        "",
+        "API endpoints:",
+        *[f"- {key}: {value}" for key, value in api_map.items()],
+    ]
+    return "\n".join(lines)
+
+
+def _agent_social_reply(message: str, context: dict[str, object]) -> str | None:
+    cleaned = str(message or "").strip().lower()
+    if not _agent_is_social_message(cleaned):
+        return None
+    if "thank" in cleaned:
+        return "Anytime. I can break down the current scan, explain a model like DINOv2 or CLIP, or walk through how Tracelyt scores spread risk."
+    if "how are you" in cleaned:
+        if _agent_context_ready(context):
+            return "I’m ready to help. I can explain this scan, why the model leaned REAL or FAKE, where the content likely came from, or what the risk score actually means."
+        return "I’m doing well and ready to help. I can explain Tracelyt, walk through Layer 1 to Layer 3, or answer technical questions about models like DINOv2, CLIP, EfficientNet, and FFT."
+    return "I’m here and ready. You can ask me about the current investigation, how Tracelyt works, or general deepfake-detection concepts."
+
+
+def _agent_product_reply(message: str, context: dict[str, object]) -> str | None:
+    cleaned = str(message or "").strip().lower()
+    if not cleaned:
+        return None
+
+    if any(phrase in cleaned for phrase in ("what is tracelyt", "what does tracelyt do", "who are you", "what can you do", "overview of tracelyt")):
+        users = _join_as_human_list(list(TRACELYT_KNOWLEDGE_BASE.get("users") or []))
+        return (
+            f"{TRACELYT_KNOWLEDGE_BASE.get('overview')} It is built for {users}. "
+            "It combines a detection layer, a source-tracing layer, and a spread-risk layer so an analyst can move from "
+            "“is this fake?” to “where did it come from and how dangerous is its circulation?” in one place."
+        )
+
+    if "dino" in cleaned:
+        return (
+            "DINOv2 is a self-supervised vision transformer, and in Tracelyt it is the structure-focused branch inside Layer 1. "
+            "Its job is to capture geometry and spatial consistency rather than surface-level semantics. That makes it useful for spotting "
+            "warped facial structure, odd perspective, unnatural symmetry, and other shape-level artifacts that generated media can leave behind. "
+            "So the short version is: DINOv2 is not the whole classifier by itself here. It is one expert branch whose signal gets fused with CLIP, "
+            "EfficientNet-B0, and FFT before the final verdict is produced."
+        )
+
+    if "clip" in cleaned:
+        return (
+            "CLIP is the semantic branch in Tracelyt’s Layer 1 detector. It helps the system reason about what the media appears to depict at a high level, "
+            "so it is good at catching semantic inconsistencies such as scene logic that feels off, mismatched context, or suspiciously coherent-looking but unnatural content. "
+            "Tracelyt does not rely on CLIP alone; it combines CLIP with structural, texture, and frequency branches to avoid a one-view-only verdict."
+        )
+
+    if "efficientnet" in cleaned:
+        return (
+            "EfficientNet-B0 is Tracelyt’s texture-focused branch. It is useful for local image evidence such as blending artifacts, overly smooth skin, boundary issues, "
+            "or subtle pixel patterns that can appear in manipulated media. In the full detector it contributes one piece of evidence alongside CLIP, DINOv2, and FFT."
+        )
+
+    if "fft" in cleaned or "frequency" in cleaned:
+        return (
+            "FFT stands for Fast Fourier Transform. In Tracelyt it is the frequency-analysis branch, which means it looks at spectral patterns rather than just visible pixels. "
+            "That matters because synthetic generators often leave frequency fingerprints such as unnatural periodic patterns, missing camera-like noise, or spectral peaks that real captures do not usually produce. "
+            "It is one of the strongest ways to catch media that looks plausible to a human eye but still breaks in the frequency domain."
+        )
+
+    if re.search(r"\blayer ?1\b", cleaned):
+        return str(dict(TRACELYT_KNOWLEDGE_BASE.get("layers") or {}).get("layer1") or "")
+    if re.search(r"\blayer ?2\b", cleaned):
+        return str(dict(TRACELYT_KNOWLEDGE_BASE.get("layers") or {}).get("layer2") or "")
+    if re.search(r"\blayer ?3\b", cleaned):
+        return str(dict(TRACELYT_KNOWLEDGE_BASE.get("layers") or {}).get("layer3") or "")
+    if re.search(r"\blayer ?4\b", cleaned):
+        return str(dict(TRACELYT_KNOWLEDGE_BASE.get("layers") or {}).get("layer4") or "")
+
+    if any(term in cleaned for term in ("vertex", "gemini", "google lens", "cloud vision", "firebase", "cloud nlp", "google stack")):
+        stack = dict(TRACELYT_KNOWLEDGE_BASE.get("google_stack") or {})
+        return (
+            "The Google stack is split by role in Tracelyt: "
+            f"Vertex AI handles {stack.get('vertex_ai')}, Gemini supports {stack.get('gemini_api')}, Cloud Vision supports {stack.get('cloud_vision')}, "
+            f"Google Lens supports {stack.get('google_lens')}, Firebase covers {stack.get('firebase')}, and Cloud NLP handles {stack.get('cloud_nlp')}."
+        )
+
+    if any(term in cleaned for term in ("accuracy", "metric", "false positive", "latency", "cohen", "kappa", "xai")):
+        metrics = dict(TRACELYT_KNOWLEDGE_BASE.get("metrics") or {})
+        return (
+            "The project targets are fairly explicit: "
+            f"{metrics.get('accuracy_target')}, {metrics.get('agreement_target')}, {metrics.get('latency_target')}, "
+            f"{metrics.get('false_positive_target')}, and {metrics.get('xai_target')}."
+        )
+
+    if any(term in cleaned for term in ("ethic", "bias", "fairness", "false positives", "human in the loop", "transparency")):
+        ethics = list(TRACELYT_KNOWLEDGE_BASE.get("ethics") or [])
+        return "Tracelyt’s safety stance is: " + " ".join(ethics)
+
+    if any(term in cleaned for term in ("roadmap", "mvp", "q3", "q4", "future", "next")):
+        roadmap = dict(TRACELYT_KNOWLEDGE_BASE.get("roadmap") or {})
+        return (
+            f"The current MVP is {roadmap.get('mvp')}. Next, Q3 2026 is aimed at {roadmap.get('q3_2026')}. "
+            f"After that, Q4 2026 is aimed at {roadmap.get('q4_2026')}."
+        )
+
+    if any(term in cleaned for term in ("repo", "repository", "codebase", "backend", "frontend", "api", "endpoint")):
+        repo = dict(TRACELYT_KNOWLEDGE_BASE.get("repo") or {})
+        api_map = dict(TRACELYT_KNOWLEDGE_BASE.get("api") or {})
+        return (
+            f"In the repo, `backend` covers {repo.get('backend')}, `ai` covers {repo.get('ai')}, `frontend` covers {repo.get('frontend')}, "
+            f"`docs` covers {repo.get('docs')}, and `tests` covers {repo.get('tests')}. "
+            f"The main analyst endpoints are {api_map.get('analyze')}, {api_map.get('status')}, and {api_map.get('chat')}."
+        )
+
+    if "deepfake" in cleaned and any(term in cleaned for term in ("how", "detect", "detection", "work")):
+        return (
+            "Deepfake detection usually works by combining several evidence types instead of trusting one signal. "
+            "Tracelyt follows that pattern: semantic reasoning through CLIP, structure analysis through DINOv2, texture analysis through EfficientNet-B0, "
+            "and spectral analysis through FFT. Then it adds provenance and spread intelligence on top, because a useful investigation is not just about "
+            "classification but also about where the content came from and how it is moving."
+        )
+
+    if "tracelyt" in cleaned and "risk" in cleaned:
+        return str(dict(TRACELYT_KNOWLEDGE_BASE.get("layers") or {}).get("layer3") or "")
+
+    if "classifier" in cleaned or "model" in cleaned or "architecture" in cleaned or "pipeline" in cleaned:
+        return (
+            "Tracelyt’s core detection architecture is a fusion pipeline rather than a single classifier. "
+            "Layer 1 combines CLIP, DINOv2, EfficientNet-B0, and FFT; Layer 2 adds source matching and provenance discovery; "
+            "Layer 3 scores spread and operational risk. The system is designed as an evidence stack, not a one-model answer box."
+        )
+
     return None
 
 
