@@ -694,9 +694,9 @@
     }
 
     el.themeSelect.addEventListener("change", (e)=>setTheme(e.target.value));
+    el.fileInput.addEventListener("click", ()=>{ el.fileInput.value = ""; });
     el.fileInput.addEventListener("change", (e)=>setFile(e.target.files && e.target.files[0]));
     el.sourceUrlInput.addEventListener("input", setRunEnabled);
-    el.dropZone.addEventListener("click", ()=>el.fileInput.click());
     el.dropZone.addEventListener("dragover", (e)=>{e.preventDefault();el.dropZone.classList.add("drag");});
     el.dropZone.addEventListener("dragleave", ()=>el.dropZone.classList.remove("drag"));
     el.dropZone.addEventListener("drop", (e)=>{e.preventDefault();el.dropZone.classList.remove("drag");setFile(e.dataTransfer.files && e.dataTransfer.files[0]);});

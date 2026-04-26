@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import asdict
 from pathlib import Path
-from urllib.parse import urlparse
 from urllib.parse import urlparse
 
 import numpy as np
@@ -23,6 +23,8 @@ from ai.layer2_matching.tracking.reverse_image_providers import (
     reverse_search_provider_status,
 )
 from ai.shared.file_utils import ensure_dir, load_json, save_json
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ExternalSearchClient:
@@ -133,6 +135,12 @@ class ExternalSearchClient:
             payload = load_json(cache_path)
             return [ReverseImageCandidate(**item) for item in payload]
         except Exception:
+            LOGGER.exception(
+                "Failed to load reverse provider cache (provider=%s, image_path=%s, cache_path=%s).",
+                provider_name,
+                image_path,
+                cache_path,
+            )
             return None
 
     def _save_provider_cache(self, provider_name: str, image_path: Path, candidates: list[ReverseImageCandidate]) -> None:
@@ -223,11 +231,13 @@ class ExternalSearchClient:
                 if cached_url.startswith(("http://", "https://")):
                     return cached_url
             except Exception:
-                pass
+                LOGGER.exception("Failed to read cached Cloudinary public URL (image_path=%s, cache_path=%s).", image_path, cache_path)
 
         try:
             public_url = upload_path_to_cloudinary(image_path, filename_override=image_path.name)
-        except Exception:
+        except Exception as exc:
+            LOGGER.exception("Failed to upload query image to Cloudinary (image_path=%s).", image_path)
+            print(f"[Cloudinary Upload Error] image_path={image_path} error={exc}")
             return None
 
         save_json(cache_path, {"url": public_url})
@@ -366,6 +376,12 @@ class ExternalSearchClient:
                 try:
                     provider_candidates = provider.search_image(search_target, max_results=max_results)
                 except Exception:
+                    LOGGER.exception(
+                        "Reverse provider search failed (provider=%s, frame_index=%s, search_target=%s).",
+                        provider.name,
+                        frame_index,
+                        search_target,
+                    )
                     provider_candidates = []
                 provider_candidates = self._sanitize_provider_candidates(provider_candidates, query_public_url)
                 if provider_candidates:
@@ -516,6 +532,11 @@ class ExternalSearchClient:
                     metadata={"reverse_providers": list(candidate.get("providers") or [])},
                 )
             except Exception:
+                LOGGER.exception(
+                    "Failed to resolve reverse candidate media (page_url=%s, media_url=%s).",
+                    candidate.get("page_url"),
+                    candidate.get("media_url"),
+                )
                 resolved = None
 
             if resolved is None or resolved.local_path is None or not resolved.local_path.exists():
@@ -561,6 +582,11 @@ class ExternalSearchClient:
                         try:
                             provider_candidates = provider.search_image(public_source_url, max_results=max_results)
                         except Exception:
+                            LOGGER.exception(
+                                "Reverse provider source-url search failed (provider=%s, source_url=%s).",
+                                provider.name,
+                                public_source_url,
+                            )
                             provider_candidates = []
                         provider_candidates = self._sanitize_provider_candidates(provider_candidates, public_source_url)
                         if provider_candidates:

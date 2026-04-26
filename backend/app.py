@@ -134,13 +134,19 @@ def _current_request_id() -> str:
 
 def build_layer2_response(data: dict[str, object] | None) -> dict[str, object]:
     payload = data if isinstance(data, dict) else {}
+    matches_raw = payload.get("matches")
     exact_raw = payload.get("exact_matches")
     visual_raw = payload.get("visual_matches_top10")
     embedding_raw = payload.get("embedding_matches_top10")
+    matches = list(matches_raw) if isinstance(matches_raw, list) else []
     exact = list(exact_raw) if isinstance(exact_raw, list) else []
     visual = list(visual_raw) if isinstance(visual_raw, list) else []
     embedding = list(embedding_raw) if isinstance(embedding_raw, list) else []
+    if not matches:
+        matches = exact or visual or embedding
     return {
+        "matches": matches,
+        "count": len(matches),
         "exact_matches": exact,
         "visual_matches_top10": visual,
         "embedding_matches_top10": embedding,
@@ -165,12 +171,14 @@ def _cleanup_layer2_store() -> None:
 
 
 def _build_layer2_channels(
+    matches: list[dict[str, object]] | None = None,
     exact_matches: list[dict[str, object]] | None = None,
     visual_matches_top10: list[dict[str, object]] | None = None,
     embedding_matches_top10: list[dict[str, object]] | None = None,
 ) -> dict[str, object]:
     return build_layer2_response(
         {
+            "matches": list(matches or []),
             "exact_matches": list(exact_matches or []),
             "visual_matches_top10": list(visual_matches_top10 or []),
             "embedding_matches_top10": list(embedding_matches_top10 or []),
@@ -1337,8 +1345,15 @@ def disable_cache(response):
     started_at = float(getattr(g, "request_started_at", 0.0) or 0.0)
     elapsed = time.time() - started_at if started_at > 0 else 0.0
     if elapsed > REQUEST_TIMEOUT_SECONDS and _is_json_api_request():
-        response = jsonify({"status": "degraded", "message": "Request timeout safeguard triggered"})
-        response.status_code = 200
+        LOGGER.warning(
+            "[RequestTimeout][%s] %s exceeded %.2fs (elapsed %.2fs)",
+            _current_request_id(),
+            request.path,
+            REQUEST_TIMEOUT_SECONDS,
+            elapsed,
+        )
+        # Preserve the actual API payload instead of replacing it with a generic degraded response.
+        response.headers["X-Request-Timeout-Safeguard"] = "triggered"
 
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
@@ -1407,7 +1422,14 @@ def _ping_service(url: str, *, timeout_seconds: float = 2.0) -> str:
 
 
 def _health_service_statuses() -> dict[str, str]:
-    cloudinary_configured = bool(str(os.getenv("CLOUDINARY_URL") or "").strip())
+    cloudinary_configured = bool(
+        str(os.getenv("CLOUDINARY_URL") or "").strip()
+        or (
+            str(os.getenv("CLOUDINARY_CLOUD_NAME") or "").strip()
+            and str(os.getenv("CLOUDINARY_API_KEY") or "").strip()
+            and str(os.getenv("CLOUDINARY_API_SECRET") or "").strip()
+        )
+    )
     serpapi_configured = bool(str(os.getenv("SERPAPI_API_KEY") or "").strip())
     proxy_configured = bool(REMOTE_PROXY_URL)
 
@@ -1497,19 +1519,17 @@ def api_analyze():
     if not enable_layer1:
         layer1_payload = {"result": "REAL", "confidence": 0.0, "heatmap": None}
 
+    layer2_public_url = str(source_url or "").strip() or None
+    if enable_layer2 and not layer2_public_url:
+        try:
+            layer2_public_url = _ensure_public_source_url(upload_id, _load_upload_metadata(upload_id))
+        except Exception:
+            LOGGER.exception("Layer2 failed to generate public URL for upload_id=%s", upload_id)
+
+    # A generated Cloudinary URL is only an internal/public processing URL.
+    # It is not evidence of an actual external source match and should not be
+    # surfaced as a Layer 2 result card.
     layer2_matches: list[dict[str, object]] = []
-    if enable_layer2 and source_url:
-        layer2_matches.append(
-            {
-                "id": f"match-{upload_id}-1",
-                "preview_url": source_url,
-                "source_url": source_url,
-                "similarity": round(min(0.98, max(0.55, confidence + 0.17)), 4),
-                "first_seen": now_iso,
-                "platform": urlparse(source_url).netloc or "web",
-                "title": Path(original_filename).name,
-            }
-        )
     layer2_payload = _build_layer2_channels(
         exact_matches=layer2_matches,
         visual_matches_top10=[],
