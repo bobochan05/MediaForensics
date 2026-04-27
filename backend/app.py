@@ -29,10 +29,16 @@ if str(PROJECT_ROOT) not in sys.path:
 from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, make_response, redirect, render_template, request, session, stream_with_context, url_for
 from PIL import Image
+from typing import TYPE_CHECKING
 from werkzeug.exceptions import HTTPException
-from ai.layer2_matching.insights import build_layer2_insights
-from ai.layer1_detection.content_classifier import classify_media_content
-from ai.layer3_tracking.services import AlertEvent, Layer3IntelligenceStore, get_alert_service
+
+if TYPE_CHECKING:
+    from ai.layer3_tracking.services import Layer3IntelligenceStore
+
+# NOTE: Avoid importing the heavy AI stack at module import time.
+# On platforms like Render, Gunicorn must bind to $PORT quickly; large ML imports can
+# delay startup long enough that the platform reports "no open ports detected".
+# Import AI modules lazily inside the request/job handlers that need them.
 
 from backend.config import load_backend_config
 from backend.auth_system import init_auth_system
@@ -184,6 +190,25 @@ app.config["SECRET_KEY"] = (os.getenv("FLASK_SECRET_KEY") or os.urandom(32).hex(
 
 _LAYER2_PIPELINE = None
 LOGGER = logging.getLogger(__name__)
+
+
+def _get_alert_service():
+    from ai.layer3_tracking.services import get_alert_service
+
+    return get_alert_service()
+
+
+def _new_alert_event(**kwargs):
+    from ai.layer3_tracking.services import AlertEvent
+
+    return AlertEvent(**kwargs)
+
+
+def _new_layer3_intelligence_store():
+    from ai.layer3_tracking.services import Layer3IntelligenceStore
+
+    return Layer3IntelligenceStore()
+
 AUTH_SERVICE = init_auth_system(app, PROJECT_ROOT)
 _LAYER2_RESULT_STORE: dict[str, dict[str, object]] = {}
 _LAYER2_RESULT_STORE_META: dict[str, float] = {}
@@ -302,22 +327,22 @@ TRACELYT_KNOWLEDGE_BASE: dict[str, object] = {
 }
 LAYER3_LATENCY_ALERT_MS = float(os.getenv("LAYER3_LATENCY_ALERT_MS", "8000"))
 AI_HTTP = requests.Session()
-_LAYER3_INTELLIGENCE_STORE: Layer3IntelligenceStore | None = None
+_LAYER3_INTELLIGENCE_STORE: object | None = None
 
 
 def _new_uuid() -> str:
     return str(uuid.uuid4())
 
 
-def _layer3_store() -> Layer3IntelligenceStore | None:
+def _layer3_store() -> object | None:
     global _LAYER3_INTELLIGENCE_STORE
     if _LAYER3_INTELLIGENCE_STORE is None:
         try:
-            _LAYER3_INTELLIGENCE_STORE = Layer3IntelligenceStore()
+            _LAYER3_INTELLIGENCE_STORE = _new_layer3_intelligence_store()
         except Exception:  # pragma: no cover - initialization guard
             LOGGER.exception("Failed to initialize Layer 3 intelligence store.")
-            get_alert_service().trigger_alert(
-                AlertEvent(
+            _get_alert_service().trigger_alert(
+                _new_alert_event(
                     event_type="layer3_store_initialization_failure",
                     severity="CRITICAL",
                     message="Layer 3 intelligence store failed to initialize.",
@@ -4853,8 +4878,8 @@ def _maybe_send_layer3_email_alert(
         )
     except Exception as exc:  # pragma: no cover - network dependent
         LOGGER.exception("Layer 3 email alert dispatch failed for %s", upload_id)
-        get_alert_service().trigger_alert(
-            AlertEvent(
+        _get_alert_service().trigger_alert(
+            _new_alert_event(
                 event_type="layer3_email_alert_failure",
                 severity="HIGH",
                 message="Layer 3 email alert delivery failed.",
@@ -4979,8 +5004,8 @@ def _build_layer3_payload(
         )
     except Exception as exc:  # pragma: no cover - background resilience
         LOGGER.exception("Layer 3 persistence failed for %s", upload_id)
-        get_alert_service().trigger_alert(
-            AlertEvent(
+        _get_alert_service().trigger_alert(
+            _new_alert_event(
                 event_type="layer3_persistence_failure",
                 severity="CRITICAL",
                 message="Layer 3 persistence failed during analysis.",
@@ -5157,6 +5182,8 @@ def _run_analysis_job(
         if enable_layer1:
             label, confidence = _run_inference_subprocess(stored_path)
             is_fake = label.lower() == "fake"
+            from ai.layer1_detection.content_classifier import classify_media_content
+
             content_classification = classify_media_content(stored_path)
             layer1_payload: dict[str, object] = build_layer1_payload(
                 is_fake=is_fake,
@@ -5178,8 +5205,8 @@ def _run_analysis_job(
         )
         layer1_duration_ms = (time.perf_counter() - layer1_started_at) * 1000
         if layer1_duration_ms > LAYER3_LATENCY_ALERT_MS:
-            get_alert_service().trigger_alert(
-                AlertEvent(
+            _get_alert_service().trigger_alert(
+                _new_alert_event(
                     event_type="layer1_latency_spike",
                     severity="MEDIUM",
                     message="Layer 1 exceeded the configured latency threshold.",
@@ -5218,8 +5245,8 @@ def _run_analysis_job(
             _store_layer2_channels(upload_id, layer2_payload)
             layer2_duration_ms = (time.perf_counter() - layer2_started_at) * 1000
             if layer2_duration_ms > LAYER3_LATENCY_ALERT_MS:
-                get_alert_service().trigger_alert(
-                    AlertEvent(
+                _get_alert_service().trigger_alert(
+                    _new_alert_event(
                         event_type="layer2_latency_spike",
                         severity="HIGH",
                         message="Layer 2 discovery exceeded the configured latency threshold.",
@@ -5337,8 +5364,8 @@ def _run_analysis_job(
         )
     except Exception as exc:  # pragma: no cover - background safety
         LOGGER.exception("Background analysis job failed for %s", upload_id)
-        get_alert_service().trigger_alert(
-            AlertEvent(
+        _get_alert_service().trigger_alert(
+            _new_alert_event(
                 event_type="analysis_job_failure",
                 severity="CRITICAL",
                 message="Background analysis job failed.",
@@ -5399,8 +5426,8 @@ def _run_layer3_refinement_job(
         layer3_payload["refinement_message"] = ""
         layer3_duration_ms = (time.perf_counter() - layer3_started_at) * 1000
         if layer3_duration_ms > LAYER3_LATENCY_ALERT_MS:
-            get_alert_service().trigger_alert(
-                AlertEvent(
+            _get_alert_service().trigger_alert(
+                _new_alert_event(
                     event_type="layer3_latency_spike",
                     severity="HIGH",
                     message="Layer 3 persistence/tracking exceeded the configured latency threshold.",
@@ -5432,8 +5459,8 @@ def _run_layer3_refinement_job(
         )
     except Exception as exc:  # pragma: no cover - background safety
         LOGGER.exception("Layer 3 refinement job failed for %s", upload_id)
-        get_alert_service().trigger_alert(
-            AlertEvent(
+        _get_alert_service().trigger_alert(
+            _new_alert_event(
                 event_type="layer3_refinement_failure",
                 severity="CRITICAL",
                 message="Layer 3 refinement failed after provisional analysis completed.",
@@ -5538,8 +5565,8 @@ def _run_layer2_layer3_enrichment_job(
         )
     except Exception as exc:  # pragma: no cover - background safety
         LOGGER.exception("Layer 2/3 enrichment job failed for %s", upload_id)
-        get_alert_service().trigger_alert(
-            AlertEvent(
+        _get_alert_service().trigger_alert(
+            _new_alert_event(
                 event_type="layer23_enrichment_failure",
                 severity="HIGH",
                 message="Background Layer 2/Layer 3 enrichment failed.",
@@ -6080,7 +6107,7 @@ def api_notifications():
         limit = max(1, min(int(request.args.get("limit", "8")), 20))
     except ValueError:
         limit = 8
-    return jsonify({"notifications": get_alert_service().recent_notifications(limit=limit)})
+    return jsonify({"notifications": _get_alert_service().recent_notifications(limit=limit)})
 
 
 @app.post("/api/predict")

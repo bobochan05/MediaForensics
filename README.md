@@ -44,8 +44,13 @@ npm run dev
 
 This repo’s Flask WSGI app is exposed as `backend.app:app`.
 
-- **Start command**: `gunicorn backend.app:app --bind 0.0.0.0:$PORT`
+- **Start command**: `gunicorn -c backend/gunicorn.conf.py backend.app:app`
 - If you use Render’s native Python runtime, the included `Procfile` already defines this.
+
+If your Render **Root Directory** is set to `backend`, use:
+
+- **Start command**: `gunicorn -c gunicorn.conf.py your_application.wsgi:application`
+- Or clear the Start Command and rely on `backend/Procfile`.
 
 If your deploy logs show `ModuleNotFoundError: No module named 'your_application'`, Render is still using a placeholder start command (common in tutorials). Update your Render service **Settings → Start Command** to the command above (or clear it and rely on the `Procfile`), then redeploy.
 
