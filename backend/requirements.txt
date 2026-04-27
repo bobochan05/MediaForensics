@@ -16,6 +16,7 @@ bcrypt
 PyJWT
 google-auth
 cloudinary
+gunicorn
 fastapi
 uvicorn
 python-multipart
