@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { captureAccessTokenFromUrl, fetchAuthSession } from "@/lib/api";
 import { useDashboardStore } from "@/store/dashboard-store";
 
+const USE_DUMMY = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
+
 export function useAuthGuard() {
   const router = useRouter();
   const setUser = useDashboardStore((state) => state.setUser);
@@ -14,6 +16,18 @@ export function useAuthGuard() {
     let mounted = true;
 
     async function run() {
+      if (USE_DUMMY) {
+        setUser({
+          authState: "guest",
+          username: "Demo User",
+          accountType: "Free",
+          apiUsed: 0,
+          apiLimit: 250,
+        });
+        setIsLoading(false);
+        return;
+      }
+
       captureAccessTokenFromUrl();
       const session = await fetchAuthSession().catch(() => ({
         authState: "anonymous" as const,

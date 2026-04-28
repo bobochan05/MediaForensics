@@ -2,8 +2,13 @@
 import type { NextRequest } from "next/server";
 
 const protectedPaths = ["/dashboard"];
+const USE_DUMMY = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 
 export function middleware(request: NextRequest) {
+  if (USE_DUMMY) {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
   const isProtected = protectedPaths.some((path) => pathname.startsWith(path));
 
