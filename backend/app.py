@@ -5810,7 +5810,14 @@ def _ping_service(url: str, *, timeout_seconds: float = 2.0) -> str:
 
 
 def _health_service_statuses() -> dict[str, str]:
-    cloudinary_configured = bool(str(os.getenv("CLOUDINARY_URL") or "").strip())
+    cloudinary_configured = bool(
+        str(os.getenv("CLOUDINARY_URL") or "").strip()
+        or (
+            str(os.getenv("CLOUDINARY_CLOUD_NAME") or "").strip()
+            and str(os.getenv("CLOUDINARY_API_KEY") or "").strip()
+            and str(os.getenv("CLOUDINARY_API_SECRET") or "").strip()
+        )
+    )
     serpapi_configured = bool(str(os.getenv("SERPAPI_API_KEY") or "").strip())
     proxy_configured = bool(REMOTE_PROXY_URL)
 
