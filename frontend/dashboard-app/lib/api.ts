@@ -3,6 +3,7 @@ import { dummyAnalyzeResponse } from "@/lib/dummy-data";
 
 const USE_DUMMY = process.env.NEXT_PUBLIC_USE_DUMMY_DATA === "true";
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim().replace(/\/$/, "");
+const ACCESS_TOKEN_STORAGE_KEY = "tracelyt_access_token";
 
 async function parseJsonSafe<T>(res: Response): Promise<T> {
   const payload = (await res.json().catch(() => ({}))) as T;
@@ -16,9 +17,44 @@ function apiUrl(path: string): string {
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+function storedAccessToken(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  return window.sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || "";
+}
+
+function authHeaders(headers?: HeadersInit): HeadersInit {
+  const token = storedAccessToken();
+  if (!token) {
+    return headers || {};
+  }
+  return {
+    ...(headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
+}
+
+export function captureAccessTokenFromUrl(): boolean {
+  if (typeof window === "undefined" || !window.location.hash) {
+    return false;
+  }
+
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const token = params.get("access_token") || "";
+  if (!token) {
+    return false;
+  }
+
+  window.sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  return true;
+}
+
 async function requestWithRefresh(path: string, init: RequestInit): Promise<Response> {
   const initial = await fetch(apiUrl(path), {
     ...init,
+    headers: authHeaders(init.headers),
     credentials: "include",
   });
 
@@ -37,6 +73,7 @@ async function requestWithRefresh(path: string, init: RequestInit): Promise<Resp
 
   return fetch(apiUrl(path), {
     ...init,
+    headers: authHeaders(init.headers),
     credentials: "include",
   });
 }
@@ -44,11 +81,15 @@ async function requestWithRefresh(path: string, init: RequestInit): Promise<Resp
 export async function fetchAuthSession(): Promise<DashboardUser> {
   const res = await fetch(apiUrl("/api/auth/session"), {
     method: "GET",
+    headers: authHeaders(),
     credentials: "include",
     cache: "no-store",
   });
 
   if (!res.ok) {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    }
     return {
       authState: "anonymous",
       accountType: "Free",
@@ -59,6 +100,9 @@ export async function fetchAuthSession(): Promise<DashboardUser> {
 
   const payload = await parseJsonSafe<Record<string, unknown>>(res);
   const authState = String(payload.auth_state || "anonymous") as DashboardUser["authState"];
+  if (authState === "anonymous" && typeof window !== "undefined") {
+    window.sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  }
   const apiLimit = Number(payload.guest_limit || 250);
   const apiUsed = Number(payload.guest_used || 0);
 

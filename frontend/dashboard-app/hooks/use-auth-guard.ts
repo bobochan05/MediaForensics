@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchAuthSession } from "@/lib/api";
+import { captureAccessTokenFromUrl, fetchAuthSession } from "@/lib/api";
 import { useDashboardStore } from "@/store/dashboard-store";
 
 export function useAuthGuard() {
@@ -14,6 +14,7 @@ export function useAuthGuard() {
     let mounted = true;
 
     async function run() {
+      captureAccessTokenFromUrl();
       const session = await fetchAuthSession();
       if (!mounted) {
         return;

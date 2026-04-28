@@ -3093,6 +3093,7 @@ def _template_context(*, service_entry: bool = False) -> dict[str, object]:
         "guest_used": auth_context["guest_used"],
         "guest_remaining": auth_context["guest_remaining"],
         "google_oauth_client_id": AUTH_SERVICE.settings.google_client_id or "",
+        "dashboard_frontend_url": DASHBOARD_FRONTEND_URL,
     }
 
 

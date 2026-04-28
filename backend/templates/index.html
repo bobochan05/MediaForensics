@@ -295,6 +295,7 @@
     const authUsername = document.getElementById("authUsername"), authEmail = document.getElementById("authEmail"), authPassword = document.getElementById("authPassword"), authConfirmPassword = document.getElementById("authConfirmPassword"), authStatus = document.getElementById("authStatus"), usernameLabel = document.getElementById("usernameLabel"), emailLabel = document.getElementById("emailLabel"), passwordLabel = document.getElementById("passwordLabel"), confirmPasswordLabel = document.getElementById("confirmPasswordLabel"), signupPrompt = document.getElementById("signupPrompt"), togglePasswords = document.getElementById("togglePasswords"), togglePasswordsLabel = document.getElementById("togglePasswordsLabel");
     const footerInfoModal = document.getElementById("footerInfoModal"), footerInfoTitle = document.getElementById("footerInfoTitle"), footerInfoDesc = document.getElementById("footerInfoDesc"), footerInfoClose = document.getElementById("footerInfoClose"), footerInfoCard = footerInfoModal ? footerInfoModal.querySelector(".info-card") : null;
     const serviceUrl = "{{ url_for('dashboard') }}";
+    const dashboardFrontendUrl = {{ dashboard_frontend_url|tojson }};
     const googleOauthClientId = {{ google_oauth_client_id|tojson }};
     let authState = {{ auth_state|tojson }};
     let selectedFile = null, freeTotal = {{ guest_limit|tojson }}, freeUsed = {{ guest_used|tojson }}, currentLang = "en", pendingDemoRedirect = false, authMode = "login";
@@ -1078,6 +1079,16 @@ Tracelyt का उपयोग करके, आप स्वीकार क�
       applyPasswordVisibility();
       clearAuthStatus();
     }
+    function authRedirectUrl(data){
+      const frontendBase = String(dashboardFrontendUrl || "").replace(/\/$/,"");
+      if(frontendBase && data && data.access_token){
+        const params = new URLSearchParams();
+        params.set("access_token", data.access_token);
+        if(data.auth_state) params.set("auth_state", data.auth_state);
+        return `${frontendBase}/dashboard#${params.toString()}`;
+      }
+      return (data && data.redirect_url) || serviceUrl;
+    }
     function goToDemo(){ window.location.href = demoUrl; }
     function hasServiceAccess(){ return authState === "user" || authState === "guest"; }
     function updateSessionStateFromPayload(payload){
@@ -1119,7 +1130,7 @@ Tracelyt का उपयोग करके, आप स्वीकार क�
         updateSessionStateFromPayload(data);
         closeAuthModal();
         pendingDemoRedirect = false;
-        window.location.href = data.redirect_url || serviceUrl;
+        window.location.href = authRedirectUrl(data);
       }catch(_error){
         setAuthStatus("Authentication failed. Try again.");
       }
@@ -1132,7 +1143,7 @@ Tracelyt का उपयोग करके, आप स्वीकार क�
         updateSessionStateFromPayload(data);
         closeAuthModal();
         pendingDemoRedirect = false;
-        window.location.href = data.redirect_url || serviceUrl;
+        window.location.href = authRedirectUrl(data);
       }catch(_error){
         setAuthStatus("Could not start guest mode. Try again.");
       }
