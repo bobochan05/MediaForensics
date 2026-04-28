@@ -15,7 +15,12 @@ export function useAuthGuard() {
 
     async function run() {
       captureAccessTokenFromUrl();
-      const session = await fetchAuthSession();
+      const session = await fetchAuthSession().catch(() => ({
+        authState: "anonymous" as const,
+        accountType: "Free" as const,
+        apiUsed: 0,
+        apiLimit: 250,
+      }));
       if (!mounted) {
         return;
       }

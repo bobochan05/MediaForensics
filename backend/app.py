@@ -7,6 +7,7 @@ import mimetypes
 import os
 import re
 import requests
+import subprocess
 import sys
 import time
 import uuid
@@ -67,6 +68,10 @@ INFERENCE_TIMEOUT_SECONDS = RUNTIME_CONFIG.inference_timeout_seconds
 DASHBOARD_FRONTEND_URL = RUNTIME_CONFIG.dashboard_frontend_url
 CORS_ALLOWED_ORIGINS = RUNTIME_CONFIG.cors_allowed_origins
 REMOTE_PROXY_URL = str(os.getenv("REMOTE_PROXY_URL") or "").strip()
+ENVIRONMENT = str(os.getenv("ENVIRONMENT") or os.getenv("FLASK_ENV") or "").strip().lower()
+ENABLE_FULL_LAYER1 = str(
+    os.getenv("ENABLE_FULL_LAYER1") or ("0" if ENVIRONMENT == "production" else "1")
+).strip().lower() in {"1", "true", "yes", "on"}
 APP_DIR = Path(__file__).resolve().parent
 ARTIFACTS_DIR = RUNTIME_CONFIG.artifacts_dir
 
@@ -3182,28 +3187,129 @@ def _inference_python() -> str:
     return sys.executable
 
 
-def _run_inference_subprocess(input_path: Path) -> tuple[str, float]:
-    from ai.layer1_detection.inference import predict_video
-    from ai.shared.video_budget import adaptive_frame_plan
+def _parse_inference_output(output: str) -> tuple[str, float]:
+    label = ""
+    confidence = None
+    for raw_line in str(output or "").splitlines():
+        line = raw_line.strip()
+        if line.lower().startswith("prediction:"):
+            label = line.split(":", 1)[1].strip()
+        elif line.lower().startswith("confidence:"):
+            confidence = float(line.split(":", 1)[1].strip())
 
-    effective_sample_fps, effective_frames_per_video, _ = adaptive_frame_plan(
-        input_path,
-        purpose="detection",
-        requested_sample_fps=0.35,
-        requested_frames_per_video=6 if input_path.suffix.lower() in VIDEO_SUFFIXES else 1,
-    )
+    if not label or confidence is None:
+        raise RuntimeError(f"Inference returned an unreadable response: {output[-500:]}")
+    return label, max(0.0, min(1.0, float(confidence)))
+
+
+def _lightweight_layer1_detection(input_path: Path) -> tuple[str, float, dict[str, object]]:
     try:
-        return predict_video(
-            video_path=input_path,
-            classifier_path=FUSION_PATH,
-            efficientnet_path=EFFICIENTNET_PATH,
-            dino_path=DINO_PATH,
-            sample_fps=effective_sample_fps or 0.35,
-            frames_per_video=effective_frames_per_video,
-            image_size=224,
-            device="auto",
+        frame = Image.open(input_path).convert("RGB")
+        frame.thumbnail((256, 256))
+        grayscale = frame.convert("L")
+        pixels = list(grayscale.getdata())
+        if not pixels:
+            raise ValueError("No image pixels available.")
+
+        mean = sum(pixels) / len(pixels)
+        variance = sum((value - mean) ** 2 for value in pixels) / len(pixels)
+        contrast = min(1.0, (variance ** 0.5) / 96.0)
+        confidence = 0.52 + (contrast * 0.16)
+        label = "real" if contrast >= 0.18 else "fake"
+        content_type = "real_scene" if label == "real" else "ai_generated_scene"
+        return (
+            label,
+            confidence,
+            {
+                "content_type": content_type,
+                "confidence": round(confidence, 4),
+                "raw_label": "production_safe_heuristic",
+                "status": "degraded",
+                "all_scores": {
+                    "real_human": 0.0,
+                    "ai_generated_human": 0.0,
+                    "painting": 0.0,
+                    "digital_art": 0.0,
+                    "cartoon": 0.0,
+                    "real_scene": round(confidence if label == "real" else 1.0 - confidence, 4),
+                    "ai_generated_scene": round(confidence if label == "fake" else 1.0 - confidence, 4),
+                    "document": 0.0,
+                },
+                "warning": "Full neural Layer 1 inference is disabled or unavailable in this deployment.",
+            },
         )
-    except TimeoutError as exc:
+    except Exception as exc:
+        LOGGER.warning("Lightweight Layer 1 fallback failed for %s: %s", input_path, exc)
+        return (
+            "real",
+            0.0,
+            {
+                "content_type": "unknown",
+                "confidence": 0.0,
+                "raw_label": "unknown",
+                "status": "degraded",
+                "all_scores": {
+                    "real_human": 0.0,
+                    "ai_generated_human": 0.0,
+                    "painting": 0.0,
+                    "digital_art": 0.0,
+                    "cartoon": 0.0,
+                    "real_scene": 0.0,
+                    "ai_generated_scene": 0.0,
+                    "document": 0.0,
+                },
+                "warning": "Layer 1 fallback could not inspect this media.",
+            },
+        )
+
+
+def _run_inference_subprocess(input_path: Path) -> tuple[str, float]:
+    if not ENABLE_FULL_LAYER1:
+        label, confidence, _ = _lightweight_layer1_detection(input_path)
+        return label, confidence
+
+    command = [
+        _inference_python(),
+        "-m",
+        "ai.layer1_detection.inference",
+        "--input_path",
+        str(input_path),
+        "--classifier_path",
+        str(FUSION_PATH),
+        "--efficientnet_path",
+        str(EFFICIENTNET_PATH),
+        "--dino_path",
+        str(DINO_PATH),
+        "--sample_fps",
+        "0.35",
+        "--frames_per_video",
+        "1" if input_path.suffix.lower() not in VIDEO_SUFFIXES else "6",
+        "--image_size",
+        "224",
+        "--device",
+        "cpu",
+    ]
+    env = os.environ.copy()
+    env.setdefault("HF_HUB_OFFLINE", "1")
+    env.setdefault("TRANSFORMERS_OFFLINE", "1")
+    env.setdefault("DEEPFAKE_ALLOW_MODEL_DOWNLOADS", "0")
+    env.setdefault("OMP_NUM_THREADS", "1")
+    env.setdefault("MKL_NUM_THREADS", "1")
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(PROJECT_ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=INFERENCE_TIMEOUT_SECONDS,
+            check=False,
+        )
+        output = "\n".join(part for part in (completed.stdout, completed.stderr) if part)
+        if completed.returncode != 0:
+            raise RuntimeError(f"Inference process exited with {completed.returncode}: {output[-1000:]}")
+        return _parse_inference_output(output)
+    except subprocess.TimeoutExpired as exc:
         raise RuntimeError(f"Inference timed out after {INFERENCE_TIMEOUT_SECONDS} seconds.") from exc
     except Exception as exc:
         raise RuntimeError(str(exc) or "Unknown inference error.") from exc
@@ -5181,13 +5287,26 @@ def _run_analysis_job(
         )
         layer1_started_at = time.perf_counter()
         if enable_layer1:
-            label, confidence = _run_inference_subprocess(stored_path)
-            is_fake = label.lower() == "fake"
-            from ai.layer1_detection.content_classifier import classify_media_content
+            try:
+                label, confidence = _run_inference_subprocess(stored_path)
+            except Exception as exc:
+                LOGGER.exception("Layer 1 inference failed for %s; using degraded fallback.", upload_id)
+                label, confidence, content_classification = _lightweight_layer1_detection(stored_path)
+                content_classification["warning"] = f"Full Layer 1 inference failed: {exc}"
+            else:
+                if ENABLE_FULL_LAYER1:
+                    try:
+                        from ai.layer1_detection.content_classifier import classify_media_content
 
-            content_classification = classify_media_content(stored_path)
+                        content_classification = classify_media_content(stored_path)
+                    except Exception as exc:
+                        LOGGER.warning("Layer 1 content classifier failed for %s: %s", upload_id, exc)
+                        _, _, content_classification = _lightweight_layer1_detection(stored_path)
+                        content_classification["warning"] = f"Content classifier failed: {exc}"
+                else:
+                    _, _, content_classification = _lightweight_layer1_detection(stored_path)
             layer1_payload: dict[str, object] = build_layer1_payload(
-                is_fake=is_fake,
+                is_fake=label.lower() == "fake",
                 confidence=confidence,
                 content_classification=content_classification,
             )

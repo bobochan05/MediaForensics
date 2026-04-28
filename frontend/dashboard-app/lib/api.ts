@@ -26,6 +26,13 @@ function storedAccessToken(): string {
   return window.sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || "";
 }
 
+function saveAccessToken(token: unknown): void {
+  if (typeof window === "undefined" || typeof token !== "string" || !token.trim()) {
+    return;
+  }
+  window.sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token.trim());
+}
+
 function authHeaders(headers?: HeadersInit): HeadersInit {
   const token = storedAccessToken();
   if (!token) {
@@ -35,6 +42,15 @@ function authHeaders(headers?: HeadersInit): HeadersInit {
     ...(headers || {}),
     Authorization: `Bearer ${token}`,
   };
+}
+
+async function fetchApi(input: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Network request failed.";
+    throw new Error(`Could not reach the Render backend at ${API_BASE_URL || "the configured API URL"}. ${message}`);
+  }
 }
 
 export function captureAccessTokenFromUrl(): boolean {
@@ -48,13 +64,13 @@ export function captureAccessTokenFromUrl(): boolean {
     return false;
   }
 
-  window.sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+  saveAccessToken(token);
   window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
   return true;
 }
 
 async function requestWithRefresh(path: string, init: RequestInit): Promise<Response> {
-  const initial = await fetch(apiUrl(path), {
+  const initial = await fetchApi(apiUrl(path), {
     ...init,
     headers: authHeaders(init.headers),
     credentials: "include",
@@ -64,7 +80,7 @@ async function requestWithRefresh(path: string, init: RequestInit): Promise<Resp
     return initial;
   }
 
-  const refreshRes = await fetch(apiUrl("/api/auth/refresh"), {
+  const refreshRes = await fetchApi(apiUrl("/api/auth/refresh"), {
     method: "POST",
     credentials: "include",
     cache: "no-store",
@@ -73,7 +89,10 @@ async function requestWithRefresh(path: string, init: RequestInit): Promise<Resp
     return initial;
   }
 
-  return fetch(apiUrl(path), {
+  const refreshPayload = await parseJsonSafe<Record<string, unknown>>(refreshRes);
+  saveAccessToken(refreshPayload.access_token);
+
+  return fetchApi(apiUrl(path), {
     ...init,
     headers: authHeaders(init.headers),
     credentials: "include",
@@ -171,7 +190,7 @@ async function pollAnalysisJob(jobId: string): Promise<AnalyzeResponse> {
 }
 
 export async function fetchAuthSession(): Promise<DashboardUser> {
-  const res = await fetch(apiUrl("/api/auth/session"), {
+  const res = await fetchApi(apiUrl("/api/auth/session"), {
     method: "GET",
     headers: authHeaders(),
     credentials: "include",
