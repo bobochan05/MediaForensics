@@ -30,54 +30,6 @@ id_ed25519.pub
 
 # Python
 __pycache__/
-
-# Local dependency vendor dir (if present)
-.pydeps/
-# Logs and temp files
-*.log
-*.tmp
-*.temp
-tmp_*.json
-pytest-cache-files-*/
-
-# ML artifacts and generated data
-artifacts/
-data/datasets/
-data/embeddings/
-*.pth
-*.pt
-# Secrets
-.env
-!.env.example
-
-# Additional env variants (keep *.example tracked)
-.env.*
-!.env.*.example
-*.env
-!*.env.example
-
-# Common credential/key material
-*.pem
-*.key
-*.p12
-*.pfx
-*.jks
-*.pkcs12
-id_rsa
-id_rsa.pub
-id_ed25519
-id_ed25519.pub
-**/serviceAccount*.json
-**/service-account*.json
-**/firebase-adminsdk*.json
-**/*oauth*client*secret*.json
-**/client_secret*.json
-**/credentials*.json
-**/secrets*.json
-.npmrc
-
-# Python
-__pycache__/
 *.py[cod]
 *.pyd
 .pytest_cache/
