@@ -72,6 +72,12 @@ ENVIRONMENT = str(os.getenv("ENVIRONMENT") or os.getenv("FLASK_ENV") or "").stri
 ENABLE_FULL_LAYER1 = str(
     os.getenv("ENABLE_FULL_LAYER1") or ("0" if ENVIRONMENT == "production" else "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
+ENABLE_FULL_LAYER2 = str(
+    os.getenv("ENABLE_FULL_LAYER2") or ("0" if ENVIRONMENT == "production" else "1")
+).strip().lower() in {"1", "true", "yes", "on"}
+ENABLE_FULL_LAYER3_REFINEMENT = str(
+    os.getenv("ENABLE_FULL_LAYER3_REFINEMENT") or ("0" if ENVIRONMENT == "production" else "1")
+).strip().lower() in {"1", "true", "yes", "on"}
 APP_DIR = Path(__file__).resolve().parent
 ARTIFACTS_DIR = RUNTIME_CONFIG.artifacts_dir
 
@@ -1019,6 +1025,24 @@ def build_layer2_response(data: dict[str, object] | None) -> dict[str, object]:
         if key in payload:
             response[key] = deepcopy(payload[key])
     return response
+
+
+def _production_safe_layer2_payload() -> dict[str, object]:
+    payload = build_layer2_response(
+        {
+            "status": "degraded",
+            "message": "Layer 2 reverse discovery is disabled on this Render deployment to keep the web service stable.",
+            "provider_status": {
+                "cloudinary": "skipped",
+                "serpapi": "skipped",
+                "proxy": "skipped",
+            },
+            "manual_search_note": "Enable ENABLE_FULL_LAYER2=1 only on a Render plan with enough memory for the full AI/search stack.",
+        }
+    )
+    payload["domain_message"] = "Layer 2 production-safe mode"
+    payload["domain_status"] = "degraded"
+    return payload
 
 
 def _cleanup_layer2_store() -> None:
@@ -5355,7 +5379,9 @@ def _run_analysis_job(
         )
 
         layer2_payload = build_layer2_response(None)
-        if enable_layer2:
+        if enable_layer2 and not ENABLE_FULL_LAYER2:
+            layer2_payload = _production_safe_layer2_payload()
+        elif enable_layer2:
             layer2_started_at = time.perf_counter()
             layer2_payload = _run_layer2_discovery(
                 upload_id=upload_id,
@@ -5435,7 +5461,7 @@ def _run_analysis_job(
             },
         )
         layer2_needs_enrichment = bool(enable_layer2 and _layer2_needs_enrichment(layer2_payload))
-        if layer2_needs_enrichment:
+        if layer2_needs_enrichment and ENABLE_FULL_LAYER3_REFINEMENT:
             _LAYER3_REFINEMENT_EXECUTOR.submit(
                 _run_layer2_layer3_enrichment_job,
                 job_id=job_id,
@@ -5454,7 +5480,7 @@ def _run_analysis_job(
                 layer1_payload=layer1_payload,
                 track_requested=track_requested,
             )
-        if enable_layer3 and auth_state == "user" and not layer2_needs_enrichment:
+        if enable_layer3 and auth_state == "user" and not layer2_needs_enrichment and ENABLE_FULL_LAYER3_REFINEMENT:
             _LAYER3_REFINEMENT_EXECUTOR.submit(
                 _run_layer3_refinement_job,
                 job_id=job_id,
